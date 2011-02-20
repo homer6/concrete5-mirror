@@ -4,13 +4,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 // now that we're in the specialized content file for this block type, 
 // we'll include this block type's class, and pass the block to it, and get
 // the content	
-$file = $controller->getFileObject();
-$rel_file_path=$file->getRelativePath(); ?>
 
+$file = $controller->getFileObject();
+$rel_file_path=$file->getRelativePath(); 
+?>
 <div style="text-align:center">
 
 <?php 
-global $c;
+$c = Page::getCurrentPage();
 $vWidth=intval($controller->width);
 $vHeight=intval($controller->height);
 if ($c->isEditMode()) { ?>
@@ -20,6 +21,8 @@ if ($c->isEditMode()) { ?>
 <?php  }else{ ?>
 	
 	<?php 
+	
+	
 	//echo mime_content_type(DIR_FILES_UPLOADED.'/'.$file->getFilename()).'<br>';
 	if( strstr(strtolower($file->getFilename()),'.flv') ){   ?>
 		
@@ -41,8 +44,8 @@ if ($c->isEditMode()) { ?>
 		<?php echo t("Loading Video... If you're seeing this message you may not have Flash installed.")?>
 		</div>
 	
-	<?php  }elseif(  strstr(strtolower($file->getFilename()),'.wmv') || strstr(strtolower($file->getFilename()),'.mpg') ||  strstr(strtolower($file->getFilename()),'.mpeg')  ){ ?> 
-	
+	<?php  }elseif(  strstr(strtolower($file->getFilename()),'.wmv') || strstr(strtolower($file->getFilename()),'.mpg') ||  strstr(strtolower($file->getFilename()),'.mpeg') ){ ?> 
+		
 		<OBJECT ID="MediaPlayer" WIDTH="<?php echo $controller->width?>" HEIGHT="<?php echo $controller->height?>" 
 		CLASSID="CLSID:22D6F312-B0F6-11D0-94AB-0080C74C7E95" STANDBY="Loading Windows Media Player components..." TYPE="application/x-oleobject">
 		<PARAM NAME="FileName" VALUE="<?php echo $rel_file_path?>">
@@ -60,7 +63,7 @@ if ($c->isEditMode()) { ?>
 			</EMBED>
 		</OBJECT>
 		
-	<?php  }elseif( strstr(strtolower($file->getFilename()),'.mov') || strstr(strtolower($file->getFilename()),'.qt')  ){ ?>	
+	<?php  }elseif( strstr(strtolower($file->getFilename()),'.mov') || strstr(strtolower($file->getFilename()),'.qt') || strstr(strtolower($file->getFilename()),'.mp4') ){ ?>	
 		
 		<object CLASSID="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B" width="<?php echo $controller->width?>" height="<?php echo $controller->height?>" CODEBASE="http://www.apple.com/qtactivex/qtplugin.cab">
 			<param name="src" value="<?php echo $rel_file_path?>">

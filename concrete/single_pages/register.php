@@ -59,29 +59,22 @@ if($success) {
 	<?php 
 	
 	$attribs = UserAttributeKey::getRegistrationList();
+	$af = Loader::helper('form/attribute');
+	
 	foreach($attribs as $ak) { 
-		if ($ak->getKeyType() == 'HTML') { ?>
-			<div><?php echo $ak->outputHTML()?></div>
-		<?php  } else { ?>
-			<div>
-			<?php echo $form->label($ak->getFormElementName(), $ak->getKeyName())?> <?php  if ($ak->isKeyRequired()) { ?><span class="required">*</span><?php  } ?>
-			<?php echo $ak->outputHTML()?>
-			</div>
-			<br/>
-			
-		<?php  } ?>
+		print $af->display($ak, $ak->isAttributeKeyRequiredOnRegister());	
+		print '<br/><br/>';
+	}
+	
+	if (ENABLE_REGISTRATION_CAPTCHA) { 
+		print $form->label('captcha', t('Please type the letters and numbers shown in the image.'));
+		print '<br/>';
+		$captcha = Loader::helper('validation/captcha');				
+		$captcha->display();
+		?>
+		
+		<div><?php  $captcha->showInput();?> </div>
 	<?php  } ?>
-	
-	<div>
-	<?php 
-	print $form->label('captcha', t('Please type the letters and numbers shown in the image.'));
-	print '<br/>';
-	$captcha = Loader::helper('validation/captcha');				
-	$captcha->display();
-	?>
-	</div>
-	
-	<div><?php  $captcha->showInput();?> </div>
 	
 	<br/>
 	

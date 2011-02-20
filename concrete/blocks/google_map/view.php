@@ -1,7 +1,7 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 
 <?php 
-global $c;
+$c = Page::getCurrentPage();
 if ($c->isEditMode()) { ?>
 
 	<div class="ccm-edit-mode-disabled-item" style="height: 400px">

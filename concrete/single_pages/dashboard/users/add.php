@@ -17,10 +17,10 @@ if ($_POST['create']) {
 		$_POST['uName'] = $_POST['uEmail'];
 	}
 	
-
-	$username = $_POST['uName'];
-	$username = trim($username);
-	$username = ereg_replace(" +", " ", $username);
+	$username = trim($_POST['uName']);
+	$username = preg_replace("/\s+/", " ", $username);
+	$_POST['uName'] = $username;	
+	
 	$password = $_POST['uPassword'];
 	
 	if (!$vals->email($_POST['uEmail'])) {
@@ -40,11 +40,10 @@ if ($_POST['create']) {
 
 		if (strlen($username) >= USER_USERNAME_MINIMUM && !$valc->username($username)) {
 			if(USER_USERNAME_ALLOW_SPACES) {
-				$e->add(t('A username may only contain letters, numbers and spaces.'));
+				$error[] = t('A username may only contain letters, numbers and spaces.');
 			} else {
-				$e->add(t('A username may only contain letters or numbers.'));
+				$error[] = t('A username may only contain letters or numbers.');
 			}
-			
 		}
 
 		if (!$valc->isUniqueUsername($username)) {
@@ -68,6 +67,20 @@ if ($_POST['create']) {
 	if (!$valt->validate('create_account')) {
 		$error[] = $valt->getErrorMessage();
 	}
+
+	Loader::model("attribute/categories/user");
+	$aks = UserAttributeKey::getRegistrationList();
+
+	foreach($aks as $uak) {
+		if ($uak->isAttributeKeyRequiredOnRegister()) {
+			$e1 = $uak->validateAttributeForm();
+			if ($e1 == false) {
+				$error[] = t('The field "%s" is required', $uak->getAttributeKeyName());
+			} else if ($e1 instanceof ValidationErrorHelper) {
+				$error[] = $e1->getList();
+			}
+		}
+	}
 	
 	if (!$error) {
 		// do the registration
@@ -80,7 +93,10 @@ if ($_POST['create']) {
 				$uHasAvatar = $av->updateUserAvatar($_FILES['uAvatar']['tmp_name'], $uo->getUserID());
 			}
 			
-			$uo->updateSelectedUserAttributes($data['editAKID'], $_POST);
+			foreach($aks as $uak) {
+				$uak->saveAttributeForm($uo);				
+			}
+
 			$uo->updateGroups($_POST['gID']);
 			$uID = $uo->getUserID();
 			$this->controller->redirect('/dashboard/users/search?uID=' . $uID . '&user_created=1');
@@ -127,11 +143,61 @@ if ($_POST['create']) {
 	</tr>
 	</table>
 	</div>
+
+	<?php 
+	Loader::model('attribute/categories/user');
+	$attribs = UserAttributeKey::getRegistrationList();
+	if (count($attribs) > 0) { ?>
 	
-	<h2><?php echo t('Groups')?></h2>
+	<table class="entry-form" border="0" cellspacing="1" cellpadding="0">
+	<tr>
+		<td class="header"><?php echo t('Registration Data')?></td>
+	</tr>
+	<?php  foreach($attribs as $ak) { ?>
+	<tr>
+		<td class="subheader"><?php echo $ak->getAttributeKeyName()?> <?php  if ($ak->isAttributeKeyRequiredOnRegister()) { ?><span class="ccm-required">*</span><?php  } ?></td>
+	</tr>
+	<tr>
+		<td width="100%"><?php  $ak->render('form', $caValue, false)?></td>
+	</tr>
+	<?php  } ?>
+	</table>
 	
-	<p><?php echo t('Once you create the account you may assign it to groups.')?></p>
 	
+	<?php  } ?>
+<?php 
+	Loader::model("search/group");
+	$gl = new GroupSearch();
+	if ($gl->getTotal() < 1000) { 
+		$gl->setItemsPerPage(1000);
+		?>
+		<h2><?php echo t('Groups')?></h2>
+		<table class="entry-form" border="0" cellspacing="1" cellpadding="0">
+		<tr>
+			<td class="header">
+				<?php echo t('Groups')?>
+			</td>
+		</tr>
+		<?php  
+		$gArray = $gl->getPage(); ?>
+		<tr>
+			<td>
+			<?php  foreach ($gArray as $g) { ?>
+				<input type="checkbox" name="gID[]" value="<?php echo $g['gID']?>" style="vertical-align: middle" <?php  
+					if (is_array($_POST['gID'])) {
+						if (in_array($g['gID'], $_POST['gID'])) {
+							echo(' checked ');
+						}
+					}
+				?> /> <?php echo $g['gName']?><br>
+			<?php  } ?>
+			
+			<div id="ccm-additional-groups"></div>
+			
+			</td>
+		</tr>
+		</table>
+	<?php  } ?>	
 
 	<div class="ccm-buttons">
 		<input type="hidden" name="create" value="1" />

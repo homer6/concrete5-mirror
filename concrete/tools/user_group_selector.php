@@ -58,7 +58,9 @@ $("#ccm-ug-tabs a").click(function() {
 <div id="ccm-select-user-tab" style="display: none">
 <h1><?php echo t('Select User')?></h1>
 
-<?php  include(DIR_FILES_TOOLS_REQUIRED . '/select_user.php'); ?>
+<?php  
+$mode = 'choose_multiple';
+include(DIR_FILES_TOOLS_REQUIRED . '/users/search_dialog.php'); ?>
 
 </div>
 

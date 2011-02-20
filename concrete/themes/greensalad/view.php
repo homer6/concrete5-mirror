@@ -4,7 +4,13 @@ $this->inc('elements/header.php'); ?>
 <div id="page" class="sidebar-left">
 	<div id="headerSpacer"></div>
 	<div id="header">		
-		<h1 id="logo"><a href="<?php echo DIR_REL?>/"><?php echo SITE?></a></h1>
+		<h1 id="logo"><!--
+			--><a href="<?php echo DIR_REL?>/"><?php 
+				$block = Block::getByName('My_Site_Name');
+				if( $block && $block->bID ) $block->display();  
+				else echo SITE;
+			?></a><!--
+		--></h1>
 		<?php 
 		// we use the "is edit mode" check because, in edit mode, the bottom of the area overlaps the item below it, because
 		// we're using absolute positioning. So in edit mode we add a bit of space so everything looks nice.
@@ -46,7 +52,14 @@ $this->inc('elements/header.php'); ?>
 			<?php 
 			$u = new User();
 			if ($u->isRegistered()) { ?>
-				<span class="sign-in"><?php echo t('Currently logged in as <b>%s</b>.', $u->getUserName())?> <a href="<?php echo $this->url('/login', 'logout')?>"><?php echo t('Sign Out')?></a></span>
+				<?php  
+				if (Config::get("ENABLE_USER_PROFILES")) {
+					$userName = '<a href="' . $this->url('/profile') . '">' . $u->getUserName() . '</a>';
+				} else {
+					$userName = $u->getUserName();
+				}
+				?>
+				<span class="sign-in"><?php echo t('Currently logged in as <b>%s</b>.', $userName)?> <a href="<?php echo $this->url('/login', 'logout')?>"><?php echo t('Sign Out')?></a></span>
 			<?php  } else { ?>
 				<span class="sign-in"><a href="<?php echo $this->url('/login')?>"><?php echo t('Sign In to Edit this Site')?></a></span>
 			<?php  } ?>

@@ -9,9 +9,13 @@ var ccmi18n = {
 	blockAreaMenu: '<?php echo t("Add Block")?>',
 	arrangeBlock: '<?php echo t('Move')?>',
 	copyBlockToScrapbook: '<?php echo t('Copy to Scrapbook')?>',
-	changeBlockTemplate: '<?php echo t('Set Custom Template')?>',
+	changeBlockTemplate: '<?php echo t('Custom Template')?>',
+	changeBlockCSS: "<?php echo t("Design")?>",
+	changeBlockBaseStyle: "<?php echo t("Set Block Styles")?>",
+	confirmBlockCssReset: "<?php echo t("Are you sure you want to remove all of this block's styles?")?>",
 	setBlockPermissions: '<?php echo t('Set Permissions')?>',
-	setBlockAlias: '<?php echo t('Setup on Child Pages')?>',	
+	setBlockAlias: '<?php echo t('Setup on Child Pages')?>',
+	clear: '<?php echo t('Clear')?>',
 	helpPopup: '<?php echo t('Help')?>',
 	noIE6: '<?php echo t('Concrete5 does not support Internet Explorer 6 in edit mode.')?>',
 	helpPopupLoginMsg: '<?php echo t('Get more help on your question by posting it to the concrete5 help center on concrete5.org')?>',
@@ -21,8 +25,11 @@ var ccmi18n = {
 	marketplaceLoginMsg: '<?php echo t('<p>You must be logged into the concrete5 Marketplace to install add-ons and themes.  Please log in.</p>')?>',
 	marketplaceLoginSuccessMsg: '<?php echo t('<p>You have successfully logged into the concrete5 Marketplace.</p>')?>',
 	marketplaceLogoutSuccessMsg: '<?php echo t('<p>You are now logged out of concrete5 Marketplace.</p>')?>',
-	ok: '<?php echo t('Ok')?>'
-	
+	deleteAttributeValue: '<?php echo t('Are you sure you want to remove this value?')?>',
+	customizeSearch: '<?php echo t('Customize Search')?>',
+	properties: '<?php echo t('Properties')?>',
+	ok: '<?php echo t('Ok')?>',
+	x: '<?php echo t('x')?>'
 }
 
 var ccmi18n_sitemap = {
@@ -76,9 +83,9 @@ var ccmi18n_filemanager = {
 	edit: '<?php echo t('Edit')?>',
 	replace: '<?php echo t('Replace')?>',
 	chooseNew: '<?php echo t('Choose New File')?>',
-	properties: '<?php echo t('Properties')?>',
 	sets: '<?php echo t('Sets')?>',
 	permissions: '<?php echo t('Access & Permissions')?>',
+	properties: '<?php echo t('Properties')?>',
 	deleteFile: '<?php echo t('Delete')?>',
 	title: '<?php echo t('File Manager')?>',
 	uploadErrorChooseFile: '<?php echo t('You must choose a file.')?>',

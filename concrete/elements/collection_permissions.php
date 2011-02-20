@@ -150,7 +150,7 @@ $saveMsg = t('Save permissions first.');
 		<h1 style="margin-bottom: 0px">Page Permissions</h1>
 
 		<div class="ccm-buttons" style="width: 140px; float: right" id="ccm-page-permissions-select-user-group"> 
-		<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector.php?cID=<?php echo $_REQUEST['cID']?>" dialog-modal="false" dialog-width="600" dialog-title="<?php echo t('Add User/Group')?>"  dialog-height="400" class="dialog-launch ccm-button-right"><span><em class="ccm-button-add"><?php echo t('Add User/Group')?></em></span></a>
+		<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector.php?cID=<?php echo $_REQUEST['cID']?>" dialog-modal="false" dialog-width="90%" dialog-title="<?php echo t('Add User/Group')?>"  dialog-height="70%" class="dialog-launch ccm-button-right"><span><em class="ccm-button-add"><?php echo t('Add User/Group')?></em></span></a>
 		</div>		
 
 		<div style="float: left; width: 450px; padding-top: 15px">
@@ -219,8 +219,8 @@ $saveMsg = t('Save permissions first.');
                    		<td class="permissions"><input type="checkbox" name="collectionAdmin[]" value="gID:<?php echo $g->getGroupID()?>"<?php  if ($g->canAdminCollection()) { ?> checked<?php  } ?>></td>
                    		
                    		<td class="subpage"><?php  foreach ($ctArray as $ct) { ?><div style="white-space: nowrap; width: auto; float: left; margin-right: 5px; min-width: 90px"><input type="checkbox" name="collectionAddSubCollection[<?php echo $ct->getCollectionTypeID()?>][]" value="gID:<?php echo $g->getGroupID()?>"<?php  if ($ct->canAddSubCollection($g)) { ?> checked<?php  } ?>>&nbsp;<?php echo $ct->getCollectionTypeName()?></div><?php  } ?><div class="ccm-spacer">&nbsp;</div></td>
-						<td class="datetime"><?php 	print $dt->datetime('cgStartDate_gID:' . $g->getGroupID(), $g->getGroupStartDate(), true); ?>
-						<td class="datetime"><?php 	print $dt->datetime('cgEndDate_gID:' . $g->getGroupID(), $g->getGroupEndDate(), true); ?>
+						<td class="datetime"><?php 	print $dt->datetime('cgStartDate_gID:' . $g->getGroupID(), $g->getGroupStartDate('user'), true); ?>
+						<td class="datetime"><?php 	print $dt->datetime('cgEndDate_gID:' . $g->getGroupID(), $g->getGroupEndDate('user'), true); ?>
 				
                   
                   </tr>

@@ -80,7 +80,7 @@ if ($_POST['task'] == 'set_advanced_permissions') {
 <?php echo $form->hidden('task', 'set_advanced_permissions')?>
 <?php echo $form->hidden('fID', $f->getFileID())?>
 
-<a style="margin-left: 20px" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector?include_core_groups=1" id="ug-selector" dialog-width="600" dialog-title="<?php echo t('Choose User/Group')?>"  dialog-height="400" class="ccm-button-right dialog-launch"><span><em><?php echo t('Add Group or User')?></em></span></a>
+<a style="margin-left: 20px" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector?include_core_groups=1" id="ug-selector" dialog-width="90%" dialog-title="<?php echo t('Choose User/Group')?>"  dialog-height="70%" class="ccm-button-right dialog-launch"><span><em><?php echo t('Add Group or User')?></em></span></a>
 
 <div class="ccm-important">
 <?php  if (!$f->overrideFileSetPermissions()) { ?>

@@ -254,10 +254,18 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * used by the theme_paths and site_theme_paths files in config/ to hard coded certain paths to various themes
 		 * @access public
 		 * @param $path string
-		 * @param $theme object
+		 * @param $theme object, if null site theme is default
 		 * @return void
 		*/
-		public function setThemeByPath($path, $theme) {
+		public function setThemeByPath($path, $theme = NULL) {
+			if ($theme != VIEW_CORE_THEME && $theme != 'dashboard') { // this is a hack until we figure this code out.
+				if (is_string($theme)) {
+					$pageTheme = PageTheme::getByHandle($theme);
+					if(is_object($pageTheme) && $pageTheme->getThemeHandle() == $theme) { // is it the theme that's been requested?
+						$theme = $pageTheme;
+					}
+				}
+			}
 			$this->themePaths[$path] = $theme;
 		}
 		
@@ -688,7 +696,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				} else {
 					$theme = FILENAME_COLLECTION_DEFAULT_THEME;
 				}		
-	
+				
 				$this->setThemeForView($theme, $themeFilename, $wrapTemplateInTheme);
 
 				// Now, if we're on an actual page, we retrieve all the blocks on the page
@@ -703,7 +711,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						if('Controller' != get_class($btc)){
 							$btc->outputAutoHeaderItems();
 						}
-						$btc->runTask('on_page_view', $view);
+						$btc->runTask('on_page_view', array($view));
 					}
 				}
 	
@@ -724,6 +732,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				if (defined('APP_CHARSET')) {
 					header("Content-Type: text/html; charset=" . APP_CHARSET);
 				}
+				
 				
 				include($this->theme);
 				

@@ -124,7 +124,7 @@
 	<?php  } ?>	
 	</span>
 		<div class="ccm-buttons" style="margin-bottom: 10px"> 
-		<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector.php?cID=<?php echo $_REQUEST['cID']?>" dialog-width="600" dialog-title="<?php echo t('Add User/Group')?>"  dialog-height="400" dialog-modal="false" class="dialog-launch ccm-button-right"><span><em class="ccm-button-add"><?php echo t('Add User/Group')?></em></span></a>
+		<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector.php?cID=<?php echo $_REQUEST['cID']?>" dialog-width="90%" dialog-title="<?php echo t('Add User/Group')?>"  dialog-height="70%" dialog-modal="false" class="dialog-launch ccm-button-right"><span><em class="ccm-button-add"><?php echo t('Add User/Group')?></em></span></a>
 		</div>
 
 		<div class="ccm-spacer">&nbsp;</div>

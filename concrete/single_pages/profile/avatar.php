@@ -1,24 +1,7 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-<div id="central" class="central-left">
-    <div id="sidebar">
-    	<div class="ccm-profile-header">
-        	<a href="<?php echo View::url('/profile',$ui->getUserID())?>"><?php echo  $av->outputUserAvatar($ui)?></a><br />
-            <a href="<?php echo View::url('/profile',$ui->getUserID())?>"><?php echo  $ui->getUsername()?></a>
-        </div>
-        <h4 style="margin-top: 0px"><?php echo t('Member Since')?></h4>
-        <?php echo date('F d, Y', strtotime($ui->getUserDateAdded()))?>
-        <?php  
-		$bt = BlockType::getByHandle('autonav');
-		$bt->controller->displayPages = 'current';
-		$bt->controller->orderBy = 'display_asc';
-		$bt->controller->displaySubPages = 'relevant';
-		$bt->controller->displaySubPageLevels = 'enough';
-		$bt->controller->displaySystemPages = true;
-		$bt->render('view');
-		?>
-    </div>
-    
-    <div id="body">	
+<div id="ccm-profile-wrapper">
+    <?php  Loader::element('profile/sidebar', array('profile'=> $ui)); ?>    
+    <div id="ccm-profile-body">	
 
         <h2><?php echo t('User Avatar')?></h2>
         <p><?php echo t('Change the picture attached to my posts.')?></p>
@@ -66,4 +49,6 @@
             </script>
         </div>
 	</div>
+	
+	<div class="ccm-spacer"></div>
 </div>

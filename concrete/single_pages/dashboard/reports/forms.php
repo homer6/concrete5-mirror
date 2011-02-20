@@ -18,6 +18,14 @@ function toggleQuestions(qsID,trigger){
 		trigger.innerHTML = toggleQuestionsHideText;
 	}
 }
+//SET UP FORM RESPONSE CONFIRM DELETE
+function deleteResponse(dLink){
+	return confirm("<?php echo t('Are you sure you want to delete this form submission?')?>");
+}
+//SET UP FORM CONFIRM DELETE
+function deleteForm(dLink){
+	return confirm("<?php echo t('Are you sure you want to delete this form and its form submissions?')?>");
+}
 </script> 
 
 <h1><span><?php echo t('Form Results')?></span></h1>
@@ -32,22 +40,37 @@ function toggleQuestions(qsID,trigger){
 
 <table class="entry-form" >
 	<tr>
-		<td class="header"><?php echo t('Form')?></td>
-		<td class="header"><?php echo t('Options')?></td>
+		<td class="header"><?php  echo t('Form')?></td>
+		<!--our counter insterted-->
+		<td class="header"><?php  echo t('Submissions')?></td>
+		<td class="header"><?php  echo t('Options')?></td>		
 	</tr>
-	<?php  foreach($surveys as $thisQuestionSetId=>$survey){
+	<?php  
+	$db = Loader::db();
+	foreach($surveys as $thisQuestionSetId=>$survey){
 		$b=Block::getByID( intval($survey['bID']) );
+		
+		//get count of number of times this block is used
+		$db = Loader::db();
+		$q = "select count(*) from CollectionVersionBlocks inner join Pages on (CollectionVersionBlocks.cID = Pages.cID) inner join CollectionVersions on (CollectionVersions.cID = Pages.cID) where CollectionVersions.cvIsApproved=1 AND CollectionVersionBlocks.cvID=CollectionVersions.cvID AND CollectionVersionBlocks.bID = '{$b->bID}'";
+		$blockActiveOnNumPages = $db->getOne($q);
+		
 		if (is_object($b)) {
 			$oc = $b->getBlockCollectionObject();
 			$ocID = $oc->getCollectionID();		
 			?>
 			<tr>
-				<td><?php echo $survey['surveyName']?></td>
+				<td><?php  echo $survey['surveyName']?></td>
+				<td><?php  echo $survey['answerSetCount']?></td>
 				<td>
-					<a href="<?php echo DIR_REL?>/index.php?cID=<?php echo $c->getCollectionId()?>&qsid=<?php echo $thisQuestionSetId?>"><?php echo t('View Responses')?></a>
+					<a href="<?php  echo DIR_REL?>/index.php?cID=<?php  echo $c->getCollectionId()?>&qsid=<?php  echo $thisQuestionSetId?>"><?php  echo t('View Responses')?></a>
 					|
-					<a href="<?php echo DIR_REL?>/index.php?cID=<?php echo $ocID?>"><?php echo t('Open Page')?></a>	
-				</td>
+					<a href="<?php  echo DIR_REL?>/index.php?cID=<?php  echo $ocID?>"><?php  echo t('Open Page')?></a>	
+					<?php  if(!intval($blockActiveOnNumPages)){ ?>
+					| 
+					<a onclick="return deleteForm()" href="<?php  echo DIR_REL?>/index.php?cID=<?php  echo $c->getCollectionId()?>&bID=<?php  echo $survey['bID']?>&qsID=<?php  echo $thisQuestionSetId?>&action=deleteForm"><?php  echo t('Delete Unused Form')?></a>
+					<?php  } ?>
+				</td>				
 			</tr>
 		<?php  }
 		
@@ -92,13 +115,15 @@ function toggleQuestions(qsID,trigger){
 			<div class="spacer"></div>
 		</div>
 	
-		<?php  foreach($answerSets as $answerSetId=>$answerSet){ ?>
+		<?php  
+		$dh = Loader::helper('date');
+		foreach($answerSets as $answerSetId=>$answerSet){ ?>
 			
 			<div style="margin:0px; padding:0px; width:100%; height:auto" >
 			<table class="entry-form" width="100%" style="margin-bottom:2px">
 				<tr>
 					<td class="header"><?php echo t('Submitted Date')?></td>
-					<td class="header"><?php echo $answerSet['created']?></td>
+					<td class="header"><?php echo $dh->getLocalDateTime($answerSet['created'])?></td>
 				</tr>
 				<?php  
 				$questionNumber=0;
@@ -139,11 +164,14 @@ function toggleQuestions(qsID,trigger){
 			</table>
 			</div>
 			
-			<?php  if( count($questions)>$numQuestionsToShow ){ ?>
-				<div style="text-align:right; margin-bottom:16px"><a onclick="toggleQuestions(<?php echo $answerSetId?>,this)"><?php echo $toggleQuestionsShowText?></a></div>
-			<?php  } ?>
-			
-		<?php  } ?>
+			<div style="text-align:right; margin-bottom:16px">
+			<a onclick="return deleteResponse()" href="<?php  echo DIR_REL?>/index.php?cID=<?php  echo $c->getCollectionId()?>&qsid=<?php  echo $answerSet['questionSetId']?>&asid=<?php  echo $answerSet['asID']?>&action=deleteResponse"><?php echo t("Delete Response")?></a>
+			&nbsp;|&nbsp;
+			<?php   if( count($questions)>$numQuestionsToShow ){ ?>
+				<a onclick="toggleQuestions(<?php  echo $answerSetId?>,this)"><?php  echo $toggleQuestionsShowText?></a>
+			<?php   } ?>
+			</div>	
+		<?php   } ?>
 		
 	<?php  } ?> 	
 

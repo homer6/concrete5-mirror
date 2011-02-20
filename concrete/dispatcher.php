@@ -1,5 +1,4 @@
 <?php 
-
 	## This constant ensures that we're operating inside dispatcher.php. There is a LATER check to ensure that dispatcher.php is being called correctly. ##
 	define('C5_EXECUTE', true);
 
@@ -11,9 +10,6 @@
 
 	## First we ensure that dispatcher is not being called directly
 	require(dirname(__FILE__) . '/startup/file_access_check.php');
-	
-	## Check host for redirection ##	
-	require(dirname(__FILE__) . '/startup/url_check.php');
 	
 	## Load the database ##
 	Loader::database();
@@ -32,6 +28,8 @@
 	Loader::library('block_view');
 	Loader::library('block_view_template');
 	Loader::library('block_controller');
+	Loader::library('attribute/view');
+	Loader::library('attribute/controller');
 
 	## Autoload settings
 	if (C5_ENVIRONMENT_ONLY == false) {
@@ -40,7 +38,13 @@
 	
 	## Load required models ##
 	Loader::model('area');
+	Loader::model('attribute/key');
+	Loader::model('attribute/value');
+	Loader::model('attribute/category');
+	Loader::model('attribute/set');
+	Loader::model('attribute/type');
 	Loader::model('block');
+	Loader::model('block_styles');
 	Loader::model('file');
 	Loader::model('file_version');
 	Loader::model('block_types');
@@ -55,9 +59,12 @@
 	Loader::model('user');
 	Loader::model('userinfo');
 
+	## Setup timzone support
+	require(dirname(__FILE__) . '/startup/timezone.php'); // must be included before any date related functions are called (php 5.3 +)
+
 	## Startup cache ##
 	Loader::library('cache/abstract');	
-	Loader::library('cache/' . CACHE_LIBRARY);	
+	Loader::library('cache/' . CACHE_LIBRARY);
 	Cache::startup();
 	
 	## Startup check, install ##	
@@ -81,6 +88,9 @@
 	## User level config ##	
 	require(dirname(__FILE__) . '/config/app.php');
 	
+	## Check host for redirection ##	
+	require(dirname(__FILE__) . '/startup/url_check.php');
+	
 	## Site-level config POST user/app config ##
 	if (file_exists(DIR_BASE . '/config/site_post.php')) {
 		require(DIR_BASE . '/config/site_post.php');
@@ -89,11 +99,16 @@
 	## Set debug-related and logging activities
 	require(dirname(__FILE__) . '/startup/debug_logging.php');
 
+	require(dirname(__FILE__) . '/startup/tools_upgrade_check.php');
+
 	## Specific site routes for various content items (if they exist) ##
 	@include('config/site_theme_paths.php');
 
 	## Specific site routes for various content items (if they exist) ##
 	@include('config/site_file_types.php');
+
+	## Package events
+	require(dirname(__FILE__) . '/startup/packages.php');
 
 	// Now we check to see if we're including CSS, Javascript, etc...
 	// Include Tools. Format: index.php?task=include_frontend&fType=TOOL&filename=test.php
@@ -105,8 +120,6 @@
 		@include('config/site_events.php');
 	}
 	
-	## Package events
-	require(dirname(__FILE__) . '/startup/packages.php');
 	
 	## Check online, user-related startup routines
 	require(dirname(__FILE__) . '/startup/user.php');

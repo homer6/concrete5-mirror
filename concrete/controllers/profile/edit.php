@@ -1,9 +1,10 @@
 <?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 Loader::model('user_attributes');
+Loader::model('attribute/categories/collection');
 class ProfileEditController extends Controller {
 
-	var $helpers = array('html', 'form');
+	var $helpers = array('html', 'form', 'date');
 	
 	public function __construct() {
 		$html = Loader::helper('html');
@@ -11,10 +12,15 @@ class ProfileEditController extends Controller {
 		$u = new User();
 		if (!$u->isRegistered()) {
 			$this->set('intro_msg', t('You must sign in order to access this page!'));
+			Loader::controller('/login');
 			$this->render('/login');
 		}
 		$this->set('ui', UserInfo::getByID($u->getUserID()));
 		$this->set('av', Loader::helper('concrete/avatar'));
+	}
+	
+	public function on_start() {
+		$this->addHeaderItem(Loader::helper('html')->css('ccm.profile.css'));
 	}
 
 	public function save() { 
@@ -31,12 +37,6 @@ class ProfileEditController extends Controller {
 		/* 
 		 * Validation
 		*/
-		
-		// validate the user's attributes
-		$invalidFields = UserAttributeKey::validateSubmittedRequest();
-		foreach($invalidFields as $field) {
-			$e->add(t("The field %s is required.", $field));
-		}
 		
 		// validate the user's email
 		$email = $this->post('uEmail');
@@ -67,12 +67,31 @@ class ProfileEditController extends Controller {
 			$data['uPasswordConfirm'] = $passwordNew;
 			$data['uPassword'] = $passwordNew;
 		}		
+		
+		$aks = UserAttributeKey::getEditableInProfileList();
+
+		foreach($aks as $uak) {
+			if ($uak->isAttributeKeyRequiredOnProfile()) {
+				$e1 = $uak->validateAttributeForm();
+				if ($e1 == false) {
+					$e->add(t('The field "%s" is required', $uak->getAttributeKeyName()));
+				} else if ($e1 instanceof ValidationErrorHelper) {
+					$e->add($e1);
+				}
+			}
+		}
 
 		if (!$e->has()) {		
 			$data['uEmail'] = $email;		
+			if(ENABLE_USER_TIMEZONES) {
+				$data['uTimezone'] = $this->post('uTimezone');
+			}
 			
 			$ui->update($data);
-			$ui->updateUserAttributes($data);
+			
+			foreach($aks as $uak) {
+				$uak->saveAttributeForm($ui);				
+			}
 		
 			$this->set('message', t('Profile Information Saved.'));
 		} else {

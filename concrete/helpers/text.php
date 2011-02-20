@@ -26,9 +26,36 @@ class TextHelper {
 	 */
 	function sanitizeFileSystem($handle, $leaveSlashes=false) {
 		$handle = trim($handle);
-		$searchNormal = array("/[&]/", "/[\s|.]+/", "/[^0-9A-Za-z-_]/", "/--/");
-		$searchSlashes = array("/[&]/", "/[\s|.]+/", "/[^0-9A-Za-z-_\/]/", "/--/");
-		$replace = array("and", "_", "", "_");
+		$handle = str_replace(PAGE_PATH_SEPARATOR, '-', $handle);
+		$searchMulti = array(
+			"ä",
+			"ö",
+			"ß",
+			"ü",
+			"æ",
+			"ø",
+			"å",
+			"é",
+			"è"	
+		);
+
+		$replaceMulti = array(
+			'ae',
+			'oe',
+			'sz',
+			'ue',
+			'ae',
+			'oe',
+			'aa',
+			'e',
+			'e'
+		);
+		
+		$handle = str_replace($searchMulti, $replaceMulti, $handle);
+
+		$searchNormal = array("/[&]/", "/[\s|.]+/", "/[^0-9A-Za-z-_]/", "/-+/");
+		$searchSlashes = array("/[&]/", "/[\s|.]+/", "/[^0-9A-Za-z-_\/]/", "/-+/");
+		$replace = array("and", "-", "", "-");
 		
 		$search = $searchNormal;
 		if ($leaveSlashes) {
@@ -37,10 +64,12 @@ class TextHelper {
 
 		$handle = preg_replace($search, $replace, $handle);
 		if (function_exists('mb_substr')) {
-			$handle = mb_strtolower(mb_substr($handle, 0, 48, APP_CHARSET), APP_CHARSET);
+			$handle = mb_strtolower($handle, APP_CHARSET);
 		} else {
-			$handle = strtolower(substr($handle, 0, 48));
+			$handle = strtolower($handle);
 		}
+		$handle = trim($handle, '-');
+		$handle = str_replace('-', PAGE_PATH_SEPARATOR, $handle);
 		return $handle;
 	}
 
@@ -121,9 +150,9 @@ class TextHelper {
 	 */	
 	public function twitterAutolink($input,$newWindow=0,$withSearch=0) {
 		$target=($newWindow)?' target="_blank" ':'';
-    	$output = preg_replace('/([\.|\,|\:|\�|\�|\>|\{|\(]?)@{1}(\w*)([\.|\,|\:|\!|\?|\>|\}|\)]?)\s/i', "$1<a href=\"http://twitter.com/$2\" ".$target." class=\"twitter-username\">@$2</a>$3 ", $input);
+    	$output = preg_replace('/([\.|\,|\:|\¡|\¿|\>|\{|\(]?)@{1}(\w*)([\.|\,|\:|\!|\?|\>|\}|\)]?)\s/i', "$1<a href=\"http://twitter.com/$2\" ".$target." class=\"twitter-username\">@$2</a>$3 ", $input);
 		if($withSearch) 
-			$output = preg_replace('/([\.|\,|\:|\�|\�|\>|\{|\(]?)#{1}(\w*)([\.|\,|\:|\!|\?|\>|\}|\)]?)\s/i', "$1<a href=\"http://search.twitter.com/search?q=%23$2\" ".$target." class=\"twitter-search\">#$2</a>$3 ", $input);		
+			$output = preg_replace('/([\.|\,|\:|\¡|\¿|\>|\{|\(]?)#{1}(\w*)([\.|\,|\:|\!|\?|\>|\}|\)]?)\s/i', "$1<a href=\"http://search.twitter.com/search?q=%23$2\" ".$target." class=\"twitter-search\">#$2</a>$3 ", $input);		
     	return $output;
 	}  
 	

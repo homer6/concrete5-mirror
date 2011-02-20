@@ -1,4 +1,8 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  Loader::library('authentication/open_id');?>
+<?php  $form = Loader::helper('form'); ?>
+
+<div style="position: relative">
 
 <h1><?php echo t('Sign in to %s', SITE)?></h1>
 
@@ -108,6 +112,8 @@
 <?php  } ?>
 
 <div class="ccm-form">
+<?php  if (ENABLE_REGISTRATION == 1) { ?><div style="position: absolute; top: 36px; right: 0px; font-size: 11px"><?php echo t('Not a member?')?> <a href="<?php echo $this->url('/register')?>"><?php echo t('Register here!')?></a></div><?php  } ?>
+
 <form method="post" action="<?php echo $this->url('/login', 'do_login')?>">
 	<div>
 	<label for="uName"><?php  if (USER_REGISTRATION_WITH_EMAIL_ADDRESS == true) { ?>
@@ -174,4 +180,6 @@
 </script>
 
 <?php  } ?>
+
+</div>
 

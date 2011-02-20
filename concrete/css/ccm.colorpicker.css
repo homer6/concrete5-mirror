@@ -139,11 +139,19 @@
 	top: 112px;
 	left: 282px;
 }
+input.colorpicker_none {
+	position: absolute;
+	left: 290px;
+	top: 145px;
+	width: 20px;
+	padding: 0px;
+	font-size: 10px; 
+}
 input.colorpicker_submit {
 	position: absolute;
-	left: 298px;
+	left: 314px;
 	top: 145px;
-	width: 36px;
+	width: 32px;
 	padding: 0px;
 	font-size: 10px; 
 }
@@ -160,7 +168,7 @@ input.colorpicker_submit {
 	background-position: bottom;
 }
 
-div.ccm-color-swatch-wrapper { position:relative; left:0px; top:0px; height:36px; width:36px; }
+div.ccm-color-swatch-wrapper { position:relative; left:0px; top:0px; height:36px; width:36px; float: left}
 div.ccm-color-swatch-wrapper div.ccm-color-swatch { 
 	position: absolute;
 	top: 0;

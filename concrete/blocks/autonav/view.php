@@ -1,7 +1,7 @@
 <?php 
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	$aBlocks = $controller->generateNav();
-	global $c;
+	$c = Page::getCurrentPage();
 	echo("<ul class=\"nav\">");
 	
 	$nh = Loader::helper('navigation');

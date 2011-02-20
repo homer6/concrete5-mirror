@@ -24,18 +24,18 @@ $akk = $c->getCollectionAttributeValue('meta_keywords');
 
 if ($akt) { 
 	$pageTitle = $akt; 
-	?><title><?php echo $akt?></title>
+	?><title><?php echo htmlspecialchars($akt, ENT_COMPAT, APP_CHARSET)?></title>
 <?php  } else { 
-	$pageTitle = $c->getCollectionName();
+	$pageTitle = htmlspecialchars($c->getCollectionName(), ENT_COMPAT, APP_CHARSET);
 	?><title><?php echo sprintf(PAGE_TITLE_FORMAT, SITE, $pageTitle)?></title>
 <?php  } 
 
 if ($akd) { 
-?><meta name="description" content="<?php echo htmlspecialchars($akd)?>" />
+?><meta name="description" content="<?php echo htmlspecialchars($akd, ENT_COMPAT, APP_CHARSET)?>" />
 <?php  } else { 
-?><meta name="description" content="<?php echo htmlspecialchars($pageDescription)?>" />
+?><meta name="description" content="<?php echo htmlspecialchars($pageDescription, ENT_COMPAT, APP_CHARSET)?>" />
 <?php  }
-if ($akk) { ?><meta name="keywords" content="<?php echo htmlspecialchars($akk)?>" />
+if ($akk) { ?><meta name="keywords" content="<?php echo htmlspecialchars($akk, ENT_COMPAT, APP_CHARSET)?>" />
 <?php  } ?>
 <meta name="generator" content="concrete5 - <?php echo APP_VERSION ?>" />
 
@@ -92,6 +92,4 @@ if (is_object($cp)) {
 
 print $this->controller->outputHeaderItems();
 
-echo $c->getCollectionAttributeValue('header_extra_content'); 
-
-
+echo $c->getCollectionAttributeValue('header_extra_content');

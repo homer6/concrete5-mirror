@@ -30,7 +30,7 @@ if (!defined('REDIRECT_TO_BASE_URL')) {
 }
 
 if (!defined('ENABLE_DEVELOPER_OPTIONS')) {
-	define("ENABLE_DEVELOPER_OPTIONS", false);
+	define("ENABLE_DEVELOPER_OPTIONS", true);
 }
 
 /*
@@ -56,6 +56,10 @@ if (!defined('STATISTICS_TRACK_PAGE_VIEWS')) {
 
 if (!defined("PAGE_TITLE_FORMAT")) {
 	define('PAGE_TITLE_FORMAT', '%1$s :: %2$s');
+}
+
+if (!defined("PAGE_PATH_SEPARATOR")) {
+	define('PAGE_PATH_SEPARATOR', '-');
 }
 
 if (!defined('ENABLE_ASSET_COMPRESSION')) {
@@ -128,10 +132,6 @@ if (!is_dir(DIR_BASE . '/' . DIRNAME_APP)) {
 # (gzip encoding?)
 define('OB_INITIAL_LEVEL', ob_get_level());
 
-# Sessions/TMP directories
-define('DIR_SESSIONS', '/tmp');
-define('DISPATCHER_FILENAME_CORE', 'dispatcher.php');
-
 # Used by the loader to load core libraries
 define('DIR_LIBRARIES', DIR_BASE . '/libraries'); // front-end
 define('DIR_LIBRARIES_CORE', DIR_BASE_CORE . '/libraries'); // front-end
@@ -163,6 +163,8 @@ define('DIRNAME_BLOCKS', 'blocks');
 define('DIRNAME_PAGES', 'single_pages');
 define('DIRNAME_PACKAGES', 'packages');
 define('DIRNAME_MODELS', 'models');
+define('DIRNAME_ATTRIBUTES', 'attribute');
+define('DIRNAME_ATTRIBUTE_TYPES', 'types');
 define('DIRNAME_LIBRARIES', 'libraries');
 define('DIRNAME_PAGE_TYPES', 'page_types');
 define('DIRNAME_ELEMENTS', 'elements');
@@ -234,6 +236,8 @@ define('DIR_FILES_CONTROLLERS', DIR_BASE . '/controllers');
 define('FILENAME_COLLECTION_CONTROLLER', 'controller.php');
 define('DIRNAME_CONTROLLERS', 'controllers');
 define('DIR_FILES_CONTROLLERS_REQUIRED', DIR_BASE_CORE . '/controllers');
+define('FILENAME_ATTRIBUTE_CONTROLLER', 'controller.php');
+define('FILENAME_ATTRIBUTE_DB', 'db.xml');
 
 # Elements
 define('DIR_FILES_ELEMENTS', DIR_BASE . '/elements');
@@ -285,6 +289,13 @@ if (!is_dir(DIR_FILES_CACHE)) {
 	@mkdir(DIR_FILES_CACHE);
 	@chmod(DIR_FILES_CACHE, 0777);
 }
+
+# Sessions/TMP directories
+if (!defined('DIR_TMP')) {
+	define('DIR_TMP', DIR_BASE . '/files/tmp');
+}
+define('DISPATCHER_FILENAME_CORE', 'dispatcher.php');
+
 
 define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
 define('DIR_FILES_CACHE_CORE', DIR_BASE . '/files/cache_objects');
@@ -402,7 +413,7 @@ if (!defined("API_KEY_PICNIK")) {
 $ADODB_ASSOC_CASE =  2;
 $ADODB_ACTIVE_CACHESECS = 300;
 $ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
-define('APP_VERSION', '5.3.2');
+define('APP_VERSION', '5.3.3');
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)
 define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number');
 define('APP_VERSION_LATEST_DOWNLOAD', 'http://www.concrete5.org/download/');

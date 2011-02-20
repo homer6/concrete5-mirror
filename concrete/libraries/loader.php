@@ -40,6 +40,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * Loads a model from either an application, the site, or the core Concrete directory
 		 */
 		public function model($mod, $pkgHandle = null) {
+			
+			$ret = Loader::legacyModel($mod);
+			if ($ret) {
+				return;
+			}
+			
 			if ($pkgHandle) {
 				$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
 				require_once($dir . '/' . $pkgHandle . '/' . DIRNAME_MODELS . '/' . $mod . '.php');
@@ -47,6 +53,26 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				require_once(DIR_MODELS . '/' . $mod . '.php');
 			} else {
 				require_once(DIR_MODELS_CORE . '/' . $mod . '.php');
+			}
+		}
+		
+		protected function legacyModel($model) {
+			switch($model) {
+				case 'collection_attributes':
+					Loader::model('attribute/categories/collection');
+					return true;
+					break;
+				case 'user_attributes':
+					Loader::model('attribute/categories/user');
+					return true;
+					break;
+				case 'file_attributes':
+					Loader::model('attribute/categories/file');
+					return true;
+					break;
+				default:
+					return false;
+					break;
 			}
 		}
 		
@@ -58,7 +84,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				extract($args);
 			}
 			$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
-			include($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php');
+			if (file_exists($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php')) {
+				include($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php');
+			}
 		}
 
 		/** 
@@ -70,7 +98,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 			if (file_exists(DIR_FILES_ELEMENTS . '/' . $file . '.php')) {
 				include(DIR_FILES_ELEMENTS . '/' . $file . '.php');
-			} else {
+			} else if (file_exists(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php')) {
 				include(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php');
 			}
 		}
@@ -132,7 +160,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$dsn = DB_TYPE . '://' . $username . ':' . $password . '@' . $server . '/' . $database;
 				}
 
-				if ($dsn) {
+				if (isset($dsn) && $dsn) {
 					$_dba = @NewADOConnection($dsn);
 					if (is_object($_dba)) {
 						if (DB_CHARSET != '') {
@@ -170,8 +198,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			// loads and instantiates the object
 			if ($pkgHandle != false) {
 				$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
-				$class = Object::camelcase($file) . "Helper";
 				require_once($dir . '/' . $pkgHandle . '/' . DIRNAME_HELPERS . '/' . $file . '.php');
+				$class = Object::camelcase($pkgHandle . '_' . $file) . "Helper";
+				if (!class_exists($class, false)) {
+					$class = Object::camelcase($file) . "Helper";
+				}
 			} else if (file_exists(DIR_HELPERS . '/' . $file . '.php')) {
 				// first we check if there's an object of the SAME kind in the core. If so, then we load the core first, then, we load the second one (site)
 				// and we hope the second one EXTENDS the first
@@ -267,6 +298,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 			Loader::model('collection_types');
 			$ct = CollectionType::getByHandle($ctHandle);
+			if (!is_object($ct)) {
+				return false;
+			}
 			$pkgHandle = $ct->getPackageHandle();
 
 			if ($pkgHandle != '') {
@@ -287,6 +321,25 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * Loads a controller for either a page or view
 		 */
 		public function controller($item) {
+			$db = Loader::db();
+			
+			if (is_string($item)) {
+				if (is_object($db)) {
+					try {
+						$_item = Page::getByPath($item);
+						if ($_item->isError()) {
+							$path = $item;
+						} else {
+							$item = $_item;
+						}
+					} catch(Exception $e) {
+						$path = $item;
+					}
+				} else {
+					$path = $item;
+				}
+			}
+			
 			if ($item instanceof Page) {
 				$c = $item;
 				if ($c->getCollectionTypeID() > 0) {					
@@ -324,8 +377,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$c = $item->getBlockCollectionObject();
 				}
 				
-			} else {
-				$path = $item;
 			}
 			
 			$controllerFile = $path . '.php';

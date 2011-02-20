@@ -46,7 +46,7 @@ class SearchBlockController extends BlockController {
 			if(!empty($body_string))
 				return @implode("....", $body_string);
 		}
-	}	
+	}
 	
 	/** 
 	 * Used for localization. If we want to localize the name/description we have to include this
@@ -77,7 +77,7 @@ class SearchBlockController extends BlockController {
 	}
 	
 	function view(){
-		global $c; 
+		$c = Page::getCurrentPage(); 
 		$this->set('title', $this->title);
 		$this->set('buttonText', $this->buttonText);
 		$this->set('baseSearchPath', $this->baseSearchPath);			
@@ -129,7 +129,7 @@ class SearchBlockController extends BlockController {
 
 		Loader::library('database_indexed_search');
 		$ipl = new IndexedPageList();
-		$ipl->filterByKeywordsBoolean($q);
+		$ipl->filterByKeywords($q);
 		
 		if( is_array($_REQUEST['search_paths']) ){ 
 			foreach($_REQUEST['search_paths'] as $path) {

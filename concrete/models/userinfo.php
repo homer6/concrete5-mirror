@@ -68,7 +68,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		private function get($where, $var, $userPermissionsArray = null) {
 			$db = Loader::db();
-			$q = "select Users.uID, Users.uLastLogin, Users.uIsValidated, Users.uPreviousLogin, Users.uIsFullRecord, Users.uNumLogins, Users.uDateAdded, Users.uIsActive, Users.uLastOnline, Users.uHasAvatar, Users.uName, Users.uEmail, Users.uPassword from Users " . $where;
+			$q = "select Users.uID, Users.uLastLogin, Users.uIsValidated, Users.uPreviousLogin, Users.uIsFullRecord, Users.uNumLogins, Users.uDateAdded, Users.uIsActive, Users.uLastOnline, Users.uHasAvatar, Users.uName, Users.uEmail, Users.uPassword, Users.uTimezone from Users " . $where;
 			$r = $db->query($q, array($var));
 			if ($r && $r->numRows() > 0) {
 				$ui = new UserInfo;
@@ -108,7 +108,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$options = is_array($options) ? $options : array();
 			$db = Loader::db();
 			$dh = Loader::helper('date');
-			$uDateAdded = $dh->getLocalDateTime();
+			$uDateAdded = $dh->getSystemDateTime();
 			
 			if ($data['uIsValidated'] == 1) {
 				$uIsValidated = 1;
@@ -147,7 +147,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function addSuperUser($uPasswordEncrypted, $uEmail) {
 			$db = Loader::db();
 			$dh = Loader::helper('date');
-			$uDateAdded = $dh->getLocalDateTime();
+			$uDateAdded = $dh->getSystemDateTime();
 			
 			$v = array(USER_SUPER_ID, USER_SUPER, $uEmail, $uPasswordEncrypted, 1, $uDateAdded);
 			$r = $db->prepare("insert into Users (uID, uName, uEmail, uPassword, uIsActive, uDateAdded) values (?, ?, ?, ?, ?, ?)");
@@ -175,10 +175,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 			
 			$db = Loader::db();  
+
+			$r = $db->Execute('select avID, akID from UserAttributeValues where uID = ?', array($this->uID));
+			while ($row = $r->FetchRow()) {
+				$uak = UserAttributeKey::getByID($row['akID']);
+				$av = $this->getAttributeValueObject($uak);
+				if (is_object($av)) {
+					$av->delete();
+				}
+			}
+
 			$r = $db->query("DELETE FROM UserGroups WHERE uID = ?",array(intval($this->uID)) );
 			$r = $db->query("DELETE FROM Users WHERE uID = ?",array(intval($this->uID)));
 			$r = $db->query("DELETE FROM UserValidationHashes WHERE uID = ?",array(intval($this->uID)));
-			$r = $db->query("DELETE FROM UserAttributeValues WHERE uID = ?",array(intval($this->uID)));
 			
 			$r = $db->query("DELETE FROM AreaGroupBlockTypes WHERE uID = ?",array(intval($this->uID)));
 			$r = $db->query("DELETE FROM CollectionVersionBlockPermissions WHERE uID = ?",array(intval($this->uID)));
@@ -188,7 +197,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$r = $db->query("DELETE FROM Piles WHERE uID = ?",array(intval($this->uID)));
 			
 			$r = $db->query("UPDATE Blocks set uID=? WHERE uID = ?",array( intval(USER_SUPER_ID), intval($this->uID)));
-			$r = $db->query("UPDATE Pages set uID=? WHERE uID = ?",array( intval(USER_SUPER_ID), intval($this->uID)));			
+			$r = $db->query("UPDATE Pages set uID=? WHERE uID = ?",array( intval(USER_SUPER_ID), intval($this->uID)));
 		}
 
 		/**
@@ -203,6 +212,61 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function getGroupMemberType() {
 			return $this->gMemberType;
 		}
+
+		public function canReadPrivateMessage($msg) {
+			return $msg->getMessageUserID() == $this->getUserID();
+		}
+		
+		public function sendPrivateMessage($recipient, $subject, $text, $inReplyTo = false) {
+			Loader::model('user_private_message');
+			$subject = ($subject == '') ? t('(No Subject)') : $subject;
+			$db = Loader::db();
+			$dt = Loader::helper('date');
+			$v = array($this->getUserID(), $dt->getLocalDateTime(), $subject, $text, $recipient->getUserID());
+			$db->Execute('insert into UserPrivateMessages (uAuthorID, msgDateCreated, msgSubject, msgBody, uToID) values (?, ?, ?, ?, ?)', $v);
+			
+			$msgID = $db->Insert_ID();
+			
+			if ($msgID > 0) {
+				// we add the private message to the sent box of the sender, and the inbox of the recipient
+				$v = array($db->Insert_ID(), $this->getUserID(), $this->getUserID(), UserPrivateMessageMailbox::MBTYPE_SENT, 0, 1);
+				$db->Execute('insert into UserPrivateMessagesTo (msgID, uID, uAuthorID, msgMailboxID, msgIsNew, msgIsUnread) values (?, ?, ?, ?, ?, ?)', $v);
+				$v = array($db->Insert_ID(), $recipient->getUserID(), $this->getUserID(), UserPrivateMessageMailbox::MBTYPE_INBOX, 1, 1);
+				$db->Execute('insert into UserPrivateMessagesTo (msgID, uID, uAuthorID, msgMailboxID, msgIsNew, msgIsUnread) values (?, ?, ?, ?, ?, ?)', $v);
+			}
+			
+			// If the message is in reply to another message, we make a note of that here
+			if (is_object($inReplyTo)) {
+				$db->Execute('update UserPrivateMessagesTo set msgIsReplied = 1 where uID = ? and msgID = ?', array($this->getUserID(), $inReplyTo->getMessageID()));
+			}
+			
+			// send the email notification
+			if ($recipient->getAttribute('profile_private_messages_notification_enabled')) {
+				$mh = Loader::helper('mail');
+				$mh->addParameter('msgSubject', $subject);
+				$mh->addParameter('msgBody', $text);
+				$mh->addParameter('msgAuthor', $this->getUserName());
+				$mh->addParameter('msgDateCreated', $msgDateCreated);
+				$mh->addParameter('profileURL', BASE_URL . View::url('/profile', 'view', $this->getUserID()));
+				$mh->addParameter('profilePreferencesURL', BASE_URL . View::url('/profile/edit'));
+				$mh->to($recipient->getUserEmail());
+				
+				Loader::library('mail/importer');
+				$mi = MailImporter::getByHandle("private_message");
+				if (is_object($mi) && $mi->isMailImporterEnabled()) {
+					$mh->load('private_message_response_enabled');
+					// we store information ABOUT the message here. The mail handler has to know how to handle this.
+					$data = new stdClass;
+					$data->msgID = $msgID;
+					$data->toUID = $recipient->getUserID();
+					$data->fromUID = $this->getUserID();
+					$mh->enableMailResponseProcessing($mi, $data);
+				} else {
+					$mh->load('private_message');
+				}
+				$mh->sendMail();				
+			}
+		}
 		
 		public function getUserObject() {
 			// returns a full user object - groups and everything - for this userinfo object
@@ -210,61 +274,92 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $nu;
 		}
 
-		/* TODO: cleanup this and make more usable */
-		
-		public function updateUserAttributes($data) {
-			Loader::model('user_attributes');
-			$db = Loader::db();
-			$keys = UserAttributeKey::getList();
-			foreach($keys as $v) {
-				$db->query("delete from UserAttributeValues where uID = {$this->uID} and ukID = " . $v->getKeyID());
-
-				if ($data['uak_' . $v->getKeyID()]) {
-					$v2 = array($this->uID, $v->getKeyID(), $data['uak_' . $v->getKeyID()]);
-					$db->query("insert into UserAttributeValues (uID, ukID, value) values (?, ?, ?)", $v2);
-				}
-			}
-		}
-		
-		public function updateSelectedUserAttributes($keyArray, $data) {
-			Loader::model('user_attributes');
-			if (is_array($keyArray)) {
-				$db = Loader::db();
-				$keys = UserAttributeKey::getList();   
-				foreach($keys as $v) {
-					if (in_array($v->getKeyID(), $keyArray) || in_array($v->getKeyHandle(), $keyArray)) {
-						$db->query("delete from UserAttributeValues where uID = {$this->uID} and ukID = " . $v->getKeyID());
-		
-						if ($data['uak_' . $v->getKeyID()]) {
-							$v2 = array($this->uID, $v->getKeyID(), $data['uak_' . $v->getKeyID()]);
-							$db->query("insert into UserAttributeValues (uID, ukID, value) values (?, ?, ?)", $v2);
-						}
-					}
-				}
-			}
-		}
-		
 		/** 
 		 * Sets the attribute of a user info object to the specified value, and saves it in the database 
 		 */
-		public function setAttribute($attributeHandle, $value) {
-			Loader::model('user_attributes');
-			$uk = UserAttributeKey::getByHandle($attributeHandle);
-			if (is_object($uk)) {
-				$uk->saveValue($this->getUserID(), $value);
-			} else {
-				throw new Exception(t('Invalid user attribute key.'));
+		public function setAttribute($ak, $value) {
+			Loader::model('attribute/categories/user');
+			if (!is_object($ak)) {
+				$ak = UserAttributeKey::getByHandle($ak);
 			}
+			$ak->setAttribute($this, $value);
+			$this->reindex();
+		}
+
+		public function clearAttribute($ak) {
+			$db = Loader::db();
+			if (!is_object($ak)) {
+				$ak = UserAttributeKey::getByHandle($ak);
+			}
+			$cav = $this->getAttributeValueObject($ak);
+			if (is_object($cav)) {
+				$cav->delete();
+			}
+			$this->reindex();
+		}
+		
+		public function reindex() {
+			$attribs = UserAttributeKey::getAttributes($this->getUserID(), 'getSearchIndexValue');
+			$db = Loader::db();
+	
+			$db->Execute('delete from UserSearchIndexAttributes where uID = ?', array($this->getUserID()));
+			$searchableAttributes = array('uID' => $this->getUserID());
+			$rs = $db->Execute('select * from UserSearchIndexAttributes where uID = -1');
+			AttributeKey::reindex('UserSearchIndexAttributes', $searchableAttributes, $attribs, $rs);
 		}
 		
 		/** 
 		 * Gets the value of the attribute for the user
 		 */
-		public function getAttribute($attributeHandle) {
+		public function getAttribute($ak, $displayMode = false) {
+			Loader::model('attribute/categories/user');
+			if (!is_object($ak)) {
+				$ak = UserAttributeKey::getByHandle($ak);
+			}
+			if (is_object($ak)) {
+				$av = $this->getAttributeValueObject($ak);
+				if (is_object($av)) {
+					return $av->getValue($displayMode);
+				}
+			}
+		}
+		
+		public function getAttributeField($ak) {
+			Loader::model('attribute/categories/user');
+			if (!is_object($ak)) {
+				$ak = UserAttributeKey::getByHandle($ak);
+			}
+			$value = $this->getAttributeValueObject($ak);
+			$ak->render('form', $value);
+		}		
+		
+		public function getAttributeValueObject($ak, $createIfNotFound = false) {
 			$db = Loader::db();
-			$v = array($this->uID, $attributeHandle);
-			$r = $db->getOne("select value from UserAttributeValues inner join UserAttributeKeys on UserAttributeValues.ukID = UserAttributeKeys.ukID where uID = ? and UserAttributeKeys.ukHandle = ?", $v);
-			return $r;
+			$av = false;
+			$v = array($this->getUserID(), $ak->getAttributeKeyID());
+			$avID = $db->GetOne("select avID from UserAttributeValues where uID = ? and akID = ?", $v);
+			if ($avID > 0) {
+				$av = UserAttributeValue::getByID($avID);
+				if (is_object($av)) {
+					$av->setUser($this);
+					$av->setAttributeKey($ak);
+				}
+			}
+			
+			if ($createIfNotFound) {
+				$cnt = 0;
+			
+				// Is this avID in use ?
+				if (is_object($av)) {
+					$cnt = $db->GetOne("select count(avID) from UserAttributeValues where avID = ?", $av->getAttributeValueID());
+				}
+				
+				if ((!is_object($av)) || ($cnt > 1)) {
+					$av = $ak->addAttributeValue();
+				}
+			}
+			
+			return $av;
 		}
 		
 		public function update($data) {
@@ -273,6 +368,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$uName = $this->getUserName();
 				$uEmail = $this->getUserEmail();
 				$uHasAvatar = $this->hasAvatar();
+				$uTimezone = $this->getUserTimezone();
 				if (isset($data['uName'])) {
 					$uName = $data['uName'];
 				}
@@ -282,13 +378,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				if (isset($data['uHasAvatar'])) {
 					$uHasAvatar = $data['uHasAvatar'];
 				}
+				if( isset($data['uTimezone'])) { 
+					$uTimezone = $data['uTimezone'];
+				}
 				
 				$testChange = false;
 				
 				if ($data['uPassword'] != null) {
 					if (User::encryptPassword($data['uPassword']) == User::encryptPassword($data['uPasswordConfirm'])) {
-						$v = array($uName, $uEmail, User::encryptPassword($data['uPassword']), $uHasAvatar, $this->uID);
-						$r = $db->prepare("update Users set uName = ?, uEmail = ?, uPassword = ?, uHasAvatar = ? where uID = ?");
+						$v = array($uName, $uEmail, User::encryptPassword($data['uPassword']), $uHasAvatar, $uTimezone, $this->uID);
+						$r = $db->prepare("update Users set uName = ?, uEmail = ?, uPassword = ?, uHasAvatar = ?, uTimezone = ? where uID = ?");
 						$res = $db->execute($r, $v);
 						
 						$testChange = true;
@@ -297,14 +396,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						$updateGroups = false;
 					}
 				} else {
-					$v = array($uName, $uEmail, $uHasAvatar, $this->uID);
-					$r = $db->prepare("update Users set uName = ?, uEmail = ?, uHasAvatar = ? where uID = ?");
+					$v = array($uName, $uEmail, $uHasAvatar, $uTimezone, $this->uID);
+					$r = $db->prepare("update Users set uName = ?, uEmail = ?, uHasAvatar = ?, uTimezone = ? where uID = ?");
 					$res = $db->execute($r, $v);
 				}
 
 				// now we check to see if the user is updated his or her own logged in record
 				if (isset($_SESSION['uID']) && $_SESSION['uID'] == $this->uID) {
-					$_SESSION['uName'] = $data['uName']; // make sure to keep the new uName in there
+					$_SESSION['uName'] = $uName; // make sure to keep the new uName in there
 				}
 
 				// run any internal event we have for user update
@@ -331,7 +430,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 
 			$dh = Loader::helper('date');
 				
-			$datetime = $dh->getLocalDateTime();
+			$datetime = $dh->getSystemDateTime();
 			if (is_array($groupArray)) {
 				foreach ($groupArray as $gID) {
 					$key = array_search($gID, $existingGIDArray);
@@ -476,8 +575,27 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $this->uEmail;
 		}
 
-		function getUserDateAdded() {
-			return $this->uDateAdded;
+		/* 
+		 * returns the user's timezone
+		 * @return string timezone
+		*/
+		function getUserTimezone() {
+			return $this->uTimezone;
+		}
+		
+		/**
+		* Gets the date a user was added to the system, 
+		* if user is specified, returns in the current user's timezone
+		* @param string $type (system || user)
+		* @return string date formated like: 2009-01-01 00:00:00 
+		*/
+		function getUserDateAdded($type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->uDateAdded);
+			} else {
+				return $this->uDateAdded;
+			}
 		}
 
 		/* userinfo permissions modifications - since users can now have their own permissions on a collection, block ,etc..*/
@@ -555,21 +673,40 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $this->permissions['canAddExtensions'];
 		}
 
-		function getUserStartDate() {
+		function getUserStartDate($type = 'system') {
 			// time-release permissions for users
-			return $this->upStartDate;
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->upStartDate);
+			} else {
+				return $this->upStartDate;
+			}
 		}
 
-		function getLastOnline() {
-			return $this->uLastOnline;
+		/**
+		* Gets the date a user was last active on the site 
+		* if user is specified, returns in the current user's timezone
+		* @param string $type (system || user)
+		* @return string date formated like: 2009-01-01 00:00:00 
+		*/
+		function getLastOnline($type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->uLastOnline);
+			} else {
+				return $this->uLastOnline;
+			}
 		}
-
-		function getUserEndDate() {
-			return $this->upEndDate;
+		
+		
+		function getUserEndDate($type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->upEndDate);
+			} else {
+				return $this->upEndDate;
+			}
 		}
-		
-		
-		
 		
 		//Remote Authentication Stuff
 		//****************************
@@ -680,7 +817,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						}
 					}
 					foreach($userIDArray as $uID) {
-						$this->uiArray[] = UserInfo::getByID($uID, $userPermissionsArray[$uID]);
+						$ui = UserInfo::getByID($uID, $userPermissionsArray[$uID]);
+						if( !$ui || !method_exists($ui,'getUserID') ) continue;
+						$this->uiArray[]=$ui;
 					}
 					unset($userPermissionsArray);
 					unset($upTemp);
@@ -696,7 +835,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					if ($r) {
 						while ($row = $r->fetchRow()) {
 								$userPermissionsArray['permissionSet'] = $row['cbgPermissions'];
-								$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+								$ui = UserInfo::getByID($row['uID'], $userPermissionsArray);
+								if( !$ui || !method_exists($ui,'getUserID') ) continue;
+								$this->uiArray[]=$ui;								
 						}
 					}
 					break;
@@ -712,7 +853,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$r = $db->Execute($q);
 					while ($row = $r->fetchRow()) {
 						$userPermissionsArray['permissions'] = $row;
-						$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+						$ui = UserInfo::getByID($row['uID'], $userPermissionsArray);
+						if( !$ui || !method_exists($ui,'getUserID') ) continue;
+						$this->uiArray[]=$ui;	
 					}
 
 					break;
@@ -728,7 +871,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 							if ($row['canAdd'] == FilePermissions::PTYPE_CUSTOM) {
 								$userPermissionsArray['permissions']['canAddExtensions'] = $db->GetCol("select extension from FilePermissionFileTypes where uID = {$row['uID']} and fsID = {$fsID}");
 							}
-							$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+							$ui = UserInfo::getByID($row['uID'], $userPermissionsArray);
+							if( !$ui || !method_exists($ui,'getUserID') ) continue;
+							$this->uiArray[]=$ui;								
 						}
 					}
 
@@ -740,7 +885,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					if ($r) {
 						while ($row = $r->fetchRow()) {
 							$userPermissionsArray['permissions'] = $row;
-							$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+							$ui = UserInfo::getByID($row['uID'], $userPermissionsArray);
+							if( !$ui || !method_exists($ui,'getUserID') ) continue;
+							$this->uiArray[]=$ui;	
 						}
 					}
 
@@ -755,7 +902,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					if ($r) {
 						while ($row = $r->fetchRow()) {
 							$userPermissionsArray['permissionSet'] = $row['agPermissions'];
-							$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+							$ui = UserInfo::getByID($row['uID'], $userPermissionsArray);
+							if( !$ui || !method_exists($ui,'getUserID') ) continue;
+							$this->uiArray[]=$ui;
 						}
 					}
 					break;

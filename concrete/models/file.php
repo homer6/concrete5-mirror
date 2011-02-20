@@ -1,5 +1,7 @@
 <?php 
 
+Loader::model('file_version');
+
 class File extends Object { 
 
 	const CREATE_NEW_VERSION_THRESHOLD = 300; // in seconds (5 minutes)
@@ -44,6 +46,16 @@ class File extends Object {
 	
 	public function refreshCache() {
 		Cache::delete('file_relative_path', $this->getFileID());
+	}
+	
+	public function reindex() {
+		$attribs = FileAttributeKey::getAttributes($this->getFileID(), $this->getFileVersionID(), 'getSearchIndexValue');
+		$db = Loader::db();
+
+		$db->Execute('delete from FileSearchIndexAttributes where fID = ?', array($this->getFileID()));
+		$searchableAttributes = array('fID' => $this->getFileID());
+		$rs = $db->Execute('select * from FileSearchIndexAttributes where fID = -1');
+		AttributeKey::reindex('FileSearchIndexAttributes', $searchableAttributes, $attribs, $rs);
 	}
 
 	public static function getRelativePathFromID($fID) {
@@ -220,7 +232,7 @@ class File extends Object {
 	public static function add($filename, $prefix, $data = array()) {
 		$db = Loader::db();
 		$dh = Loader::helper('date');
-		$date = $dh->getLocalDateTime(); 
+		$date = $dh->getSystemDateTime(); 
 		
 		$uID = 0;
 		$u = new User();
@@ -251,12 +263,12 @@ class File extends Object {
 		
 		$fvTitle = (isset($data['fvTitle'])) ? $data['fvTitle'] : '';
 		$fvDescription = (isset($data['fvDescription'])) ? $data['fvDescription'] : '';
-		$fvTags = (isset($data['fvTags'])) ? self::cleanTags($data['fvTags']) : '';
+		$fvTags = (isset($data['fvTags'])) ? FileVersion::cleanTags($data['fvTags']) : '';
 		$fvIsApproved = (isset($data['fvIsApproved'])) ? $data['fvIsApproved'] : '1';
 
 		$db = Loader::db();
 		$dh = Loader::helper('date');
-		$date = $dh->getLocalDateTime();
+		$date = $dh->getSystemDateTime();
 		
 		$fvID = $db->GetOne("select max(fvID) from FileVersions where fID = ?", array($this->fID));
 		if ($fvID > 0) {
@@ -282,18 +294,6 @@ class File extends Object {
 			
 		$fv = $this->getVersion($fvID);
 		return $fv;
-	}
-	
-	//takes a string of comma or new line delimited tags, and puts them in the appropriate format
-	public static function cleanTags($tagsStr){ 
-		$tagsArray=explode("\n",str_replace(array("\r",","),"\n",$tagsStr));
-		$cleanTags=array();
-		foreach($tagsArray as $tag){
-			if( !strlen(trim($tag)) ) continue;
-			$cleanTags[]=trim($tag);
-		}
-		//the leading and trailing line break char is for searching: fvTag like %\ntag\n% 
-		return "\n".join("\n",$cleanTags)."\n";
 	}
 	
 	public function getApprovedVersion() {

@@ -393,14 +393,36 @@
 			return $this->gDescription;
 		}
 		
-		function getGroupStartDate() {
-			return $this->cgStartDate;
+		/**
+		 * Gets the group start date
+		 * if user is specified, returns in the current user's timezone
+		 * @param string $type (system || user)
+		 * @return string date formated like: 2009-01-01 00:00:00 
+		*/
+		function getGroupStartDate($type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->cgStartDate);
+			} else {
+				return $this->cgEndDate;
+			}
 		}
-		
-		function getGroupEndDate() {
-			return $this->cgEndDate;
+
+		/**
+		 * Gets the group end date 
+		 * if user is specified, returns in the current user's timezone
+		 * @param string $type (system || user)
+		 * @return string date formated like: 2009-01-01 00:00:00 
+		*/
+		function getGroupEndDate($type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->cgEndDate);
+			} else {
+				return $this->cgEndDate;
+			}
 		}
-		
+
 		function canRead() {
 			return strpos($this->permissionSet, 'r') > -1;
 		}
@@ -475,6 +497,33 @@
 			return $this->permissions['canAddExtensions'];
 		}
 		
+		public function isGroupExpirationEnabled() {
+			return $this->gUserExpirationIsEnabled;
+		}
+		
+		public function getGroupExpirationMethod() {
+			return $this->gUserExpirationMethod;
+		}
+		
+		public function getGroupExpirationDateTime() {
+			return $this->gUserExpirationSetDateTime;
+		}
+		public function getGroupExpirationAction() {
+			return $this->gUserExpirationAction;
+		}
+		
+		public function getGroupExpirationIntervalDays() {
+			return floor($this->gUserExpirationInterval / 1440);
+		}
+		
+		public function getGroupExpirationIntervalHours() {			
+			return floor(($this->gUserExpirationInterval % 1440) / 60);
+		}
+		
+		public function getGroupExpirationIntervalMinutes() {
+			return floor(($this->gUserExpirationInterval % 1440) % 60);
+		}
+		
 		function update($gName, $gDescription) {
 			$db = Loader::db();
 			if ($this->gID) {
@@ -494,6 +543,22 @@
 				$ng = Group::getByID($db->Insert_ID());
 				return $ng;
 			}
+		}
+		
+		public function removeGroupExpiration() {
+			$db = Loader::db();
+			$db->Execute('update Groups set gUserExpirationIsEnabled = 0, gUserExpirationMethod = null, gUserExpirationSetDateTime = null, gUserExpirationInterval = null, gUserExpirationAction = null where gID = ?', array($this->getGroupID()));
+		}
+		
+		public function setGroupExpirationByDateTime($datetime, $action) {
+			$db = Loader::db();
+			$db->Execute('update Groups set gUserExpirationIsEnabled = 1, gUserExpirationMethod = \'SET_TIME\', gUserExpirationInterval = 0, gUserExpirationSetDateTime = ?, gUserExpirationAction = ? where gID = ?', array($datetime, $action, $this->gID));
+		}
+
+		public function setGroupExpirationByInterval($days, $hours, $minutes, $action) {
+			$db = Loader::db();
+			$interval = $minutes + ($hours * 60) + ($days * 1440);
+			$db->Execute('update Groups set gUserExpirationIsEnabled = 1, gUserExpirationMethod = \'INTERVAL\', gUserExpirationSetDateTime = null, gUserExpirationInterval = ?, gUserExpirationAction = ? where gID = ?', array($interval, $action, $this->gID));
 		}
 					
 		

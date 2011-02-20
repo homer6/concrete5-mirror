@@ -16,7 +16,8 @@ defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 				<td class="header"><?php echo t('Date')?></td>
 				<td class="header"><?php echo t('User')?></td>
 			</tr>
-			<?php  foreach($survey_details as $detail) { ?>
+			<?php  
+			foreach($survey_details as $detail) { ?>
 			<tr>
 				<td><?php echo $detail['option'] ?></td>
 				<td><?php echo $detail['ipAddress'] ?></td>

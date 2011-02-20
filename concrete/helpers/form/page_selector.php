@@ -39,20 +39,28 @@ class FormPageSelectorHelper {
 		}
 
 		$html = '';
-		$html .= '<div class="ccm-summary-selected-page"><div class="ccm-summary-selected-page-inner"><strong class="ccm-summary-selected-page-label">';
+		$html .= '<div class="ccm-summary-selected-item"><div class="ccm-summary-selected-item-inner"><strong class="ccm-summary-selected-item-label">';
 		if ($selectedCID > 0) {
 			$oc = Page::getByID($selectedCID);
 			$html .= $oc->getCollectionName();
 		}
 		$html .= '</strong></div>';
-		$html .= '<a class="ccm-sitemap-select-page dialog-launch" onclick="ccmActivePageField=this" dialog-width="600" dialog-height="450" dialog-modal="false" dialog-title="' . t('Choose Page') . '" href="' . REL_DIR_FILES_TOOLS_REQUIRED . '/sitemap_overlay.php?sitemap_mode=select_page">' . t('Select Page') . '</a>';
+		$html .= '<a class="ccm-sitemap-select-page" dialog-width="600" dialog-height="450" dialog-modal="false" dialog-title="' . t('Choose Page') . '" href="' . REL_DIR_FILES_TOOLS_REQUIRED . '/sitemap_overlay.php?sitemap_mode=select_page">' . t('Select Page') . '</a>';
 		$html .= '<input type="hidden" name="' . $fieldName . '" value="' . $selectedCID . '">';
 		$html .= '</div>'; 
 		$html .= '<script type="text/javascript"> 
+		var ccmActivePageField;
+		$(function() {
+			$("a.ccm-sitemap-select-page").unbind();
+			$("a.ccm-sitemap-select-page").dialog();
+			$("a.ccm-sitemap-select-page").click(function() {
+				ccmActivePageField = this;
+			});
+		});
 		ccm_selectSitemapNode = function(cID, cName) { ';
 		if($javascriptFunc=='' || $javascriptFunc=='ccm_selectSitemapNode'){
 			$html .= '
-			var par = $(ccmActivePageField).parent().find(\'.ccm-summary-selected-page-label\');
+			var par = $(ccmActivePageField).parent().find(\'.ccm-summary-selected-item-label\');
 			var pari = $(ccmActivePageField).parent().find(\'[name=' . $fieldName . ']\');
 			par.html(cName);
 			pari.val(cID);
@@ -64,5 +72,21 @@ class FormPageSelectorHelper {
 		return $html;
 	}
 	
+	/* Embed a sitemap in javascript dialog.  Supports the following args:
+     *  'node_action'   - path to script containing code to be execute when user clicks on a node in the sitemap
+     *  'dialog_title'  - dialog title
+     *  'dialog_height' - dialog height (default: 350px) 
+     *  'dialog_width'  - dialog width (default: 350px)
+     *  'target_id'     - id of the (hidden) field on the parent page that is to receive the CID of the chosen page
+	 *                    (do not include the '#')
+     *  (any other arguments the dashboard/sitemap element supports)
+	 */
+	public function sitemap($args) {
+    	$args['sitemap_mode'] = 'move_copy_delete';
+		if (empty($args['node_action'])) {
+			$args['node_action'] = '<none>';
+		}
+    	Loader::element('dashboard/sitemap', $args);
+	}
 	
 }

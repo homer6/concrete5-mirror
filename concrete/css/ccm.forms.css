@@ -2,20 +2,23 @@
 div#ccm-edit-collection {width: 600px; margin: 0px auto 0px auto}
 div#ccm-edit-collection-design {width: 640px; margin: 0px auto 0px auto; -khtml-user-select: none; -moz-user-select: none}
 div.ccm-pane-controls a {color: #003C8A; cursor:pointer}
-div.ccm-pane-controls *, div.ccm-dialog-window * {font-family: "Helvetica Neue", Arial, Helvetica, sans-serif}
+div.ccm-pane-controls *, div.ccm-dialog-window * {font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; color: #333}
 div.ccm-pane-controls {text-align: left; font-size: 12px}
 
-div.ccm-pane-controls h1, div.ccm-dialog-window h1 {color: rgb(0, 60, 138); font-size: 18px; margin-bottom: 16px; margin-top: 16px}
+div.ccm-pane-controls h1, div.ccm-dialog-window h1 {color: rgb(0, 60, 138); position: static !important; font-size: 18px; margin-bottom: 16px; margin-top: 16px}
 div.ccm-dialog-window div.ccm-pane-controls h1 {display: none}
 div.ccm-dialog-window div.ccm-pane-header {display: none}
 
-div.ccm-pane-controls h2, div.ccm-dialog-window h2 {color: #666; font-size: 14px; line-height: 14px;  margin-bottom: 8px; margin-top: 4px}
+div.ccm-pane-controls strong, div.ccm-dialog-window strong {color: #666; font-weight: bold}
+div.ccm-pane-controls h2, div.ccm-dialog-window h2 {color: #666; font-weight: bold;  font-size: 14px; line-height: 14px;  margin-bottom: 8px; margin-top: 4px}
+div.ccm-pane-controls h3, div.ccm-dialog-window h3 {color: #666; font-weight: bold; font-size: 12px; line-height: 12px;  margin-bottom: 6px; margin-top: 4px}
 div.ccm-pane-controls div.ccm-field {clear: both; padding-bottom: 8px; border-bottom: 1px solid #ddd; margin-bottom: 8px}
-div.ccm-pane-controls div.ccm-field-meta {clear: both; margin: 0px auto 8px auto; position: relative; width: 400px; padding-bottom: 8px; border-bottom: 1px solid #ddd}
-div.ccm-field-meta a.ccm-meta-close {position: absolute; top: 0px; right: 0px; font-weight: bold; color: #bababa; font-size: 10px}
+div.ccm-pane-controls div.ccm-field-meta {clear: both; margin: 0px auto 8px auto; width: 400px; padding-bottom: 8px; border-bottom: 1px solid #ddd}
+div.ccm-field-meta a.ccm-meta-close {float: right; font-weight: bold; color: #bababa; font-size: 10px}
 span.ccm-meta-path {display:  block; margin-bottom: 8px}
 div.ccm-field a.ccm-meta-path-add, div.ccm-field a.ccm-meta-path-del {font-weight: bold; color: #bababa; font-size: 10px}
 div.ccm-pane-controls label {display: block; color: #000; margin-bottom: 3px; font-weight: bold !important}
+div.ccm-pane-controls div.ccm-block-field-group label {color: #333; font-weight: normal !important; display: inline}
 div.ccm-pane-controls div.ccm-field-one {width: 280px; float: left; margin-right: 12px; padding-bottom: 8px}
 div.ccm-pane-controls div.ccm-field-two {width: 280px; float: left; padding-bottom: 8px}
 div.ccm-note { font-size:10px; color:#999999; font-weight:normal }
@@ -33,7 +36,7 @@ div#ccm-page-types, div#ccm-required-meta-add {height: 180px}
 div#ccm-required-meta, div#ccm-move-page, div#ccm-required-meta-add {-webkit-border-radius: 12px; -moz-border-radius: 12px; border: 2px solid #bababa; background: white; padding: 8px}
 div#ccm-optional-meta, div#ccm-delete-page, div#ccm-page-types {border: 2px solid #bababa; padding: 8px; background: white; -webkit-border-radius: 12px; -moz-border-radius: 12px;}
 
-div#ccm-required-meta input.ccm-input-text {width: 272px !important}
+div#ccm-properties-standard-tab input.ccm-input-text, div#ccm-page-paths-tab input.ccm-input-text {width: 272px !important}
 
 div.ccm-form-area {border: 2px solid #bababa; padding: 8px; background: white; -webkit-border-radius: 12px; -moz-border-radius: 12px;}
 
@@ -56,7 +59,7 @@ a.ccm-button-left {float: left; }
 a.ccm-button {float: left; margin-right: 10px}
 a.ccm-button-right {float: right}
 
-div.ccm-button, a.ccm-button-right, a.ccm-button-left, a.ccm-button {display: block; text-decoration: none !important; height: 38px !important; position: relative; background: transparent url(../images/button_l.png) no-repeat;}
+div.ccm-button, a.ccm-button-right, a.ccm-button-left, a.ccm-button {display: block; text-decoration: none !important; height: 38px !important; background: transparent url(../images/button_l.png) no-repeat;}
 a.ccm-button-right:hover, a.ccm-button-left:hover, a.ccm-button:hover {background: transparent url(../images/button_l_active.png) no-repeat scroll;}
 
 div.ccm-button span,a.ccm-button-left span, a.ccm-button-right span, a.ccm-button span {white-space: nowrap; height: 12px; display: block; float: left; padding-top: 11px; padding-bottom: 15px; margin-left: 15px; padding-right: 16px; font-size: 11px; color: #535353; background: transparent url(../images/button_r.png) repeat-y scroll right top;}
@@ -110,6 +113,7 @@ table.ccm-grid tr.ccm-row-alt td {background-color: #F0F5FF !important}
 table.ccm-grid th {font-weight: bold; color: #999999; background-color: #efefef; text-align: center;}
 table.ccm-grid tr.version-active td, table.ccm-grid tr.active td {font-weight: bold; font-size: 13px}
 table.ccm-grid td.actor img {float: right}
+table.ccm-grid td.ccm-grid-cb {text-align: center}
 table.ccm-grid img {border: 0px}
 
 ul.ccm-dialog-tabs {display: block; height: 18px; margin: 0px; padding: 0px 0px 0px 10px; border-bottom: 1px solid #dedede; list-style-type: none; font-size: 10px; }
@@ -123,23 +127,10 @@ ul.ccm-dialog-tabs li {padding: 0px; margin: 0px}
 ul.ccm-dialog-tabs li:last-child * {border-right: 1px solid #dedede}
 ul.ccm-dialog-tabs li {border-right: 1px solid #dedede }
 
-.ccm-input-text, div.ccm-field-meta input, div.ccm-field-meta textarea, .ccm-input-date, .ccm-input-password {font-size: 12px; border: 1px solid #aaa; color: #444; padding: 4px}
+.ccm-input-text, div.ccm-field-meta input, div.ccm-field-meta textarea, .ccm-input-date, .ccm-input-password, .ccm-input-textarea {font-size: 12px; border: 1px solid #aaa; color: #444; padding: 4px}
 .ccm-input-date-wrapper input {width: 100px}
+.ccm-input-checkbox {vertical-align: middle}
 
-/* user search */
-form#ccm-user-search label {
-	font-weight: bold; color: #555;
-	margin: 0px 4px 0px 0px;
-	vertical-align: middle
-}
-
-form#ccm-user-search input, form#ccm-user-search select {
-	font-size: 10px;
-	margin-right: 10px;
-}
-
-form#ccm-user-search input.ccm-text {width: 100px}
-div#ccm-user-search-fields {margin: 10px 0px 10px 0px}
 
 /* grid list */
 table.ccm-grid-list {border-right: 1px solid #aaa; border-bottom: 1px solid #aaa; width: 100%}
@@ -183,7 +174,7 @@ div.ccm-editor-controls ul li a {color: #333; text-decoration: none; display: bl
 div.ccm-editor-controls ul li a:hover {text-decoration: underline}
 
 /* page selector in blocks */
-div.ccm-summary-selected-page {border: 1px solid #dedede; margin-top: 8px; margin-bottom: 8px; padding: 10px}
+div.ccm-summary-selected-item {border: 1px solid #dedede; margin-top: 8px; margin-bottom: 8px; padding: 10px}
 
 /* blocks */
 div.ccm-block-field-group {margin-bottom: 10px; border-bottom: 1px dotted #aaa; padding-bottom: 10px}

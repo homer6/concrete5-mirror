@@ -104,16 +104,22 @@ class Controller {
 		if ($method) {
 			$this->task = $method;
 		}
-		if (method_exists($this, 'on_start')) {
-			call_user_func_array(array($this, 'on_start'), array($method));
-		}
+		
+		$this->on_start();
+		
 		if ($method) {
 			$this->runTask($method, $data);
 		}
 		
-		if (method_exists($this, 'on_before_render')) {
-			call_user_func_array(array($this, 'on_before_render'), array($method));
-		}
+		$this->on_before_render();
+	}
+	
+	protected function on_start() {
+	
+	}
+	
+	protected function on_before_render() {
+	
 	}
 	
 	/** 
@@ -122,6 +128,9 @@ class Controller {
 	 */
 	public function runTask($method, $params) {
 		if (method_exists($this, $method)) {
+			if(!is_array($params)) {
+				$params = array($params);
+			}
 			$ret = call_user_func_array(array($this, $method), $params);
 		}
 		return $ret;
@@ -228,6 +237,8 @@ class Controller {
 	 * @return void
 	 */
 	public function set($key, $val) {
+		$loc = CacheLocal::get();
+		$loc->cache['controllerSets'][$key] = $val;
 		$this->sets[$key] = $val;
 	}
 	
@@ -302,7 +313,10 @@ class Controller {
 	public function render($view) {
 		$v = View::getInstance();
 		$this->renderOverride = $view;
-		$v->setCollectionObject($this->getCollectionObject());
+		$c = $this->getCollectionObject();
+		if (is_object($c)) {
+			$v->setCollectionObject($c);
+		}
 		$v->setController($this);
 		if (method_exists($this, 'on_before_render')) {
 			call_user_func_array(array($this, 'on_before_render'), array($method));
@@ -339,7 +353,13 @@ class Controller {
 	 * Gets the array of items that have been set using set()
 	 * @return array
 	 */
-	public function getSets() { return $this->sets; }
+	public function getSets() { 
+		$loc = CacheLocal::get();
+		if (isset($loc->cache['controllerSets'])) {
+			return $loc->cache['controllerSets'];
+		}
+		return array();
+	}
 	
 	/** 
 	 * Gets an array of helper objects that have been set using the $helpers array

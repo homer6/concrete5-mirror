@@ -16,7 +16,7 @@ $supportHelper=Loader::helper('concrete/support');
 		$answers=$supportHelper->askQuestion( $_POST['question'] );
 		?>
 		
-		<h2><?php  printf(ngettext('%d result found.', '%d results found.', count($answers)), count($answers))?> <a href="javascript:void(0)" onclick="ccm_support.show()"><?php echo t('Search again.')?></a></h2>
+		<h2><?php  printf( ngettext('%d result found.', '%d results found.', count($answers)), count($answers))?> <a href="javascript:void(0)" onclick="ccm_support.show()"><?php echo t('Search again.')?></a></h2>
 		
 		<?php  if( !is_array($answers) ){ ?>
 		

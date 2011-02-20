@@ -4,6 +4,7 @@ global $c;
 Loader::model('collection_types');
 Loader::model('collection_attributes');
 $dt = Loader::helper('form/date_time');
+$uh = Loader::helper('form/user_selector');
 
 if ($cp->canAdminPage()) {
 	$ctArray = CollectionType::getList();
@@ -64,29 +65,16 @@ if ($cp->canAdminPage()) {
 	
 	<label><?php echo t('Public Date/Time')?></label> 
 	<?php  
-	print $dt->datetime('cDatePublic', $c->getCollectionDatePublic()); ?>
+	print $dt->datetime('cDatePublic', $c->getCollectionDatePublic('user')); ?>
 	</div>
 	
 	<div class="ccm-field-two">
 	<label><?php echo t('Owner')?></label>
+	
 		<?php  
-		$ui = UserInfo::getByID($c->getCollectionUserID());
-		if (is_object($ui)) {
-			$currentUName = $ui->getUserName();
-		} else {
-			$currentUName = "(None)";
-		}
-		print '<div style="padding-top: 4px;font-size: 12px"><span id="ccm-uName">' . $currentUName . '</span>';
-		if ($cp->canAdminPage()) { ?>
-		(<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/select_user.php" id="ccm-edit-page-user" dialog-modal="false" dialog-width="600" dialog-height="400" dialog-title="<?php echo t('Choose User')?>"><?php echo t('Edit')?></a>)
-		<input type="hidden" name="uID" value="<?php echo $c->getCollectionUserID()?>" id="ccm-uID" />
+		print $uh->selectUser('uID', $c->getCollectionUserID());
+		?>
 		
-		<script type="text/javascript">$(function() {
-			$("#ccm-edit-page-user").dialog();
-		})</script>
-		<?php  } ?>
-		</div>
-
 	</div>
 		
 	
@@ -101,7 +89,7 @@ if ($cp->canAdminPage()) {
 		<div class="ccm-field">
 		<label><?php echo  t('Canonical URL')?></label>
 		<?php  if (!$c->isGeneratedCollection()) { ?>
-			<?php echo BASE_URL . substr($c->getCollectionPath(), 0, -1 * strlen($c->getCollectionHandle()))?><input s type="text" name="cHandle" class="ccm-input-text" value="<?php  echo $c->getCollectionHandle()?>" id="cHandle"><input type="hidden" name="oldCHandle" value="<?php  echo $c->getCollectionHandle()?>"><br /><br />
+			<?php echo BASE_URL . DIR_REL . substr($c->getCollectionPath(), 0, -1 * strlen($c->getCollectionHandle()))?><input s type="text" name="cHandle" class="ccm-input-text" value="<?php  echo $c->getCollectionHandle()?>" id="cHandle"><input type="hidden" name="oldCHandle" value="<?php  echo $c->getCollectionHandle()?>"><br /><br />
 		<?php   } else { ?>
 			<?php  echo $c->getCollectionHandle()?><br /><br />
 		<?php   } ?>

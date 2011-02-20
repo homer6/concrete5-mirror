@@ -4,10 +4,26 @@
 <script type="text/javascript">
 	function makeAlias(value, formInputID) {
 		alias = value.replace(/[&]/gi, "and");
-		alias = alias.replace(/[\s|.]+/gi, "_");
-		alias = alias.replace(/[^0-9A-Za-z-]/gi, "_");
-		//alias = alias.replace(/--/gi, '_');
-		alias = alias.replace(/-+/gi, '_');
+		alias = alias.replace(/[\s|.]+/gi, "<?php echo PAGE_PATH_SEPARATOR?>");
+		
+		// thanks fernandos
+        alias = alias.replace(/[\u00C4\u00E4]/gi, "ae");            // Ää    
+        alias = alias.replace(/[\u00D6\u00F6]/gi, "oe");            // Öö    
+        alias = alias.replace(/[\u00DF]/gi, "sz");                  // ß    
+        alias = alias.replace(/[\u00DC\u00FC]/gi, "ue");            // Üü
+        alias = alias.replace(/[\u00C6\u00E6]/gi, "ae");            // Ææ 
+        alias = alias.replace(/[\u00D8\u00F8]/gi, "oe");            // ø 
+        alias = alias.replace(/[\u00C5\u00E5]/gi, "aa");            // Åå    
+        alias = alias.replace(/[\u00E8\u00C8\u00E9\u00C9]/gi, "e"); // éÉèÈ 
+		
+		alias = alias.replace(/[^0-9A-Za-z]/gi, "<?php echo PAGE_PATH_SEPARATOR?>");
+		alias = alias.replace(/<?php echo PAGE_PATH_SEPARATOR?>+/gi, '<?php echo PAGE_PATH_SEPARATOR?>');
+		if (alias.charAt(alias.length-1) == '<?php echo PAGE_PATH_SEPARATOR?>') {
+			alias = alias.substring(0,alias.length-1);
+		}
+		if (alias.charAt(0) == '<?php echo PAGE_PATH_SEPARATOR?>') {
+			alias = alias.substring(1,alias.length);
+		}
 		alias = alias.toLowerCase();
 		
 		formObj = document.getElementById(formInputID);
@@ -62,13 +78,13 @@ for ($i = 0; $i < count($ctArray); $i++) {
 							$requiredKeys=array();
 							$aks = $ct->getAvailableAttributeKeys();
 							foreach($aks as $ak)
-								$requiredKeys[] = intval($ak->getCollectionAttributeKeyID());
+								$requiredKeys[] = intval($ak->getAttributeKeyID());
 								
 							$usedKeysCombined=array();
 							$usedKeys=array();
 							$setAttribs = $c->getSetCollectionAttributes();
 							foreach($setAttribs as $ak) 
-								$usedKeys[] = $ak->getCollectionAttributeKeyID(); 
+								$usedKeys[] = $ak->getAttributeKeyID(); 
 							$usedKeysCombined = array_merge($requiredKeys, $usedKeys);
 							?>
 							
@@ -94,7 +110,7 @@ for ($i = 0; $i < count($ctArray); $i++) {
 
 		<div class="ccm-field">	
 			<div class="ccm-field-one" style="width: 400px">
-				<label><?php echo t('Name')?></label> <input type="text" name="cName" value="" class="text" style="width: 100%" onBlur="makeAlias(this.value, 'cHandle')" onkeypress="makeAlias(this.value, 'cHandle')" >
+				<label><?php echo t('Name')?></label> <input type="text" name="cName" value="" class="text" style="width: 100%" onKeyUp="makeAlias(this.value, 'cHandle')" >
 			</div>
 			
 			<div class="ccm-field-two" style="width: 200px"	>

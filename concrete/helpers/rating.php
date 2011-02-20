@@ -19,8 +19,35 @@
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class RatingHelper {
 	
-	public function output($field, $value, $isEditableField = false, $includeJS = true) {
+	public function outputDisplay($value) {
 		$html = '';
+		$star1 = ($value >= 20) ? 'rating-star-on' : 'rating-star-off';
+		$star2 = ($value >= 40) ? 'rating-star-on' : 'rating-star-off';
+		$star3 = ($value >= 60) ? 'rating-star-on' : 'rating-star-off';
+		$star4 = ($value >= 80) ? 'rating-star-on' : 'rating-star-off';
+		$star5 = ($value >= 100) ? 'rating-star-on' : 'rating-star-off';
+		
+		$html .= '<div class="ccm-rating">';
+		$html .= '<div class="rating-star rating-star-readonly ' . $star1 . '"><a href="javascript:void(0)"></a></div>';		
+		$html .= '<div class="rating-star rating-star-readonly ' . $star2 . '"><a href="javascript:void(0)"></a></div>';		
+		$html .= '<div class="rating-star rating-star-readonly ' . $star3 . '"><a href="javascript:void(0)"></a></div>';		
+		$html .= '<div class="rating-star rating-star-readonly ' . $star4 . '"><a href="javascript:void(0)"></a></div>';		
+		$html .= '<div class="rating-star rating-star-readonly ' . $star5 . '"><a href="javascript:void(0)"></a></div>';		
+		$html .= '</div>';
+		return $html;
+	}
+	
+	public function output($field, $value, $isEditableField = false, $includeJS = true) {
+		if ($isEditableField == false) {
+			return $this->outputDisplay($value);
+		}
+		
+		$form = Loader::helper("form");
+		$v = $form->getRequestValue($field);
+		if ($v !== false) {
+			$value = $v;
+		}
+		
 		$html = '';
 		$checked1 = ($value == 20) ? 'checked' : '';
 		$checked2 = ($value == 40) ? 'checked' : '';
@@ -42,7 +69,7 @@ class RatingHelper {
 		if ($includeJS) { 
 			$html .= "<script type=\"text/javascript\">
 				$(function() {
-					$('input[name={$field}]').rating();
+					$('input[name=\"{$field}\"]').rating();
 				});
 				</script>";
 		}
@@ -83,7 +110,7 @@ class RatingHelper {
 		if ($includeJS) { 
 			$html .= "<script type=\"text/javascript\">
 				$(function() {
-					$('input[name={$field}]').rating();
+					$('input[name=\"{$field}\"]').rating();
 				});
 				</script>";
 		}
@@ -95,9 +122,10 @@ class RatingHelper {
 	public function getAverageChildRating($cItem, $akHandle) {
 		$cID = (is_object($cItem)) ? $cItem->getCollectionID() : $cItem;
 		$db = Loader::db();
-		$akID = $db->GetOne("select akID from CollectionAttributeKeys where akHandle = ?", array($akHandle));
-		if ($akID > 0) {
-			$val = $db->GetOne('select avg(value) from CollectionAttributeValues cav inner join CollectionVersions cv on cav.cID = cv.cID and cav.cvID = cv.cvID and cv.cvIsApproved = 1 inner join Pages p on p.cID = cv.cID where p.cParentID = ?', array($cID));
+		Loader::model('attribute/categories/collection');
+		$ak = CollectionAttributeKey::getByHandle('rating');
+		if (is_object($ak)) {
+			$val = $db->GetOne('select avg(ak_rating) from CollectionSearchIndexAttributes c inner join Pages p on p.cID = c.cID where p.cParentID = ?', array($cID));
 			return $val;
 		}		
 	}

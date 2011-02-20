@@ -1,10 +1,10 @@
 /* HTML Tag Redefinition */
 html, body {height: 100%;  }
-body {/* customize_background */ background-color: #ffffff; /* customize_background */ text-align: center; padding: 0px; margin: 0px; }
+body {/* customize_background */ background-color: #ffffff; /* customize_background */ padding: 0px; margin: 0px; }
 img {border: 0px}
 a { cursor:pointer}
 
-label { font-weight:bold; display:block; padding-top: 10px; }
+label { font-weight:bold;}
 fieldset { border:1px solid #ccc;}
 
 /* error text class optionally provided by theme */
@@ -19,6 +19,8 @@ div.ccm-error-response {color: #f00; margin-bottom: 12px}
 	line-height: auto; 
 	margin-bottom: 0px; padding: 0px; margin-top:8px; cursor:pointer;  left:0px ; z-index:10; width:auto; float:left; position: relative }
 #page #header #logo a{ /* customize_header_logo */color:#999; /* customize_header_logo */ text-decoration:none;}
+#page #header #logo p{ display:inline; line-height:inherit; font-size:inherit; padding:inherit; margin:inherit; color:inherit }
+
 
 #page #header #headerNav{ position: absolute; top: 14px; right: 0px; z-index:2; width:100%; overflow:visible;}
 #page #header ul.nav-header{ list-style:none; margin:0px; padding:0px; width:auto; z-index:2; overflow:visible; float: right}
@@ -36,9 +38,8 @@ div.ccm-error-response {color: #f00; margin-bottom: 12px}
 #page #central.central-left div#sidebar {float: left !important; }
 #page #central.central-left #body {padding-left: 72px !important; padding-right: 0px !important; float:right}
  
-#page #central #body{ float:left; width:67%; padding-right:28px; overflow:hidden; padding-left: 0px !important; padding-right: 0px !important }
-#page #central #body p {text-align:justify;}
-#page .no-sidebar #body{ float: none !important; width: auto !important; overflow:hidden }
+#page #central #body{ float:left; width:67%; padding-right:28px; padding-left: 0px !important; padding-right: 0px !important }
+#page .no-sidebar #body{ float: none !important; width: auto !important; }
 #page #central #sidebar{ float:right; width:24%; overflow:hidden }
 #page #central #sidebar p{ line-height:24px}
 #page #central #sidebar ul.nav{ list-style:none; margin-left:0px; padding:0px; padding-left:24px; font-size:11px;}

@@ -2,11 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<meta http-equiv="content-type" content="text/html; charset=<?php echo APP_CHARSET?>" />
 <!-- insert CSS for Default Concrete Theme //-->
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery.js"></script>
 <style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.default.theme.css";</style>
-
+<?php  
+if (is_object($c)) {
+	$v = View::getInstance();
+	$v->disableEditing();
+ 	Loader::element('header_required');
+} else { 
+	print Loader::helper('html')->javascript('jquery.js');
+}
+?>
 </head>
 <body>
 

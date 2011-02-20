@@ -1,24 +1,7 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-<div id="central" class="central-left">
-    <div id="sidebar">
-    	<div class="ccm-profile-header">
-        	<a href="<?php echo View::url('/profile',$ui->getUserID())?>"><?php echo  $av->outputUserAvatar($ui)?></a><br />
-            <a href="<?php echo View::url('/profile',$ui->getUserID())?>"><?php echo  $ui->getUsername()?></a>
-        </div>
-        <h4 style="margin-top: 0px"><?php echo t('Member Since')?></h4>
-        <?php echo date('F d, Y', strtotime($ui->getUserDateAdded()))?>
-        <?php  
-		$bt = BlockType::getByHandle('autonav');
-		$bt->controller->displayPages = 'current';
-		$bt->controller->orderBy = 'display_asc';
-		$bt->controller->displaySubPages = 'relevant';
-		$bt->controller->displaySubPageLevels = 'enough';
-		$bt->controller->displaySystemPages = true;
-		$bt->render('view');
-		?>
-    </div>
-    
-    <div id="body">	
+<div id="ccm-profile-wrapper">
+    <?php  Loader::element('profile/sidebar', array('profile'=> $ui)); ?>    
+    <div id="ccm-profile-body">	
 
 		<?php  if (isset($error) && $error->has()) {
             $error->output();
@@ -35,25 +18,31 @@
         <h1><?php echo t('Edit Profile')?></h1>
         <div class="ccm-form">
             <form method="post" action="<?php echo $this->action('save')?>" id="profile-edit-form">
-            <?php  $attribs = UserAttributeKey::getRegistrationList(); 
+            <?php  $attribs = UserAttributeKey::getEditableInProfileList(); 
             if(is_array($attribs) && count($attribs)) { 
             ?>
                 <fieldset>
-                <div>
-                    <?php echo $form->label('uEmail', t('Email'))?>
-                    <span class="required">*</span> <?php echo $form->text('uEmail',$ui->getUserEmail())?>
-                </div>	
+                <div class="ccm-profile-attribute">
+                    <?php echo $form->label('uEmail', t('Email'))?> <span class="ccm-required">*</span><br/>
+                    <?php echo $form->text('uEmail',$ui->getUserEmail())?>
+                </div>
+                <?php  if(ENABLE_USER_TIMEZONES) { ?>
+                    <div class="ccm-profile-attribute">
+                        <?php echo  $form->label('uTimezone', t('Time Zone'))?> <span class="ccm-required">*</span><br/>
+                        <?php echo  $form->select('uTimezone', 
+							$date->getTimezones(), 
+							($ui->getUserTimezone()?$ui->getUserTimezone():date_default_timezone_get())
+					); ?>
+                    </div>
+ 				<?php  } ?>               
                 <?php 
-                foreach($attribs as $ak) { 
-                    if ($ak->getKeyType() == 'HTML') { ?>
-                        <div><?php echo $ak->outputHTML()?></div>
-                    <?php  } else { ?>
-                        <div>
-                            <?php echo $form->label($ak->getFormElementName(), $ak->getKeyName())?> <?php  if ($ak->isKeyRequired()) { ?><span class="required">*</span><?php  } ?>
-                            <?php echo $ak->outputHTML($ui->getUserID())?>
-                        </div>
-                    <?php  } ?>
-                <?php  } ?>
+                $af = Loader::helper('form/attribute');
+                $af->setAttributeObject($ui);
+                foreach($attribs as $ak) {
+                	print '<div class="ccm-profile-attribute">';
+                	print $af->display($ak, $ak->isAttributeKeyRequiredOnProfile());
+                	print '</div>';
+                } ?>
                 </fieldset>
             <?php  } ?>
             <h3><?php echo t('Change Password')?></h3>
@@ -75,4 +64,6 @@
         </div>
         
     </div>
+	
+	<div class="ccm-spacer"></div>
 </div>

@@ -24,8 +24,8 @@ $th = Loader::helper('text');
 	</tr>
 	<?php  foreach($entries as $ent) { ?>
 	<tr>
-		<td valign="top" style="white-space: nowrap" class="active"><?php echo date('g:i:s', strtotime($ent->getTimestamp()))?><?php  if (date('m-d-y') != date('m-d-y', strtotime($ent->getTimestamp()))) { ?>
-			<?php echo date('m/d/y', strtotime($ent->getTimestamp()))?>
+		<td valign="top" style="white-space: nowrap" class="active"><?php echo date('g:i:s', strtotime($ent->getTimestamp('user')))?><?php  if (date('m-d-y') != date('m-d-y', strtotime($ent->getTimestamp('user')))) { ?>
+			<?php echo date('m/d/y', strtotime($ent->getTimestamp('user')))?>
 		<?php  } ?></td>
 		<td valign="top"><strong><?php echo $ent->getType()?></strong></td>
 		<td style="width: 100%"><?php echo $th->makenice($ent->getText())?></td>

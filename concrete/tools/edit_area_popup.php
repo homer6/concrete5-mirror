@@ -295,7 +295,7 @@ ccmChangeDisplayedScrapbook = function(sel){
 				row3Cell2.width = '100%';
 				row3Cell2.innerHTML = '<div style="width: 460px;">';
 				<?php  foreach ($btArray as $bt) { ?>
-					row3Cell2.innerHTML += '<div style="white-space: nowrap; float: left; width: 80px; margin-right: 20px"><input type="checkbox" name="areaAddBlockType[<?php echo $bt->getBlockTypeID()?>][]" value="' + rowValue + '" />&nbsp;<?php echo $bt->getBlockTypeName()?></div>';
+					row3Cell2.innerHTML += '<div style="white-space: nowrap; float: left; width: 80px; margin-right: 20px"><input type="checkbox" name="areaAddBlockType[<?php echo $bt->getBlockTypeID()?>][]" value="' + rowValue + '" />&nbsp;<?php echo htmlspecialchars($bt->getBlockTypeName(), ENT_QUOTES, APP_CHARSET)?></div>';
 				<?php  } ?>		
 				row3Cell2.innerHTML += '</div>';
 			}
@@ -358,7 +358,7 @@ ccmChangeDisplayedScrapbook = function(sel){
 				row3Cell2.width = '100%';
 				row3Cell2.innerHTML = '<div style="width: 460px;">';
 				<?php  foreach ($btArray as $bt) { ?>
-					row3Cell2.innerHTML += '<div style="white-space: nowrap; float: left; width: 80px; margin-right: 20px"><input type="checkbox" name="areaAddBlockType[<?php echo $bt->getBlockTypeID()?>][]" value="' + rowValue + '" />&nbsp;<?php echo $bt->getBlockTypeName()?></div>';
+					row3Cell2.innerHTML += '<div style="white-space: nowrap; float: left; width: 80px; margin-right: 20px"><input type="checkbox" name="areaAddBlockType[<?php echo $bt->getBlockTypeID()?>][]" value="' + rowValue + '" />&nbsp;<?php echo htmlspecialchars($bt->getBlockTypeName(), ENT_QUOTES, APP_CHARSET)?></div>';
 				<?php  } ?>		
 				row3Cell2.innerHTML += '</div>';
 				
@@ -432,7 +432,7 @@ ccmChangeDisplayedScrapbook = function(sel){
 <?php  } ?>
 
 	<div class="ccm-buttons" style="margin-bottom: 10px"> 
-		<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector.php?cID=<?php echo $_REQUEST['cID']?>" dialog-width="600" dialog-title="<?php echo t('Choose User/Group')?>"  dialog-height="400" class="dialog-launch ccm-button-right"><span><em class="ccm-button-add"><?php echo t('Add Group or User')?></em></span></a>
+		<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector.php?cID=<?php echo $_REQUEST['cID']?>" dialog-width="90%" dialog-title="<?php echo t('Choose User/Group')?>"  dialog-height="70%" class="dialog-launch ccm-button-right"><span><em class="ccm-button-add"><?php echo t('Add Group or User')?></em></span></a>
 	</div>
 	<div class="ccm-spacer">&nbsp;</div><br/>
 

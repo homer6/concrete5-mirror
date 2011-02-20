@@ -3,7 +3,6 @@
         "http://www.w3.org/TR/2000/REC-xhtml1-20000126/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=<?php echo APP_CHARSET?>">
 <?php 
 $html = Loader::helper('html');
 $v = View::getInstance();
@@ -12,6 +11,7 @@ $v->disableEditing();
 // Required JavaScript
 
 $v->addHeaderItem($html->javascript('jquery.js'));
+$v->addHeaderItem($html->javascript('jquery.ui.js'));
 $v->addHeaderItem($html->javascript('ccm.dialog.js'));
 $v->addHeaderItem($html->javascript('ccm.base.js'));
 $v->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_REQUIRED . '/i18n_js"></script>'); 
@@ -19,6 +19,7 @@ $v->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_R
 $v->addHeaderItem($html->javascript('jquery.rating.js'));
 $v->addHeaderItem($html->javascript('jquery.form.js'));
 $v->addHeaderItem($html->javascript('ccm.ui.js'));
+$v->addHeaderItem($html->javascript('ccm.search.js'));
 $v->addHeaderItem($html->javascript('ccm.filemanager.js'));
 $v->addHeaderItem($html->javascript('ccm.themes.js'));
 $v->addHeaderItem($html->javascript('jquery.ui.js'));
@@ -26,7 +27,7 @@ $v->addHeaderItem($html->javascript('jquery.colorpicker.js'));
 $v->addHeaderItem($html->javascript('ccm.popup_login.js'));
 
 if (LANGUAGE != 'en') {
-	$v->addHeaderItem($html->javascript('i18n/ui.datepicker-<?php echo LANGUAGE?>.js'));
+	$v->addHeaderItem($html->javascript('i18n/ui.datepicker-'.LANGUAGE.'.js'));
 }
 
 // Require CSS
@@ -34,6 +35,7 @@ $v->addHeaderItem($html->css('ccm.dashboard.css'));
 $v->addHeaderItem($html->css('ccm.colorpicker.css'));
 $v->addHeaderItem($html->css('ccm.menus.css'));
 $v->addHeaderItem($html->css('ccm.forms.css'));
+$v->addHeaderItem($html->css('ccm.search.css'));
 $v->addHeaderItem($html->css('ccm.filemanager.css'));
 $v->addHeaderItem($html->css('ccm.calendar.css'));
 $v->addHeaderItem($html->css('ccm.dialog.css'));
@@ -119,6 +121,7 @@ foreach($nav as $n2) {
 	// if we're right under the dashboard, we get items beneath us. If not we get items at our same level
 	$pcs = $nh->getTrailToCollection($c);
 	$pcs = array_reverse($pcs);
+	
 	if (count($pcs) == 2) {
 		$parent = $c;
 	} else {
@@ -132,12 +135,22 @@ foreach($nav as $n2) {
 		if ($cp->canRead()) { 
 			$subpagesP[] = $sc;
 		}
+	
+		
 	}
 	
 	if (count($subpagesP) > 0) { 
 	?>	
 		<div id="ccm-dashboard-subnav">
-		<ul><?php  foreach($subpagesP as $sc) { ?><li <?php  if ($sc->getCollectionID() == $c->getCollectionID()) { ?> class="nav-selected" <?php  } ?>><a href="<?php echo $nh->getLinkToCollection($sc, false, true)?>"><?php echo t($sc->getCollectionName())?></a></li><?php  } ?></ul>
+		<ul><?php  foreach($subpagesP as $sc) { 
+		
+			if ($c->getCollectionPath() == $sc->getCollectionPath() || (strpos($c->getCollectionPath(), $sc->getCollectionPath()) == 0) && strpos($c->getCollectionPath(), $sc->getCollectionPath()) !== false) {
+				$isActive = true;
+			} else {
+				$isActive = false;
+			}
+			
+		?><li <?php  if ($isActive) { ?> class="nav-selected" <?php  } ?>><a href="<?php echo $nh->getLinkToCollection($sc, false, true)?>"><?php echo t($sc->getCollectionName())?></a></li><?php  } ?></ul>
 		<br/><div class="ccm-spacer">&nbsp;</div>
 		</div>
 	
@@ -158,6 +171,43 @@ foreach($nav as $n2) {
 </div>
 <?php  } ?>
 
+<?php  if (count($pcs) > 2 && (!$disableThirdLevelNav)) { 
+
+	if (count($pcs) == 3) {
+		$parent = $c;
+	} else {
+		$parent = $pcs[3];
+	}
+	$subpages = AutonavBlockController::getChildPages($parent);
+	$subpagesP = array();
+	foreach($subpages as $sc) {
+		$cp = new Permissions($sc);
+		if ($cp->canRead()) { 
+			$subpagesP[] = $sc;
+		}	
+	}
+	
+	if (count($subpagesP) > 0) { 
+	?>	
+	<div id="ccm-dashboard-subnav-third">
+		<ul><?php  foreach($subpagesP as $sc) { 
+		
+			if ($c->getCollectionPath() == $sc->getCollectionPath() || (strpos($c->getCollectionPath(), $sc->getCollectionPath()) == 0) && strpos($c->getCollectionPath(), $sc->getCollectionPath()) !== false) {
+				$isActive = true;
+			} else {
+				$isActive = false;
+			}
+			
+		?><li <?php  if ($isActive) { ?> class="nav-selected" <?php  } ?>><a href="<?php echo $nh->getLinkToCollection($sc, false, true)?>"><?php echo t($sc->getCollectionName())?></a></li><?php  } ?></ul>
+	</div>
+	
+	
+	<?php 
+	}
+}
+
+?>
+
 <div id="ccm-dashboard-content">
 
 	<div style="margin:0px; padding:0px; width:100%; ">
@@ -165,11 +215,16 @@ foreach($nav as $n2) {
 		<?php  
 		if ($error instanceof Exception) {
 			$_error[] = $error->getMessage();
-		} else if ($error instanceof ValidationErrorHelper) { 
-			$_error = $error->getList();
+		} else if ($error instanceof ValidationErrorHelper) {
+			$_error = array();
+			if ($error->has()) {
+				$_error = $error->getList();
+			}
 		} else {
 			$_error = $error;
 		}
+		
+		if (count($_error) > 0) {
 			?>
 			<div class="message error">
 			<strong><?php echo t('The following errors occurred when attempting to process your request:')?></strong>
@@ -178,6 +233,7 @@ foreach($nav as $n2) {
 			</ul>
 			</div>
 		<?php  
+		}
 	}
 	
 	if (isset($message)) { ?>

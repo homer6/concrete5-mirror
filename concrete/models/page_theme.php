@@ -402,15 +402,13 @@ class PageTheme extends Object {
 	 * Parses the style declaration found in the stylesheet to return the type of editable style
 	 */
 	private function getEditableStyleType($value) {
-		$value = trim($value);
-		$value = substr($value, 0, strpos($value, ':'));
-		if ($value == 'font') {
+		// thx yamanoi
+		if (preg_match('/^\s*font\s*:/',$value)) {
 			return PageThemeEditableStyle::TSTYPE_FONT;
 		}
-		if ($value == 'color' || strpos($value, '-color') > -1) {
+		if (preg_match('/^\s*([a-z]+-)*color\s*:/',$value)) {
 			return PageThemeEditableStyle::TSTYPE_COLOR;
 		}
-
 		return PageThemeEditableStyle::TSTYPE_CUSTOM;
 
 	}
@@ -435,7 +433,7 @@ class PageTheme extends Object {
 			//you can easily make the .* dot character match multiple lines by adding the "s" modifiers to the end of the expression...
 			//but this introduces another bug where you can't have two tags with the same name within a style sheet
 			//Any regex wizards out there wanting to give it a shot?
-			preg_match_all("/\/\*[\s]?customize_(.*)[\s]?\*\/(.*)\/\*[\s]?customize_\\1[\s]?\*\//i", $ss, $matches); 
+			preg_match_all("/\/\*[\s]?customize_(.*)[\s]?\*\/(.*)\/\*[\s]?customize_\\1[\s]?\*\//isU", $ss, $matches); 
 	
 			// the format of the $matches array is [1] = the handle of the editable style object, [2] = the value (which we need to trim)
 			// handles are unique.

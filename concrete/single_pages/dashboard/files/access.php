@@ -14,7 +14,7 @@
 		<form method="post" id="file-access-permissions" action="<?php echo $this->url('/dashboard/files/access', 'save_global_permissions')?>">
 			<?php echo $validation_token->output('file_permissions');?>
 
-			<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector" id="ug-selector" dialog-modal="false" dialog-width="600" dialog-title="<?php echo t('Choose User/Group')?>"  dialog-height="400" class="ccm-button-right dialog-launch"><span><em><?php echo t('Add Group or User')?></em></span></a>
+			<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/user_group_selector" id="ug-selector" dialog-modal="false" dialog-width="90%" dialog-title="<?php echo t('Choose User/Group')?>"  dialog-height="70%" class="ccm-button-right dialog-launch"><span><em><?php echo t('Add Group or User')?></em></span></a>
 
 			<p>
 			<?php echo t('Add users or groups to determine access to the file manager.');?>
@@ -39,7 +39,7 @@
 			<?php  } ?>
 			<?php  foreach($uArray as $ui) { ?>
 				
-				<?php  print print $this->controller->getFileAccessRow('GLOBAL', 'uID_' . $ui->getUserID(), $ui->getUserName(), $ui->getFileSearchLevel(), $ui->getFileReadLevel(), $ui->getFileWriteLevel(), $ui->getFileAdminLevel(), $ui->getFileAddLevel(), $ui->getAllowedFileExtensions()); ?>
+				<?php  print $this->controller->getFileAccessRow('GLOBAL', 'uID_' . $ui->getUserID(), $ui->getUserName(), $ui->getFileSearchLevel(), $ui->getFileReadLevel(), $ui->getFileWriteLevel(), $ui->getFileAdminLevel(), $ui->getFileAddLevel(), $ui->getAllowedFileExtensions()); ?>
 			
 			<?php  } ?>
 			</div>
@@ -67,12 +67,16 @@
 			Separate extensions with commas. Periods and spaces will be
 			ignored.')?>
 			</p>
-			<?php echo $form->textarea('file-access-file-types',$file_access_file_types,array('rows'=>'5','style'=>'width:100%'));?>
-			<div class="ccm-spacer">&nbsp;</div><br/>
-			<?php 		
-				$b1 = $concrete_interface->submit(t('Save'), 'file-access-extensions');
-				print $concrete_interface->buttons($b1);
-			?>		
+			<?php  if (UPLOAD_FILE_EXTENSIONS_CONFIGURABLE) { ?>
+				<?php echo $form->textarea('file-access-file-types',$file_access_file_types,array('rows'=>'5','style'=>'width:270px'));?>
+				<div class="ccm-spacer">&nbsp;</div><br/>
+				<?php 		
+					$b1 = $concrete_interface->submit(t('Save'), 'file-access-extensions');
+					print $concrete_interface->buttons($b1);
+				?>
+			<?php  } else { ?>
+				<?php echo $file_access_file_types?>
+			<?php  } ?>
 		</form>
 	</div>
 	<br/>
@@ -82,7 +86,7 @@
 			<?php echo $validation_token->output('file_storage');?>
 			<h2><?php echo t('Standard File Location')?></h2>
 			<p><?php echo t('Enter the directory where files will be stored on this server by default.')?></p>
-			<?php echo $form->textarea('DIR_FILES_UPLOADED', DIR_FILES_UPLOADED, array('rows'=>'2','style' => 'width:280px'))?>
+			<?php echo $form->textarea('DIR_FILES_UPLOADED', DIR_FILES_UPLOADED, array('rows'=>'2','style' => 'width:270px'))?>
 			<div class="ccm-spacer">&nbsp;</div><br/>
 			
 			<h2><?php echo t('Alternate Storage Directory')?></h2>
@@ -91,7 +95,7 @@
 			<label for="alternate_storage_directory_name"><strong><?php echo t('Location Name')?></strong></label>
 			<?php echo $form->text('fslName', $fslName, array('style' => 'width:270px'))?>
 			<label for="alternate_storage_directory_name"><strong><?php echo t('Path')?></strong></label>
-			<?php echo $form->textarea('fslDirectory', $fslDirectory, array('rows' => '2', 'style' => 'width:280px'))?>
+			<?php echo $form->textarea('fslDirectory', $fslDirectory, array('rows' => '2', 'style' => 'width:270px'))?>
 			<?php 		
 				$b1 = $concrete_interface->submit(t('Save'), 'file-storage');
 				print $concrete_interface->buttons($b1);

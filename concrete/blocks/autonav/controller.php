@@ -186,25 +186,27 @@
 		// TODO - Implement displayUnavailablePages in the btNavigation table, and in the frontend of the autonav block
 
 		function __construct($obj = null) {
-			switch(strtolower(get_class($obj))) {
-				case "blocktype":
-					// instantiating autonav on a particular collection page, instead of adding
-					// it through the block interface
-					$this->bID = null;
-					global $c;
-					if (is_object($c)) {
-						$this->cID = $c->getCollectionID();
-						$this->cParentID = $c->getCollectionParentID();
-					}
-					break;
-				case "block": // block
-					// standard block object
-					$this->bID = $obj->bID;
-					$cobj = $obj->getBlockCollectionObject();
-					$this->cID = ($cobj->getCollectionPointerID()) ? $cobj->getCollectionPointerOriginalID() : $cobj->getCollectionID();
-					$this->displayCID = $cobj->getCollectionID();
-					$this->cParentID = $cobj->cParentID;
-					break;
+			if (is_object($obj)) {
+				switch(strtolower(get_class($obj))) {
+					case "blocktype":
+						// instantiating autonav on a particular collection page, instead of adding
+						// it through the block interface
+						$this->bID = null;
+						$c = Page::getCurrentPage();
+						if (is_object($c)) {
+							$this->cID = $c->getCollectionID();
+							$this->cParentID = $c->getCollectionParentID();
+						}
+						break;
+					case "block": // block
+						// standard block object
+						$this->bID = $obj->bID;
+						$cobj = $obj->getBlockCollectionObject();
+						$this->cID = ($cobj->getCollectionPointerID()) ? $cobj->getCollectionPointerOriginalID() : $cobj->getCollectionID();
+						$this->displayCID = $cobj->getCollectionID();
+						$this->cParentID = $cobj->cParentID;
+						break;
+				}
 			}
 			
 			parent::__construct($obj);
@@ -406,6 +408,31 @@
 				return null;
 			}
 		}
+		
+		protected function displayPage($tc) {
+		
+			if ($tc->isSystemPage() && (!$this->displaySystemPages)) {
+				if ($tc->getCollectionPath() == '/members' && Config::get('ENABLE_USER_PROFILES')) {
+					return true;
+				}
+				
+				return false;
+			}
+			
+			$tcv = $tc->getVersionObject();
+			if ((!is_object($tcv)) || (!$tcv->isApproved() && !$this->displayUnapproved)) { 
+				return false;
+			}
+			
+			if ($this->displayUnavailablePages == false) {
+				$tcp = new Permissions($tc);
+				if (!$tcp->canRead() && ($tc->getCollectionPointerExternalLink() == null)) {
+					return false;
+				}
+			}
+
+			return true;
+		}
 
 		function getNavigationArray($cParentID, $orderBy, $currentLevel) {
 			$db = Loader::db();
@@ -439,22 +466,8 @@
 							$tc = Page::getByID($row['cID'], "ACTIVE");
 						}
 						
-						if ($tc->isSystemPage() && (!$this->displaySystemPages)) { 
-							continue; 
-						}
+						$displayPage = $this->displayPage($tc);
 						
-						$tcv = $tc->getVersionObject();
-						if ((!is_object($tcv)) || (!$tcv->isApproved() && !$this->displayUnapproved)) { 
-							$displayPage = false;
-						}
-						
-						if ($this->displayUnavailablePages == false) {
-							$tcp = new Permissions($tc);
-							if (!$tcp->canRead() && ($tc->getCollectionPointerExternalLink() == null)) {
-								$displayPage = false;
-							}
-						}
-
 						if ($displayPage) {
 							$niRow = array();
 							$niRow['cvName'] = $tc->getCollectionName();

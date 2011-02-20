@@ -80,15 +80,6 @@ if ($_REQUEST['created']) {
 	$message = t('Page Type updated.');
 }
 
-if ($_REQUEST['attribute_updated']) {
-	$message = t('Page Attribute Updated.');
-}
-if ($_REQUEST['attribute_created']) {
-	$message = t('Page Attribute Created.');
-}
-if ($_REQUEST['attribute_deleted']) {
-	$message = t('Page Attribute Deleted.');
-}
 
 ?>
 
@@ -179,7 +170,7 @@ if ($ctEditMode) {
 			<tr>
 		<?php  } ?>
 		
-		<td><input type="checkbox" name="akID[]" value="<?php echo $ak->getCollectionAttributeKeyID()?>" <?php  if (($this->controller->isPost() && in_array($ak->getCollectionAttributeKeyID(), $akIDArray))) { ?> checked <?php  } else if ((!$this->controller->isPost()) && $ct->isAvailableCollectionTypeAttribute($ak->getCollectionAttributeKeyID())) { ?> checked <?php  } ?> /> <?php echo $ak->getCollectionAttributeKeyName()?></td>
+		<td><input type="checkbox" name="akID[]" value="<?php echo $ak->getAttributeKeyID()?>" <?php  if (($this->controller->isPost() && in_array($ak->getAttributeKeyID(), $akIDArray))) { ?> checked <?php  } else if ((!$this->controller->isPost()) && $ct->isAvailableCollectionTypeAttribute($ak->getAttributeKeyID())) { ?> checked <?php  } ?> /> <?php echo $ak->getAttributeKeyName()?></td>
 		
 		<?php  $i++;
 		
@@ -324,7 +315,7 @@ if ($ctEditMode) {
 			<tr>
 		<?php  } ?>
 		
-		<td><input type="checkbox" name="akID[]" value="<?php echo $ak->getCollectionAttributeKeyID()?>" /> <?php echo $ak->getCollectionAttributeKeyName()?></td>
+		<td><input type="checkbox" name="akID[]" value="<?php echo $ak->getAttributeKeyID()?>" /> <?php echo $ak->getAttributeKeyName()?></td>
 		
 		<?php  $i++;
 		
@@ -421,10 +412,11 @@ if ($ctEditMode) {
 	</div>
 	
 	
-	<h1><span><?php echo t('Page Attributes')?></span></h1>
+	<h1><a class="ccm-dashboard-header-option" href="<?php echo $this->url('/dashboard/settings/', 'manage_attribute_types')?>">Manage Attribute Types</a>
+	<span><?php echo t('Page Attributes')?></span></h1>
 	<div class="ccm-dashboard-inner">
 	
-	<?php echo  Loader::element('dashboard/attributes_table', array('attribs'=>$attribs) ); ?>
+	<?php echo  Loader::element('dashboard/attributes_table', array('category' => $category, 'attribs'=>$attribs, 'editURL' => '/dashboard/pages/types/attributes')); ?>
 	
 	<br/>
 	<div class="ccm-buttons">

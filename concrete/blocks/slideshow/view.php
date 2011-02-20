@@ -1,7 +1,6 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 
-<script>
-
+<script type="text/javascript">
 var ccmSlideShowHelper<?php echo intval($bID)?> = {
 
 	bID:<?php echo intval($bID)?>,
@@ -21,6 +20,7 @@ var ccmSlideShowHelper<?php echo intval($bID)?> = {
 		}
 		this.displayWrap.css('height',maxHeight);
 
+		
 		//center images
 		for(var i=0;i<this.imgInfos.length;i++){ 
 			if( this.imgInfos[i].imgHeight < maxHeight){
@@ -96,7 +96,7 @@ var ccmSlideShowHelper<?php echo intval($bID)?> = {
 		} ?>
 	]
 }
-$(function(){ccmSlideShowHelper<?php echo intval($bID)?>.init()}); 
+$(function(){ccmSlideShowHelper<?php echo intval($bID)?>.init();}); 
 </script>
 
 <style>

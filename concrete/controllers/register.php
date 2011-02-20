@@ -46,18 +46,20 @@ class RegisterController extends Controller {
 		
 		// clean the username
 		$username = trim($username);
-		$username = ereg_replace(" +", " ", $username);
+		$username = preg_replace("/ +/", " ", $username);
 		
 		
 		if (!$ip->check()) {
 			$e->add($ip->getErrorMessage());
 		}		
 		
-		$captcha = Loader::helper('validation/captcha');
-	   if (!$captcha->check()) {
-	      $e->add(t("Incorrect image validation code. Please check the image and re-enter the letters or numbers as necessary."));
-	     }
-	
+		if (ENABLE_REGISTRATION_CAPTCHA) { 
+			$captcha = Loader::helper('validation/captcha');
+			if (!$captcha->check()) {
+				$e->add(t("Incorrect image validation code. Please check the image and re-enter the letters or numbers as necessary."));
+			}
+		}
+		
 		if (!$vals->email($_POST['uEmail'])) {
 			$e->add(t('Invalid email address provided.'));
 		} else if (!$valc->isUniqueEmail($_POST['uEmail'])) {
@@ -109,10 +111,18 @@ class RegisterController extends Controller {
 				$e->add(t('The two passwords provided do not match.'));
 			}
 		}
-	
-		$invalidFields = UserAttributeKey::validateSubmittedRequest();
-		foreach($invalidFields as $field) {
-			$e->add(t("The field %s is required.", $field));
+		
+		$aks = UserAttributeKey::getRegistrationList();
+
+		foreach($aks as $uak) {
+			if ($uak->isAttributeKeyRequiredOnRegister()) {
+				$e1 = $uak->validateAttributeForm();
+				if ($e1 == false) {
+					$e->add(t('The field "%s" is required', $uak->getAttributeKeyName()));
+				} else if ($e1 instanceof ValidationErrorHelper) {
+					$e->add($e1);
+				}
+			}
 		}
 
 		if (!$e->has()) {
@@ -125,8 +135,10 @@ class RegisterController extends Controller {
 
 			$process = UserInfo::register($data);
 			if (is_object($process)) {
-
-				$process->updateUserAttributes($data);
+				
+				foreach($aks as $uak) {
+					$uak->saveAttributeForm($process);				
+				}
 				
 				// now we log the user in
 
@@ -138,15 +150,9 @@ class RegisterController extends Controller {
 				if (!$nh->integer($rcID)) {
 					$rcID = 0;
 				}
-				if(defined('USER_REGISTRATION_APPROVAL_REQUIRED') && USER_REGISTRATION_APPROVAL_REQUIRED) {
-					$ui = UserInfo::getByID($u->getUserID());
-					$ui->deactivate();
-					//$this->redirect('/register', 'register_pending', $rcID);
-					$redirectMethod='register_pending';
-					$registerData['msg']=$this->getRegisterPendingMsg();
-					
+				
 				// now we check whether we need to validate this user's email address
-				} elseif (defined("USER_VALIDATE_EMAIL")) {
+				if (defined("USER_VALIDATE_EMAIL") && USER_VALIDATE_EMAIL) {
 					if (USER_VALIDATE_EMAIL > 0) {
 						$uHash = $process->setupValidation();
 						
@@ -160,7 +166,17 @@ class RegisterController extends Controller {
 						//$this->redirect('/register', 'register_success_validate', $rcID);
 						$redirectMethod='register_success_validate';
 						$registerData['msg']= join('<br><br>',$this->getRegisterSuccessValidateMsgs());
+						
+						$u->logout();
+
 					}
+				} else if(defined('USER_REGISTRATION_APPROVAL_REQUIRED') && USER_REGISTRATION_APPROVAL_REQUIRED) {
+					$ui = UserInfo::getByID($u->getUserID());
+					$ui->deactivate();
+					//$this->redirect('/register', 'register_pending', $rcID);
+					$redirectMethod='register_pending';
+					$registerData['msg']=$this->getRegisterPendingMsg();
+					$u->logout();
 				}
 				
 				if (!$u->isError()) {

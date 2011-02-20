@@ -116,6 +116,7 @@ class Area extends Object {
 	}
 
 	function get(&$c, $arHandle) {
+		
 		$ca = new Cache();
 		$a = Cache::get('area', $c->getCollectionID() . ':' . $arHandle);
 		if ($a instanceof Area) {
@@ -308,6 +309,11 @@ class Area extends Object {
 	}
 	
 	function display(&$c, $alternateBlockArray = null) {
+
+		if(!intval($c->cID)){
+			//Invalid Collection
+			return false;
+		}
 
 		$ourArea = Area::getOrCreate($c, $this->arHandle);
 		if (count($this->customTemplateArray) > 0) {

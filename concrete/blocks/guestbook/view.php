@@ -1,5 +1,5 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-<?php  global $c; ?><style>
+<?php  $c = Page::getCurrentPage(); ?><style>
 
 h4.guestBook-title {
 	border-bottom:1px solid #666666;
@@ -21,6 +21,8 @@ div.guestBook-entry {
 	font-size:.8em;
 	color:#333333;
 	text-align:right;
+	float:right;
+	padding-left:8px; 
 }
 .guestBook-formBlock {
 	margin:12px 0 12px 0;
@@ -80,7 +82,7 @@ foreach($posts as $p) { ?>
 				</span> 
 				<?php echo t('on')?>
 				<span class="contentDate">
-					<?php echo date("M dS, Y",strtotime($p['entryDate']));?>
+					<?php echo date("M jS, Y",strtotime($p['entryDate']));?>
 				</span>
 			</div>
 			<?php echo nl2br($p['commentText'])?>

@@ -10,50 +10,17 @@
 	
 	//just trying to prevent duplication of this code
 	function processMetaData($nvc){			
-		/* update meta data */
 		Loader::model('collection_attributes');
-		Loader::model('collection_types');		
-			
-		foreach($_POST['selectedAKIDs'] as $akID) {
-			if ($akID > 0) {
-				$ak = CollectionAttributeKey::getByID($akID);
-				$existingOptions = explode("\n", $ak->getCollectionAttributeKeyValues());
-				$submittedValue = $ak->getValueFromPost();
-				$otherSubmittedVal=trim($_POST['akID_'.$akID.'_other']); 
-				
-				//Multi Select List
-				if( is_array($submittedValue) ){													
-					//add new options to list if allowed
-					if( $ak->getAllowOtherValues() ){
-						$newValues=array();
-						foreach($submittedValue as $val)
-							if( !in_array($val,$existingOptions) && strlen(trim($val))  ) 
-								$newValues[]=$val; 
-						$akValues=join("\n",array_merge($existingOptions,$newValues));
-						$ak->updateValues($akValues);
-					}							
-					$submittedValue=join("\n",$submittedValue);
-					
-				//Single Select - New Value
-				}elseif( strlen($otherSubmittedVal) && 
-						 $otherSubmittedVal!=CollectionAttributeKey::getNewValueEmptyFieldTxt() && 
-						 $ak->getAllowOtherValues() ){
-						 
-					$submittedValue=$otherSubmittedVal;
-					
-					//add the new value to possible values
-					if( !in_array($otherSubmittedVal,$existingOptions) ){
-						$existingOptions[]=$otherSubmittedVal;
-						$akValues=join("\n",$existingOptions);
-						$ak->updateValues($akValues);
-					}
+		$nvc->clearCollectionAttributes($_POST['selectedAKIDs']);
+		if (is_array($_POST['selectedAKIDs'])) {
+			foreach($_POST['selectedAKIDs'] as $akID) {
+				if ($akID > 0) {
+					$ak = CollectionAttributeKey::getByID($akID);
+					$ak->saveAttributeForm($nvc);
 				}
-				if (isset($submittedValue)) {
-					$nvc->addAttribute($ak, $submittedValue);
-				}
-			}
-		} 
-	}	
+			} 
+		}
+	}
 	
 	// Modification for step editing
 	$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
@@ -85,7 +52,7 @@
 					$b = Block::getByID($_REQUEST['bID'], $c, $a);
 					$p = new Permissions($b); // might be block-level, or it might be area level
 					// we're removing a particular block of content
-					if ($p->canDeleteBlock()) {
+					if ($p->canDeleteBlock()){
 						$nvc = $c->getVersionToModify();
 						$b->loadNewCollection($nvc);
 						
@@ -98,6 +65,53 @@
 						
 						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
 						exit;
+					}
+				}
+				break;
+			case 'update_block_css': 
+				$a = Area::get($c, $_REQUEST['arHandle']);
+				if (is_object($a)) {
+					$b = Block::getByID($_REQUEST['bID'], $c, $a);
+					$p = new Permissions($b);
+					if ($p->canWrite()){ 					
+					
+						Loader::model('block_styles');						
+						
+						$nvc = $c->getVersionToModify();
+						$b->loadNewCollection($nvc);
+						
+						//if this block is being changed, make sure it's a new version of the block.
+						if ($b->isAlias() ) { 
+							$nb = $b->duplicate($nvc);
+							$b->deleteBlock(); 
+							$b = $nb; 					
+						}			
+						
+						$cssData=array();
+						$cssData['bID'] = $b->bID;
+						$cssData['cID'] = $nvc->cID;
+						
+						if($_POST['reset_block_css']!=1){ 
+							$cssData['css_id'] = str_replace( array('"', "'", ';', "<", ">"), '', $_POST['css_id']);							
+							$cssData['css_class'] = str_replace( array('"', "'", ';', "<", ">"), '', $_POST['css_class_name']);
+							$cssData['css_custom'] = str_replace( '"' , "'", $_POST['css_custom'] );	
+						
+							$blockStylesKeys=array('font_family','color','font_size','line_height','text_align','background_color','border_style',
+								'border_color','border_width','border_position','margin_top','margin_right','margin_bottom','margin_left',
+								'padding_top','padding_right','padding_bottom','padding_left');
+								
+							$cssDataRaw=array();
+							foreach($blockStylesKeys as $blockStyleKey){
+								$cssDataRaw[$blockStyleKey]=$_POST[$blockStyleKey];
+							}
+							$cssData['css_unserialized']=$cssDataRaw;
+						}						
+						
+						$blockStyles = new BlockStyles();
+						$blockStyles->setData( $cssData );
+						$blockStyles->save( $nvc );
+												
+						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);				
 					}
 				}
 				break;
@@ -602,14 +616,13 @@
 				}
 				
 				$dt = Loader::helper('form/date_time');
-				$data['cDatePublic'] = $dt->translate('cDatePublic');
+				$dh = Loader::helper('date');
+				$data['cDatePublic'] = $dh->getSystemDateTime($dt->translate('cDatePublic'));
 				if ($cp->canAdminPage()) {
 					$data['uID'] = $_POST['uID'];
 				}
 				
 				$nvc->update($data);
-				$nvc->clearCollectionAttributes();			
-				
 				processMetaData($nvc);
 				
 				if ($_POST['rel'] == 'SITEMAP') { 
@@ -679,10 +692,12 @@
 				// the $c below identifies that we're adding a collection _to_ that particular collection object
 				//$newCollectionID = $ct->addCollection($c);				
 				
+				$dt = Loader::helper('form/date_time');
+				$dh = Loader::helper('date');
+				
 				$data = $_POST;
 				$data['cvIsApproved'] = 0;
-				$dt = Loader::helper('form/date_time');
-				$data['cDatePublic'] = $dt->translate('cDatePublic');				
+				$data['cDatePublic'] = $dh->getSystemDateTime($dt->translate('cDatePublic'));	
 				
 				$nc = $c->add($ct, $data);
 				

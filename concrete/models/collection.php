@@ -102,65 +102,90 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function getCollectionAttributeValue($ak) {
 			if (is_object($this->vObj)) {
 				if (is_object($ak)) {
-					return $this->vObj->getAttribute($ak->getCollectionAttributeKeyHandle());
+					return $this->vObj->getAttribute($ak->getAttributeKeyHandle());
 				} else {
 					return $this->vObj->getAttribute($ak);
 				}
 			}
 		}
-		
-		/*
-		
-		function getCollectionAttributeValue($ak) {
+
+		// remove the collection attributes for this version of a page
+		public function clearCollectionAttributes($retainAKIDs = array()) {
 			$db = Loader::db();
-			if (is_object($ak)) {
-				$v = array($this->getCollectionID(), $this->getVersionID(), $ak->getCollectionAttributeKeyID());
-				$q = "select value from CollectionAttributeValues where cID = ? and cvID = ? and akID = ?";		
-				$value = $db->GetOne($q, $v);
-				$akType = $ak->getCollectionAttributeKeyType();
-			} else if (is_string($ak)) {
-				$db = Loader::db();
-				$v = array($this->getCollectionID(), $this->getVersionID(), $ak);
-				$q = "select cak.akType, cav.value from CollectionAttributeValues cav inner join CollectionAttributeKeys cak on cav.akID = cak.akID where cID = ? and cvID = ? and cak.akHandle = ?";
-				$r = $db->getRow($q, $v);
-				$value = $r['value'];
-				$akType = $r['akType'];
+			if (count($retainAKIDs) > 0) {
+				$akIDStr = implode(',', $retainAKIDs);
+				$v2 = array($this->getCollectionID(), $this->getVersionID());
+				$db->query("delete from CollectionAttributeValues where cID = ? and cvID = ? and akID not in ({$akIDStr})", $v2);
+			} else {
+				$v2 = array($this->getCollectionID(), $this->getVersionID());
+				$db->query("delete from CollectionAttributeValues where cID = ? and cvID = ?", $v2);
 			}
-			$v = false;
-			switch($akType) {
-				case "IMAGE_FILE":
-					if ($value > 0) {
-						Loader::block('library_file');
-						$v = LibraryFileBlockController::getFile($value);
-					}
-					break;
-				default:
-					$v = $value;
-					break;
-			}
-			return $v;
+			$this->reindex();
 		}
 		
-		public function getAttribute($akHandle) {
-			return $this->getCollectionAttributeValue($akHandle);
-		}
-		*/
-		
-		
-		public function setAttribute($akHandle, $value) {
-			$db = Loader::db();
-			$akID = $db->GetOne("select akID from CollectionAttributeKeys where akHandle = ?", array($akHandle));
-			if ($akID > 0) {
-				$db->Replace('CollectionAttributeValues', array(
-					'cID' => $this->cID,
-					'cvID' => $this->getVersionID(),
-					'akID' => $akID,
-					'value' => $value
-				),
-				array('cID', 'cvID', 'akID'), true);
+		public function reindex() {
+			if ($this->isAlias()) {
+				return false;
 			}
 			
+			Loader::model('attribute/categories/collection');
+			$attribs = CollectionAttributeKey::getAttributes($this->getCollectionID(), $this->getVersionID(), 'getSearchIndexValue');
+			$db = Loader::db();
+	
+			$db->Execute('delete from CollectionSearchIndexAttributes where cID = ?', array($this->getCollectionID()));
+			$searchableAttributes = array('cID' => $this->getCollectionID());
+			$rs = $db->Execute('select * from CollectionSearchIndexAttributes where cID = -1');
+			AttributeKey::reindex('CollectionSearchIndexAttributes', $searchableAttributes, $attribs, $rs);
+			
+			Loader::library('database_indexed_search');
+			$is = new IndexedSearch();
+			$db->Replace('PageSearchIndex', array(
+				'cID' => $this->getCollectionID(), 
+				'cName' => $this->getCollectionName(), 
+				'cDescription' => $this->getCollectionDescription(), 
+				'cPath' => $this->getCollectionPath(),
+				'cDatePublic' => $this->getCollectionDatePublic(), 
+				'content' => $is->getBodyContentFromPage($this)
+			), array('cID'), true);			
+		}
+		
+		public function getAttributeValueObject($ak, $createIfNotFound = false) {
+			$db = Loader::db();
+			$av = false;
+			$v = array($this->getCollectionID(), $this->getVersionID(), $ak->getAttributeKeyID());
+			$avID = $db->GetOne("select avID from CollectionAttributeValues where cID = ? and cvID = ? and akID = ?", $v);
+			if ($avID > 0) {
+				$av = CollectionAttributeValue::getByID($avID);
+				if (is_object($av)) {
+					$av->setCollection($this);
+					$av->setAttributeKey($ak);
+				}
+			}
+			
+			if ($createIfNotFound) {
+				$cnt = 0;
+			
+				// Is this avID in use ?
+				if (is_object($av)) {
+					$cnt = $db->GetOne("select count(avID) from CollectionAttributeValues where avID = ?", $av->getAttributeValueID());
+				}
+				
+				if ((!is_object($av)) || ($cnt > 1)) {
+					$av = $ak->addAttributeValue();
+				}
+			}
+			
+			return $av;
+		}
+		
+		public function setAttribute($ak, $value) {
+			if (!is_object($ak)) {
+				$ak = CollectionAttributeKey::getByHandle($ak);
+			}
+			$ak->setAttribute($this, $value);
+			unset($ak);
 			$this->refreshCache();
+			$this->reindex();
 		}
 		
 		// get's an array of collection attribute objects that are attached to this collection. Does not get values
@@ -175,33 +200,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 
 		function addAttribute($ak, $value) {
-			$db = Loader::db();
-			$vo = $this->getVersionObject();
-			$cvID = $vo->getVersionID();
-
-			$v = array($this->getCollectionID(), $cvID, $ak->getCollectionAttributeKeyID());
-			$db->query("delete from CollectionAttributeValues where cID = ? and cvID = ? and akID = ?", $v);
-
-			$v3 = array($this->getCollectionID(), $cvID, $ak->getCollectionAttributeKeyID(), $value);
-			$db->query("insert into CollectionAttributeValues (cID, cvID, akID, value) values (?, ?, ?, ?)", $v3);
-			
-			unset($v); unset($v3);
-			
-			// deal with arrays as values by storing them funky. we should probably just use serialize.
-			
-			if (is_array($value)) {
-				$_sub = array();
-				foreach($value as $sub) {
-					$sub = trim($sub);
-					if ($sub) {
-						$_sub[] = $sub;
-					}
-				}
-				if (count($_sub) > 0) { 
-					$value = implode("[|]", $_sub);
-				}
-			}
-			$this->refreshCache();
+			$this->setAttribute($ak, $value);
 		}
 
 		/* area stuff */
@@ -243,15 +242,20 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		function getCollectionID() {
 			return $this->cID;
 		}
-
-		function getCollectionDateLastModified($mask = null) {
-			if ($mask == null) {
-				return $this->cDateModified;
+		
+		function getCollectionDateLastModified($mask = null, $type="system") {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				$cDateModified = $dh->getLocalDateTime($this->cDateModified);
 			} else {
-				return date($mask, strtotime($this->cDateModified));
+				$cDateModified = $this->cDateModified;
+			}
+			if ($mask == null) {
+				return $cDateModified;
+			} else {
+				return date($mask, strtotime($cDateModified));
 			}
 		}
-
 
 		function getVersionObject() {
 			return $this->vObj;
@@ -261,11 +265,18 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $this->cHandle;
 		}
 
-		function getCollectionDateAdded($mask = null) {
-			if ($mask == null) {
-				return $this->cDateAdded;
+		function getCollectionDateAdded($mask = null,$type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				$cDateAdded = $dh->getLocalDateTime($this->cDateAdded);
 			} else {
-				return date($mask, strtotime($this->cDateAdded));
+				$cDateAdded = $this->cDateAdded;
+			}
+			
+			if ($mask == null) {
+				return $cDateAdded;
+			} else {
+				return date($mask, strtotime($cDateAdded));
 			}
 		}
 
@@ -443,7 +454,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function add($data) {
 			$db = Loader::db();
 			$dh = Loader::helper('date');
-			$cDate = $dh->getLocalDateTime(); 
+			$cDate = $dh->getSystemDateTime(); 
 			$cDatePublic = ($data['cDatePublic']) ? $data['cDatePublic'] : $cDate;
 			
 			if (isset($data['cID'])) {
@@ -472,7 +483,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			// marks this collection as newly modified
 			$db = Loader::db();
 			$dh = Loader::helper('date');
-			$cDateModified = $dh->getLocalDateTime();
+			$cDateModified = $dh->getSystemDateTime();
 
 			$v = array($cDateModified, $this->cID);
 			$q = "update Collections set cDateModified = ? where cID = ?";
@@ -505,7 +516,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function duplicate() {
 			$db = Loader::db();
 			$dh = Loader::helper('date');
-			$cDate = $dh->getLocalDateTime();
+			$cDate = $dh->getSystemDateTime();
 			
 			$v = array($cDate, $cDate, $this->cHandle);
 			$r = $db->query("insert into Collections (cDateAdded, cDateModified, cHandle) values (?, ?, ?)", $v);

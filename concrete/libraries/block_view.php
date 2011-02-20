@@ -202,6 +202,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$this->controller->setupAndRun($_action);
 			extract($this->controller->getSets());
 			extract($this->controller->getHelperObjects());
+			$headerItems = $this->controller->headerItems;
 			extract($args);
 			
 			if ($this->controller->getRenderOverride() != '') { 
@@ -232,7 +233,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					} else if ($_filename != FILENAME_BLOCK_VIEW) {
 						$bvt->setBlockCustomRender($_filename); 
 					}
-					$template = $bvt->getTemplate();					
+					$template = $bvt->getTemplate();
+					$header = DIR_FILES_ELEMENTS_CORE . '/block_header_view.php';
+					$footer = DIR_FILES_ELEMENTS_CORE . '/block_footer_view.php';										
 					break;
 				case 'add':
 					if (!isset($_filename)) {

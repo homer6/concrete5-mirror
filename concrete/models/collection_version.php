@@ -111,26 +111,9 @@
 			}
 			
 			// load the attributes for a particular version object
-			$db = Loader::db();
-			$v = array($c->getCollectionID(), $cv->getVersionID());
-			$r = $db->Execute('select akHandle, value, akType from CollectionAttributeValues inner join CollectionAttributeKeys on CollectionAttributeKeys.akID = CollectionAttributeValues.akID where cID = ? and cvID = ?', $v);
-			while ($row = $r->fetchRow()) {
-				switch($row['akType']) {
-					case "IMAGE_FILE":
-						if ($row['value'] > 0) {
-							Loader::block('library_file');
-							$v = File::getByID($row['value']);
-						}
-						break;
-					default:
-						$v = $row['value'];
-						break;
-				}
-				$attributes[$row['akHandle']] = $v;
-			}
+			Loader::model('attribute/categories/collection');			
+			$cv->attributes = CollectionAttributeKey::getAttributes($c->getCollectionID(), $cvID);
 			
-			$cv->setAttributeArray($attributes);
-
 			$cv->cID = $c->getCollectionID();			
 			$cv->cvIsMostRecent = $cv->_checkRecent();
 			
@@ -140,12 +123,10 @@
 			return $cv;
 		}
 
-		public function setAttributeArray($arr) {
-			$this->attributes = $arr;
-		}
-		
 		public function getAttribute($ak) {
-			return $this->attributes[$ak];
+			if (is_object($this->attributes)) {
+				return $this->attributes->getAttribute($ak);
+			}
 		}
 
 		function isApproved() {return $this->cvIsApproved;}
@@ -158,7 +139,21 @@
 		function getVersionApproverUserID() {return $this->cvApproverUID;}
 		function getVersionAuthorUserName() {return $this->cvAuthorUname;}
 		function getVersionApproverUserName() {return $this->cvApproverUname;}
-		function getVersionDateCreated() {return $this->cvDateCreated;}
+		
+		/**
+		 * Gets the date the collection version was created 
+		 * if user is specified, returns in the current user's timezone
+		 * @param string $type (system || user)
+		 * @return string date formated like: 2009-01-01 00:00:00 
+		*/
+		function getVersionDateCreated($type = 'system') {
+			if(ENABLE_USER_TIMEZONES && $type == 'user') {
+				$dh = Loader::helper('date');
+				return $dh->getLocalDateTime($this->cvDateCreated);
+			} else {
+				return $this->cvDateCreated;
+			}
+		}
 		
 		function canWrite() {return $this->cvCanWrite;}
 		
@@ -182,16 +177,16 @@
 			$versionComments = (!$versionComments) ? t("New Version %s", $newVID) : $versionComments;
 			
 			$dh = Loader::helper('date');
-			$v = array($this->cID, $newVID, $c->getCollectionName(), $c->getCollectionHandle(), $c->getCollectionDescription(), $c->getCollectionDatePublic(), $dh->getLocalDateTime(), $versionComments, $u->getUserID(), 1);
+			$v = array($this->cID, $newVID, $c->getCollectionName(), $c->getCollectionHandle(), $c->getCollectionDescription(), $c->getCollectionDatePublic(), $dh->getSystemDateTime(), $versionComments, $u->getUserID(), 1);
 			$q = "insert into CollectionVersions (cID, cvID, cvName, cvHandle, cvDescription, cvDatePublic, cvDateCreated, cvComments, cvAuthorUID, cvIsNew)
 				values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 				
-			$q2 = "select akID, value from CollectionAttributeValues where cID = ? and cvID = ?";
+			$q2 = "select akID, avID from CollectionAttributeValues where cID = ? and cvID = ?";
 			$v2 = array($c->getCollectionID(), $this->getVersionID());
 			$r2 = $db->query($q2, $v2);
 			while ($row2 = $r2->fetchRow()) {
-				$v3 = array($c->getCollectionID(), $newVID, $row2['akID'], $row2['value']);
-				$db->query("insert into CollectionAttributeValues (cID, cvID, akID, value) values (?, ?, ?, ?)", $v3);
+				$v3 = array($c->getCollectionID(), $newVID, $row2['akID'], $row2['avID']);
+				$db->query("insert into CollectionAttributeValues (cID, cvID, akID, avID) values (?, ?, ?, ?)", $v3);
 				
 			}
 			
@@ -244,6 +239,7 @@
 			if (($oldHandle != $newHandle) && (!$c->isGeneratedCollection())) {
 				$c->rescanCollectionPath();
 			}
+			$c->reindex();
 			$this->refreshCache();
 		}
 		
@@ -301,8 +297,15 @@
 				}
 			}
 			
-			$q = "delete from CollectionAttributeValues where cID = '{$cID}' and cvID = '{$cvID}'";
-			$r = $db->query($q);
+			$r = $db->Execute('select avID, akID from CollectionAttributeValues where cID = ? and cvID = ?', array($cID, $cvID));
+			Loader::model('attribute/categories/collection');			
+			while ($row = $r->FetchRow()) {
+				$cak = CollectionAttributeKey::getByID($row['akID']);
+				$cav = $c->getAttributeValueObject($cak);
+				if (is_object($cav)) {
+					$cav->delete();
+				}
+			}
 			
 			$q = "delete from CollectionVersions where cID = '{$cID}' and cvID='{$cvID}'";
 			$r = $db->query($q);

@@ -98,8 +98,24 @@ class Package extends Object {
 	public function getPackageName() {return t($this->pkgName);}
 	public function getPackageDescription() {return t($this->pkgDescription);}
 	public function getPackageHandle() {return $this->pkgHandle;}
-	public function getPackageDateInstalled() {return $this->pkgDateInstalled;}
+	
+	/**
+	 * Gets the date the package was added to the system, 
+	 * if user is specified, returns in the current user's timezone
+	 * @param string $type (system || user)
+	 * @return string date formated like: 2009-01-01 00:00:00 
+	*/
+	function getPackageDateInstalled($type = 'system') {
+		if(ENABLE_USER_TIMEZONES && $type == 'user') {
+			$dh = Loader::helper('date');
+			return $dh->getLocalDateTime($this->pkgDateInstalled);
+		} else {
+			return $this->pkgDateInstalled;
+		}
+	}
+	
 	public function getPackageVersion() {return $this->pkgVersion;}
+	public function getPackageCurrentlyInstalledVersion() {return $this->pkgCurrentVersion;}
 	public function isPackageInstalled() { return $this->pkgIsInstalled;}
 	
 	protected $appVersionRequired = '5.0.0';
@@ -111,6 +127,7 @@ class Package extends Object {
 	const E_PACKAGE_SAVE = 5;
 	const E_PACKAGE_UNZIP = 6;
 	const E_PACKAGE_INSTALL = 7;
+	const E_PACKAGE_MIGRATE_BACKUP = 8;
 
 	protected $errorText = array();
 
@@ -209,7 +226,7 @@ class Package extends Object {
 		$db->Execute("delete from Packages where pkgID = ?", array($this->pkgID));
 	}
 	
-	public function testForInstall($package) {
+	public function testForInstall($package, $testForAlreadyInstalled = true) {
 		// this is the pre-test routine that packages run through before they are installed. Any errors that come here
 		// are to be returned in the form of an array so we can show the user. If it's all good we return true
 		$db = Loader::db();
@@ -225,9 +242,11 @@ class Package extends Object {
 		}
 		
 		// Step 2 - check to see if the user has already installed a package w/this handle
-		$cnt = $db->getOne("select count(*) from Packages where pkgHandle = ?", array($package));
-		if ($cnt > 0) {
-			$errors[] = Package::E_PACKAGE_INSTALLED;
+		if ($testForAlreadyInstalled) {
+			$cnt = $db->getOne("select count(*) from Packages where pkgHandle = ?", array($package));
+			if ($cnt > 0) {
+				$errors[] = Package::E_PACKAGE_INSTALLED;
+			}
 		}
 		
 		if (count($errors) == 0) {
@@ -252,6 +271,7 @@ class Package extends Object {
 		$errorText[Package::E_PACKAGE_SAVE] = t("Concrete was not able to save the package after download.");
 		$errorText[Package::E_PACKAGE_UNZIP] = t('An error occurred while trying to unzip the package.');
 		$errorText[Package::E_PACKAGE_INSTALL] = t('An error occurred while trying to install the package.');
+		$errorText[Package::E_PACKAGE_MIGRATE_BACKUP] = t('Unable to backup old package directory to %s', DIR_FILES_TRASH);
 
 		$testResultsText = array();
 		foreach($testResults as $result) {
@@ -290,17 +310,47 @@ class Package extends Object {
 			return $pkg;
 		}
 	}
+
+	public function getByHandle($pkgHandle) {
+		$db = Loader::db();
+		$row = $db->GetRow("select * from Packages where pkgHandle = ?", array($pkgHandle));
+		if ($row) {
+			$pkg = Loader::package($row['pkgHandle']);
+			$pkg->setPropertiesFromArray($row);
+			return $pkg;
+		}
+	}
 	
 	protected function install() {
 		$db = Loader::db();
 		$dh = Loader::helper('date');
-		$v = array($this->getPackageName(), $this->getPackageDescription(), $this->getPackageVersion(), $this->getPackageHandle(), 1, $dh->getLocalDateTime());
+		$v = array($this->getPackageName(), $this->getPackageDescription(), $this->getPackageVersion(), $this->getPackageHandle(), 1, $dh->getSystemDateTime());
 		$db->query("insert into Packages (pkgName, pkgDescription, pkgVersion, pkgHandle, pkgIsInstalled, pkgDateInstalled) values (?, ?, ?, ?, ?, ?)", $v);
 		
 		$pkg = Package::getByID($db->Insert_ID());
 		Package::installDB($pkg->getPackagePath() . '/' . FILENAME_PACKAGE_DB);
 		
 		return $pkg;
+	}
+	
+	public function upgradeCoreData() {
+		$db = Loader::db();
+		$p1 = Loader::package($this->getPackageHandle());
+		$v = array($p1->getPackageName(), $p1->getPackageDescription(), $p1->getPackageVersion(), $this->getPackageID());
+		$db->query("update Packages set pkgName = ?, pkgDescription = ?, pkgVersion = ? where pkgID = ?", $v);
+	}
+	
+	public function upgrade() {
+		Package::installDB($this->getPackagePath() . '/' . FILENAME_PACKAGE_DB);		
+		// now we refresh all blocks
+		$items = $this->getPackageItems();
+		foreach($items as $item) {
+			switch(get_class($item)) {
+				case 'BlockType':
+					$item->refresh();
+					break;
+			}
+		}
 	}
 	
 	public static function getInstalledHandles() {
@@ -318,6 +368,56 @@ class Package extends Object {
 			$pkgArray[] = $pkg;
 		}
 		return $pkgArray;
+	}
+	
+	/** 
+	 * Returns an array of packages that have newer versions in the local packages directory
+	 * than those which are in the Packages table. This means they're ready to be upgraded
+	 */
+	public static function getLocalUpgradeablePackages() {
+		$packages = Package::getAvailablePackages(false);
+		$upgradeables = array();
+		$db = Loader::db();
+		foreach($packages as $p) {
+			$row = $db->GetRow("select pkgID, pkgVersion from Packages where pkgHandle = ? and pkgIsInstalled = 1", array($p->getPackageHandle()));
+			if ($row['pkgID'] > 0) { 
+				if (version_compare($p->getPackageVersion(), $row['pkgVersion'], '>')) {
+					$p->pkgCurrentVersion = $row['pkgVersion'];
+					$upgradeables[] = $p;
+				}		
+			}
+		}
+		return $upgradeables;		
+	}
+	
+	public function backup() {
+		// you can only backup root level packages.
+		// Need to figure something else out for core level
+		if ($this->pkgHandle != '' && is_dir(DIR_PACKAGES . '/' . $this->pkgHandle)) {
+			$ret = @rename(DIR_PACKAGES . '/' . $this->pkgHandle, DIR_FILES_TRASH . '/' . $this->pkgHandle . '_' . date('YmdHis'));
+			if (!$ret) {
+				return array(Package::E_PACKAGE_MIGRATE_BACKUP);
+			}
+		}
+	}
+
+
+	public function config($cfKey, $getFullObject = false) {
+		$co = new Config();
+		$co->setPackageObject($this);
+		return $co->get($cfKey, $getFullObject);
+	}
+	
+	public function saveConfig($cfKey, $value) {
+		$co = new Config();
+		$co->setPackageObject($this);
+		return $co->save($cfKey, $value);
+	}
+
+	public function clearConfig($cfKey) {
+		$co = new Config();
+		$co->setPackageObject($this);
+		return $co->clear($cfKey);
 	}
 	
 	public static function getAvailablePackages($filterInstalled = true) {

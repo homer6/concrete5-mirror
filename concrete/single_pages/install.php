@@ -183,12 +183,18 @@ $(function() {
 	
 	<label for="DB_DATABASE"><?php echo t('Database Name')?></label><br/>
 	<?php echo $form->text('DB_DATABASE', array('disabled'=> 1)); ?>
+	<br/><br/>
+	
+	<h2><?php echo t('Sample Content')?></h2>
+	
+	<?php echo $form->checkbox('INSTALL_SAMPLE_CONTENT',1,true); ?>
+	<label for="INSTALL_SAMPLE_CONTENT"><?php echo t('Install sample content')?></label><br/>	
 	<br/>
 	
 	<div class="ccm-button">
 	<?php echo $form->submit('submit', t('Install Concrete').' &gt;', array('disabled'=> 1))?>
 	</div>
-	
+	<br/><br/>
 
 </form>
 </div>

@@ -38,6 +38,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		protected $btInterfaceWidth = "400";
 		protected $btInterfaceHeight = "400";
 		protected $btHasRendered = false;
+		public $headerItems = array();
 
 		protected $identifier;
 		
@@ -199,6 +200,15 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$this->addHeaderItem($h);
 				}
 			}
+			
+			$c = $this->getCollectionObject();
+			BlockStyles::addHeaderItems($c);
+		}
+		
+		public function addHeaderItem($file) {
+			$namespace = 'BLOCK_CONTROLLER_' . strtoupper($this->btHandle);
+			$this->headerItems[$namespace][] = $file;
+			parent::addHeaderItem($file);
 		}
 		
 		public function setupAndRun($method) {

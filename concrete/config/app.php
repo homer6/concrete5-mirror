@@ -29,10 +29,6 @@ if (!defined('ENABLE_LOG_ERRORS')) {
 	Config::getOrDefine('ENABLE_LOG_ERRORS', true);
 }
 
-if (!defined('ENABLE_LOG_DATABASE_QUERIES')) {
-	Config::getOrDefine('ENABLE_LOG_DATABASE_QUERIES', false);
-}
-
 # Default URL rewriting setting
 if (!defined('URL_REWRITING')) {
 	Config::getOrDefine('URL_REWRITING', false);
@@ -90,6 +86,12 @@ if (!defined('ENABLE_OPENID_AUTHENTICATION')) {
 	Config::getOrDefine('ENABLE_OPENID_AUTHENTICATION', false);
 }
 
+Config::getOrDefine('MAIL_SEND_METHOD', 'PHP_MAIL');
+
+if (!defined('ENABLE_REGISTRATION_CAPTCHA')) { 
+	Config::getOrDefine('ENABLE_REGISTRATION_CAPTCHA', true);
+}
+
 if (!defined('ENABLE_USER_PROFILES')) { 
 	Config::getOrDefine('ENABLE_USER_PROFILES', false);
 }
@@ -131,6 +133,9 @@ define('UVTYPE_CHANGE_PASSWORD', 1);
 
 if (!defined('UPLOAD_FILE_EXTENSIONS_ALLOWED')) {
 	Config::getOrDefine('UPLOAD_FILE_EXTENSIONS_ALLOWED','*.flv;*.jpg;*.gif;*.jpeg;*.ico;*.docx;*.xla;*.png;*.psd;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt;*.kml');
+	define('UPLOAD_FILE_EXTENSIONS_CONFIGURABLE', true);
+} else {
+	define('UPLOAD_FILE_EXTENSIONS_CONFIGURABLE', false);
 }
 
 define('BLOCK_NOT_AVAILABLE_TEXT', t('This block is no longer available.'));
@@ -170,4 +175,8 @@ if (!defined('REGISTRATION_TYPE')) {
 
 if (!defined('ENABLE_REGISTRATION')) {
 	Config::getOrDefine('ENABLE_REGISTRATION', false);	
+}
+
+if (!defined('ENABLE_USER_TIMEZONES')) {
+	Config::getOrDefine('ENABLE_USER_TIMEZONES', false);	
 }

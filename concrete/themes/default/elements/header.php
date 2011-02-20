@@ -12,7 +12,6 @@
 
 </head>
 <body>
-			
 <div id="page">
 	<div id="headerSpacer"></div>
 	<div id="header">
@@ -27,7 +26,14 @@
 			$a->display($c);
 			?>
 		</div>
-		<h1 id="logo"><a href="<?php echo DIR_REL?>/"><?php echo SITE?></a></h1>
+		
+		<h1 id="logo"><!--
+			--><a href="<?php echo DIR_REL?>/"><?php 
+				$block = Block::getByName('My_Site_Name');  
+				if( $block && $block->bID ) $block->display();   
+				else echo SITE;
+			?></a><!--
+		--></h1>
 
 		<?php 
 		// we use the "is edit mode" check because, in edit mode, the bottom of the area overlaps the item below it, because
