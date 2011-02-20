@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -46,31 +46,37 @@ class PackageList extends Object {
 	}
 	
 	public static function getHandle($pkgID) {
+		$pkgHandle = Cache::get('pkgHandle', $pkgID);
+		if ($pkgHandle != false) {
+			return $pkgHandle;
+		}
+		
 		$pl = PackageList::get();
 		$handle = null;
 		$plitems = $pl->getPackages();
+		
 		foreach($plitems as $p) {
 			if ($p->getPackageID() == $pkgID) {
 				$handle = $p->getPackageHandle();
 				break;
 			}
 		}
+
+		Cache::set('pkgHandle', $pkgID, $handle);
 		return $handle;
 	}
 	
 	public static function get() {
-		static $list;
-		if (!isset($list)) {
-			$db = Loader::db();
-			$r = $db->query("select pkgID, pkgName, pkgDescription, pkgHandle, pkgDateInstalled from Packages order by pkgID asc");
-			$list = new PackageList();
-			while ($row = $r->fetchRow()) {
-				$pkg = new Package;
-				$pkg->setPropertiesFromArray($row);
-				$list->add($pkg);
-			}
-		}
 		
+		$db = Loader::db();
+		$r = $db->query("select pkgID, pkgName, pkgIsInstalled, pkgDescription, pkgHandle, pkgDateInstalled from Packages order by pkgID asc");
+		$list = new PackageList();
+		while ($row = $r->fetchRow()) {
+			$pkg = new Package;
+			$pkg->setPropertiesFromArray($row);
+			$list->add($pkg);
+		}
+
 		return $list;
 	}
 	
@@ -93,9 +99,17 @@ class Package extends Object {
 	public function getPackageDescription() {return $this->pkgDescription;}
 	public function getPackageHandle() {return $this->pkgHandle;}
 	public function getPackageDateInstalled() {return $this->pkgDateInstalled;}
+	public function isPackageInstalled() { return $this->pkgIsInstalled;}
+	
+	protected $appVersionRequired = '5.0.0';
 	
 	const E_PACKAGE_NOT_FOUND = 1;
 	const E_PACKAGE_INSTALLED = 2;
+	const E_PACKAGE_VERSION = 3;
+	
+	public function getApplicationVersionRequired() {
+		return $this->appVersionRequired;
+	}
 	
 	public static function installDB($xmlFile) {
 		
@@ -111,6 +125,7 @@ class Package extends Object {
 		// to find a table that doesn't exist! 
 		
 		$handler = $db->IgnoreErrors();
+		ob_start();
 		
 		$schema = $db->getADOSChema();		
 		$sql = $schema->ParseSchema($xmlFile);
@@ -123,15 +138,22 @@ class Package extends Object {
 		}
 
 		$r = $schema->ExecuteSchema();
-		
+
+		$dbLayerErrorMessage = ob_get_contents();
+				
+		ob_end_clean();
+
 		$result = new stdClass;
 		$result->result = false;
-		if (!$r) {
+		
+		if ($dbLayerErrorMessage != '') {
+			$result->message = $dbLayerErrorMessage;
+			return $result;
+		} if (!$r) {
 			$result->message = $db->ErrorMsg();
 			return $result;
 		}
 		
-
 		$result->result = true;
 		
 		$db->CacheFlush();
@@ -145,6 +167,12 @@ class Package extends Object {
 		// are to be returned in the form of an array so we can show the user. If it's all good we return true
 		$db = Loader::db();
 		$errors = array();
+		
+		// test minimum application version requirement
+		$pkg = Loader::package($package);
+		if (version_compare(APP_VERSION, $pkg->getApplicationVersionRequired(), '<')) {
+			$errors[] = array(E_PACKAGE_VERSION, $pkg->getApplicationVersionRequired());
+		}
 		
 		// Step 1 does that package exist ?
 		if ((!is_dir(DIR_PACKAGES . '/' . $package) && (!is_dir(DIR_PACKAGES_CORE . '/' . $package))) || $package == '') {
@@ -190,10 +218,12 @@ class Package extends Object {
 	protected function install() {
 		$db = Loader::db();
 		$dh = Loader::helper('date');
-		$v = array($this->pkgName, $this->pkgDescription, $this->pkgHandle, 1, $dh->getLocalDateTime());
+		$v = array($this->getPackageName(), $this->getPackageDescription(), $this->getPackageHandle(), 1, $dh->getLocalDateTime());
 		$db->query("insert into Packages (pkgName, pkgDescription, pkgHandle, pkgIsInstalled, pkgDateInstalled) values (?, ?, ?, ?, ?)", $v);
 		
 		$pkg = Package::getByID($db->Insert_ID());
+		Package::installDB($pkg->getPackagePath() . '/' . FILENAME_PACKAGE_DB);
+		
 		return $pkg;
 	}
 	

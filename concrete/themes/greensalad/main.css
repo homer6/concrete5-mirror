@@ -53,9 +53,11 @@ img {
 	overflow:visible;
 }
 #page #header #logo a {
-	color:#fff;
+	/* customize_header_logo */ color: #ffffff; /* customize_header_logo */
+	font: normal bold 32px Arial;
 	text-decoration:none;
 }
+
 #page #header ul.nav-header {
 	list-style:none;
 	margin:0px;
@@ -119,7 +121,7 @@ img {
 	text-align:justify;
 	width:542px;
 	padding:15px;
-	background-color:#f4ffd2;
+	/* customize_background */ background-color:#f4ffd2; /* customize_background */
 }
 #page #central #sidebar {
 	float:right;
@@ -216,3 +218,5 @@ div.spacer, div.ccm-spacer {
 	margin-top:0px;
 	padding-top:0px
 }
+
+/* customize_miscellaneous */ /* customize_miscellaneous */

@@ -1,18 +1,12 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $this->inc('elements/header.php'); ?>
 
 
-	<div id="central">
-		<div id="sidebar">
-			<?php  
-			$as = new Area('Sidebar');
-			$as->display($c);
-			?>		
-		</div>
+	<div id="central" class="no-sidebar">
 		
 		<div id="body">	
-			<?php  
+			<?php 
 
 			print $innerContent;
 			
@@ -22,4 +16,4 @@ $this->inc('elements/header.php'); ?>
 		<div class="spacer">&nbsp;</div>		
 	</div>
 
-<?php   $this->inc('elements/footer.php'); ?>
+<?php  $this->inc('elements/footer.php'); ?>

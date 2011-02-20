@@ -1,4 +1,4 @@
-<?php  
+<?php 
 /*
 	Bulgarian language, v1.0, 25.03.2004, encoding by Windows-1251 charset
 	contributed by Valentin Sheiretsky <valio#valio.eu.org>

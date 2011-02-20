@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -50,26 +50,38 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		public static function getByID($bID, $c = null, $a = null) {
+			if ($c == null && $a == null) {
+				$cID = 0;
+				$arHandle = "";
+				$cvID = 0;
+			} else {
+				if (is_object($a)) {
+					$arHandle = $a->getAreaHandle();
+				} else if ($a != null) {
+					$arHandle = $a;
+					$a = Area::getOrCreate($c, $a);
+				}
+				$cID = $c->getCollectionID();
+				$cvID = $c->getVersionID();
+			}
+
+			$ca = new Cache();
+			$b = $ca->get('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle);
+			if ($b instanceof Block) {
+				return $b;
+			}
 			$db = Loader::db();
 
 			$b = new Block;
-
 			if ($c == null && $a == null) {
 				// just grab really specific block stuff
 				$q = "select bID, bIsActive, BlockTypes.btID, BlockTypes.btHandle, BlockTypes.pkgID, BlockTypes.btName, bName, bDateAdded, bDateModified, bFilename, Blocks.uID from Blocks inner join BlockTypes on (Blocks.btID = BlockTypes.btID) where bID = ?";
 				$b->isOriginal = 1;
-				$v = array($bID);
-				
+				$v = array($bID);				
 			} else {
 
-				if (is_object($a)) {
-					$b->a = $a;
-					$b->arHandle = $a->getAreaHandle();
-				} else if ($a != null) {
-					$b->arHandle = $a; // passing the area name. We only pass the object when we're adding from the front-end
-				}
-	
-				$cID = $c->getCollectionID();
+				$b->arHandle = $arHandle;
+				$b->a = $a;
 				$b->cID = $cID;
 				$b->c = ($c) ? $c : '';
 
@@ -89,7 +101,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (is_array($row)) {
 				$b->setPropertiesFromArray($row);
 				$r->free();
-				return $b;
+				
+				$bt = BlockType::getByID($b->getBlockTypeID());
+				$class = $bt->getBlockTypeClass();
+				$b->instance = new $class($b);
+
+				if ($c != null || $a != null) {
+					$ca = new Cache();
+					$ca->set('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle, $b);
+				}
+				return $b;				
 
 			}
 		}
@@ -129,10 +150,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$dirp = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
 				$dir = $dirp . '/' . $pkgHandle . '/' . DIRNAME_BLOCKS . '/' . $this->getBlockTypeHandle();
 			} else {
-				if (is_dir(DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle())) {
-					$dir = DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle();
-				} else {
+				if (is_dir(DIR_FILES_BLOCK_TYPES . '/' . $this->getBlockTypeHandle())) {
 					$dir = DIR_FILES_BLOCK_TYPES . '/' . $this->getBlockTypeHandle();
+				} else {
+					$dir = DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle();
 				}
 			}
 			return $dir;	
@@ -189,10 +210,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		public function getInstance() {
-			$bt = BlockType::getByID($this->btID);
-			$class = $bt->getBlockTypeClass();
-			$bc = new $class($this);
-			return $bc;
+			return $this->instance;
 		}
 
 		function getCollectionList() {
@@ -230,6 +248,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$class = $bt->getBlockTypeClass();
 			$bc = new $class($this);
 			$bc->save($data);
+			
+			$this->refreshCache();
 		}
 
 		function isActive() {
@@ -240,12 +260,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$db = Loader::db();
 			$q = "update Blocks set bIsActive = 0 where bID = '{$this->bID}'";
 			$db->query($q);
+			$this->refreshCache();
 		}
 
 		function activate() {
 			$db = Loader::db();
 			$q = "update Blocks set bIsActive = 1 where bID = '{$this->bID}'";
 			$db->query($q);
+			$this->refreshCache();
 		}
 
 		public function getPackageID() {return $this->pkgID;}
@@ -266,12 +288,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$r = $db->prepare($q);
 				$res = $db->execute($r, $v);
 			}
+			$this->refreshCache();
 		}
 
 		function alias($c) {	
-			// The master collection "alias to all" functionality has been removed from here and will be added back into a 
-			// separate interface, utilizing separate functions to do the same stuff.
-			
+		
 			// creates an alias of the block, attached to this collection, within the CollectionVersionBlocks table
 			// additionally, this command grabs the permissions from the original record in the
 			// CollectionVersionBlocks table, and attaches them to the new one
@@ -433,7 +454,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$bID = $this->getBlockID();
 			$arHandle = $this->getAreaHandle();
 			$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
-			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;bID={$bID}&amp;arHandle={$arHandle}" . $step;
+			$valt = Loader::helper('validation/token');
+			$token = $valt->generate();
+			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;bID={$bID}&amp;arHandle={$arHandle}" . $step . "&ccm_token=" . $token;
 			return $str;
 		}
 
@@ -479,6 +502,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				return false;
 			}
 
+			$this->refreshCache();
+
 			$cID = $this->cID;
 			$c = $this->getBlockCollectionObject();
 			$cvID = $c->getVersionID();
@@ -509,7 +534,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			//then, we see whether or not this block is aliased to anything else
 			$q = "select count(*) as total from CollectionVersionBlocks where bID = '$bID'";
 			$totalBlocks = $db->getOne($q);
-			
 			if ($totalBlocks < 1) {
 				$q = "delete from BlockRelations where originalBID = ? or bID = ?";
 				$r = $db->query($q, array($this->bID, $this->bID));
@@ -553,6 +577,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 
 			$c = $this->getBlockCollectionObject();
 			$cvID = $c->getVersionID();
+			$this->refreshCache();
 
 			switch($i) {
 				case '1':
@@ -754,6 +779,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 				}
 			}
+
+			$this->refreshCache();
+			
 		}
 		
 		public function setCustomTemplate($template) {
@@ -764,6 +792,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function setName($name) {
 			$data['bName'] = $name;
 			$this->updateBlockInformation($data);
+		}
+		
+		/** 
+		 * Removes a cached version of the block 
+		 */
+		public function refreshCache() {
+			$c = $this->getBlockCollectionObject();
+			$a = $this->getBlockAreaObject();
+			if (is_object($c) && is_object($a)) { 
+				Cache::delete('block', $this->getBlockID() . ':' . $c->getCollectionID() . ':' . $c->getVersionID() . ':' . $a->getAreaHandle());
+			}
 		}
 		
 		function updateBlockInformation($data) {
@@ -785,6 +824,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$q = "update Blocks set bName = ?, bFilename = ?, bDateModified = ? where bID = ?";
 			$r = $db->prepare($q);
 			$res = $db->execute($r, $v);
+			$this->refreshCache();
 
 		}
 

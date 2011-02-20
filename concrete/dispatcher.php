@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 	## This constant ensures that we're operating inside dispatcher.php. There is a LATER check to ensure that dispatcher.php is being called correctly. ##
 	define('C5_EXECUTE', true);
@@ -25,16 +25,21 @@
 	Loader::library('request');
 	Loader::library('events');
 	Loader::library('model');
+	Loader::library('item_list');
 	Loader::library('view');
 	Loader::library('controller');
 	Loader::library('block_view');
 	Loader::library('block_controller');
+
+	## Autoload settings
+	require('startup/autoload.php');
 	
 	## Load required models ##
 	Loader::model('area');
 	Loader::model('block');
 	Loader::model('block_types');
 	Loader::model('collection');
+	Loader::model('collection_version');
 	Loader::model('config');
 	Loader::model('groups');
 	Loader::model('package');
@@ -43,8 +48,12 @@
 	Loader::model('permissions');
 	Loader::model('user');
 	Loader::model('userinfo');
-	Loader::model('version');
 
+	## Startup cache ##
+	Loader::library('cache/abstract');	
+	Loader::library('cache/' . CACHE_LIBRARY);	
+	Cache::startup();
+	
 	## Startup check, install ##	
 	require('startup/magic_quotes_gpc_check.php');
 
@@ -72,9 +81,13 @@
 	@include('config/site_theme_paths.php');
 
 	## Specific site/app events if they are enabled ##
-	if (ENABLE_APPLICATION_EVENTS) {
+	## This must come before packages ##
+	if (defined('ENABLE_APPLICATION_EVENTS') && ENABLE_APPLICATION_EVENTS == true) {
 		include('config/site_events.php');
 	}
+	
+	## Package events
+	require('startup/packages.php');
 	
 	## Check online, user-related startup routines
 	require('startup/user.php');
@@ -139,6 +152,7 @@
 	if ($_REQUEST['ccm-disable-controls'] == true || intval($cvID) > 0) {
 		$v = View::getInstance();
 		$v->disableEditing();
+		$v->disableLinks();
 	}
 	
 	$vp = $c->loadVersionObject($cvID);

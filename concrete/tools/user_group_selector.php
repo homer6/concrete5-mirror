@@ -1,4 +1,4 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $displayGroups = true;
 $displayUsers = true;
@@ -11,7 +11,7 @@ if ($_REQUEST['mode'] == 'users') {
 
 $c1 = Page::getByPath('/dashboard/users');
 $cp1 = new Permissions($c1);
-$c2 = Page::getByPath('/dashboard/groups');
+$c2 = Page::getByPath('/dashboard/users/groups');
 $cp2 = new Permissions($c2);
 if ((!$cp1->canRead()) && (!$cp2->canRead())) {
 	die(_("Access Denied."));
@@ -33,34 +33,34 @@ $("#ccm-ug-tabs a").click(function() {
 
 </script>
 
-<?php   if ($displayGroups && $displayUsers) { ?>
+<?php  if ($displayGroups && $displayUsers) { ?>
 
 <ul class="ccm-dialog-tabs" id="ccm-ug-tabs">
-<li class="ccm-nav-active"><a href="javascript:void(0)" id="ccm-select-group"><?php  echo t('Groups')?></a></li>
-<li><a href="javascript:void(0)" id="ccm-select-user"><?php  echo t('Users')?></a></li>
+<li class="ccm-nav-active"><a href="javascript:void(0)" id="ccm-select-group"><?php echo t('Groups')?></a></li>
+<li><a href="javascript:void(0)" id="ccm-select-user"><?php echo t('Users')?></a></li>
 </ul>
 
-<?php   } ?>
+<?php  } ?>
 
-<?php   if ($displayGroups) { ?>
+<?php  if ($displayGroups) { ?>
 
 <div id="ccm-select-group-tab">
 
-<h1><?php  echo t('Select Group')?></h1>
+<h1><?php echo t('Select Group')?></h1>
 
-<?php   include(DIR_FILES_TOOLS_REQUIRED . '/select_group.php'); ?>
+<?php  include(DIR_FILES_TOOLS_REQUIRED . '/select_group.php'); ?>
 
 </div>
 
-<?php   } ?>
+<?php  } ?>
 
-<?php   if ($displayUsers) { ?>
+<?php  if ($displayUsers) { ?>
 
 <div id="ccm-select-user-tab" style="display: none">
-<h1><?php  echo t('Select User')?></h1>
+<h1><?php echo t('Select User')?></h1>
 
-<?php   include(DIR_FILES_TOOLS_REQUIRED . '/select_user.php'); ?>
+<?php  include(DIR_FILES_TOOLS_REQUIRED . '/select_user.php'); ?>
 
 </div>
 
-<?php   } ?>
+<?php  } ?>

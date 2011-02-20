@@ -1,4 +1,4 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 error_reporting(E_ALL ^ E_NOTICE);
 ini_set('display_errors', 1);
@@ -89,27 +89,36 @@ class UpgradeController extends Controller {
 			
 		This typically shouldn't include schema changes which will be picked up by refresh_schema
 		*/
-		
+
 		switch(strtolower($this->site_version)) {
 			case "5.0.0a1":
 				$ugvs[] = "version_500a1";
 				$ugvs[] = "version_500b1";
 				$ugvs[] = "version_500b2";
 				$ugvs[] = "version_500";
+				$ugvs[] = "version_510";
 				break;
 			case "5.0.0b1":
 				$ugvs[] = "version_500b1";
 				$ugvs[] = "version_500b2";
 				$ugvs[] = "version_500";
+				$ugvs[] = "version_510";
 				break;
 			case "5.0.0b2":
 				$ugvs[] = "version_500b2";
 				$ugvs[] = "version_500";
+				$ugvs[] = "version_510";
 				break;
 			case "5.0.0":
 				$ugvs[] = "version_500";
+				$ugvs[] = "version_510";
 				break;
-
+			case "5.1.0rc1":
+			case "5.1.0rc2":
+			case "5.1.0":
+			case "5.1.1":
+				$ugvs[] = "version_510";
+				break;
 		}
 		
 		foreach($ugvs as $ugh) {
@@ -140,6 +149,8 @@ class UpgradeController extends Controller {
 		try {
 			$this->set_upgrades();
 			$this->refresh_schema();
+			$ca = new Cache();
+			$ca->flush();
 			foreach($this->upgrades as $ugh) {
 				$ugh->run();
 			}

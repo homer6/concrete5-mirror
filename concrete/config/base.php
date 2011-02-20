@@ -1,4 +1,4 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 define('DISPATCHER_FILENAME', 'index.php');
 
@@ -18,15 +18,11 @@ if ($config_check_failed) {
 }
 
 if (!defined('UPLOAD_FILE_EXTENSIONS_ALLOWED')) {
-	define('UPLOAD_FILE_EXTENSIONS_ALLOWED', '*.flv;*.jpg;*.gif;*.jpeg;*.docx;*.xla;*.png;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt');
+	define('UPLOAD_FILE_EXTENSIONS_ALLOWED', '*.flv;*.jpg;*.gif;*.jpeg;*.ico;*.docx;*.xla;*.png;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt;*.kml');
 }
 
 if (!defined('REDIRECT_TO_BASE_URL')) {
 	define('REDIRECT_TO_BASE_URL', true);
-}
-
-if (!defined('ENABLE_APPLICATION_EVENTS')) {
-	define('ENABLE_APPLICATION_EVENTS', false);
 }
 
 if (!defined('ENABLE_EMAILS')) {
@@ -63,11 +59,17 @@ if (!defined("LANGUAGE")) {
 
 define("LANGUAGE_DOMAIN_CORE", "messages");
 
+if (!defined('CACHE_LIBRARY')) {
+	define('CACHE_LIBRARY', 'default');
+}
+
 # Debug Menu - Determines whether a "Submit Feedback/Bug/Question" is active */
 # Currently Concrete5 does not include this capability but it will likely come back.
 define('MENU_FEEDBACK_DISPLAY', 1);
 define('MENU_FEEDBACK_URL', 'http://www.concretecms.com/tools/process_feedback.php');
-define('MENU_HELP_URL', 'http://www.concrete5.org/docs/');
+if (!defined("MENU_HELP_URL")) {
+	define('MENU_HELP_URL', 'http://www.concrete5.org/help/');
+}
 
 # Path to the core files shared between all concrete 5 installations
 define('DIR_BASE_CORE', dirname(__FILE__) . '/..');
@@ -141,11 +143,14 @@ define('DIRNAME_BLOCK_TOOLS', 'tools');
 define('DIRNAME_BLOCK_TEMPLATES', 'templates');
 define('DIRNAME_CSS', 'css');
 define('DIRNAME_JAVASCRIPT', 'js');
+define('DIRNAME_IMAGES', 'images');
+define('DIRNAME_HELPERS', 'helpers');
 
 # Blocks
 define('DIR_FILES_BLOCK_TYPES', DIR_BASE . '/blocks');
 define('DIR_FILES_BLOCK_TYPES_CORE', DIR_BASE_CORE . '/blocks');
 define('FILENAME_BLOCK_VIEW', 'view.php');
+define('FILENAME_BLOCK_VIEW_SCRAPBOOK', 'scrapbook.php');
 define('FILENAME_BLOCK_ADD', 'add.php');
 define('FILENAME_BLOCK_EDIT', 'edit.php');
 define('FILENAME_BLOCK_ICON', 'icon.png');
@@ -156,7 +161,7 @@ define('FILENAME_BLOCK_DB', 'db.xml');
 if (defined('MULTI_SITE') && MULTI_SITE == 1) {
 	define('ASSETS_URL_WEB', BASE_URL);
 } else {
-	define('ASSETS_URL_WEB', BASE_URL . DIR_REL);
+	define('ASSETS_URL_WEB', DIR_REL);
 	define('MULTI_SITE', 0);
 }
 
@@ -174,6 +179,7 @@ define('FILENAME_COLLECTION_DEFAULT_THEME', 'default');
 define('FILENAME_COLLECTION_TYPE_DEFAULT_ICON', 'main.png');
 define('FILENAME_PAGE_ICON', 'icon.png');
 define('FILENAME_PACKAGE_CONTROLLER', 'controller.php');
+define('FILENAME_PACKAGE_DB', 'db.xml');
 //define('DIR_FILES_COLLECTION_TYPES', DIR_BASE . '/views/page_types');
 define('DIR_FILES_COLLECTION_TYPE_ICONS', DIR_BASE_CORE . '/images/icons/page_types');
 define('REL_DIR_FILES_COLLECTION_TYPE_ICONS', ASSETS_URL_IMAGES . '/icons/page_types');
@@ -235,6 +241,8 @@ define('DIR_FILES_TRASH', DIR_FILES_UPLOADED . '/trash');
 
 # Cache
 define('DIR_FILES_CACHE', DIR_FILES_UPLOADED . '/cache');
+define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
+define('DIR_FILES_CACHE_CORE', DIR_FILES_UPLOADED . '/cache_objects');
 define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
 define('REL_DIR_FILES_CACHE', REL_DIR_FILES_UPLOADED . '/cache');
 
@@ -243,6 +251,7 @@ define('REL_DIR_FILES_CACHE', REL_DIR_FILES_UPLOADED . '/cache');
 # define('DIR_FILES_BIN', DIR_BASE_CORE . '/bin');
 define('DIR_FILES_BIN_HTMLDIFF', DIR_LIBRARIES_3RDPARTY_CORE . '/htmldiff.py');
 define('DIR_FILES_BIN_UNZIP', '/usr/bin/unzip');
+if(!defined('DIR_FILES_BIN_ASPELL')) define('DIR_FILES_BIN_ASPELL', '/usr/bin/aspell'); // spellchecker
 
 # Asset library constants 
 define('AL_THUMBNAIL_WIDTH', '80');
@@ -296,7 +305,7 @@ define('ONLINE_NOW_TIMEOUT', 600);
 # Information for the home page in the system (used by the installation program)
 define("HOME_CID", 1);
 define("HOME_CTID", 1);
-define("HOME_NAME", "Home Page");
+define("HOME_NAME", "Home");
 define('HOME_UID', USER_SUPER_ID);
 define('HOME_HANDLE', "home");
 
@@ -345,11 +354,29 @@ if (!defined('DB_USE_CACHE')) {
 }
 $ADODB_ASSOC_CASE =  2;
 $ADODB_ACTIVE_CACHESECS = 300;
-$ADODB_CACHE_DIR = DIR_FILES_CACHE;
-define('ADODB_OUTP', 'concrete_log_query');
-define('APP_VERSION', '5.1.1');
+$ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
+define('APP_VERSION', '5.2.1');
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)
 define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number');
 define('APP_VERSION_LATEST_DOWNLOAD', 'http://www.concrete5.org/download/');
+
+# Marketplace Vars
+/* if (!defined('ENABLE_MARKETPLACE_SUPPORT')) {
+	define('ENABLE_MARKETPLACE_SUPPORT', true);
+} */
+if (!defined('MARKETPLACE_BLOCK_LIST_WS')) {
+	define('MARKETPLACE_BLOCK_LIST_WS', 'http://www.concrete5.org/tools/get_marketplace_block_list/');
+}
+if (!defined('MARKETPLACE_THEME_LIST_WS')) {
+	define('MARKETPLACE_THEME_LIST_WS', 'http://www.concrete5.org/tools/get_marketplace_theme_list/');
+}
+if (!defined('MARKETPLACE_THEME_PREVIEW_URL')) {
+	define('MARKETPLACE_THEME_PREVIEW_URL', 'http://www.concrete5.org/tools/preview_theme/');
+}
+
+define('MARKETPLACE_CONTENT_LATEST_THRESHOLD', 10800); // every three hours
+
+define('MARKETPLACE_DIRNAME_THEME_PREVIEW', 'previewable_themes');
+define('MARKETPLACE_THEME_PREVIEW_ASSETS_URL', 'http://www.concrete5.org/' . MARKETPLACE_DIRNAME_THEME_PREVIEW);
 
 require_once(DIR_LIBRARIES_CORE . '/loader.php');

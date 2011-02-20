@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class LoginController extends Controller {
@@ -11,6 +11,9 @@ class LoginController extends Controller {
 			$this->set('uNameLabel', t('Email Address'));
 		} else {
 			$this->set('uNameLabel', t('Username'));
+		}
+		if(strlen($_GET['uName'])) { // pre-populate the username if supplied
+			$this->set("uName",$_GET['uName']);
 		}
 	}
 	

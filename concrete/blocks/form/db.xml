@@ -23,7 +23,10 @@
 			<default value="0" />
 		</field>
 		<field name="recipientEmail" type="C" size="255">
-		</field>				
+		</field>		
+		<field name="displayCaptcha" type="i">
+			<default value="1"/>
+		</field>      		
 	</table>
 
 	<table name="btFormQuestions">
@@ -45,6 +48,14 @@
 		<field name="position" type="I">
 			<unsigned />
 			<default value="1000" />
+		</field>
+		<field name="width" type="I">
+			<unsigned />
+			<default value="50" />
+		</field>
+		<field name="height" type="I">
+			<unsigned />
+			<default value="3" />
 		</field>
 	</table>
 	

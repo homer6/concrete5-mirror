@@ -1,4 +1,4 @@
-<?php  
+<?php 
 /*
 require_once('_base_tools.php');
 require_once(DIR_CLASSES.'/toolbox/validation_tools.php');

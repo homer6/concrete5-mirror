@@ -1,4 +1,4 @@
-<?php  
+<?php 
 // Copyright (c) 2004-2005 ars Cognita Inc., all rights reserved
 /* ******************************************************************************
     Released under both BSD license and Lesser GPL library license. 
@@ -2100,7 +2100,7 @@ class adoSchema {
 	function ExtractSchema( $data = FALSE, $indent = '  ', $prefix = '' , $stripprefix=false) {
 		$old_mode = $this->db->SetFetchMode( ADODB_FETCH_NUM );
 		
-		$schema = '<?php  xml version="1.0"?>' . "\n"
+		$schema = '<?php xml version="1.0"?>' . "\n"
 				. '<schema version="' . $this->schemaVersion . '">' . "\n";
 		
 		if( is_array( $tables = $this->db->MetaTables( 'TABLES' , ($prefix) ? $prefix.'%' : '') ) ) {

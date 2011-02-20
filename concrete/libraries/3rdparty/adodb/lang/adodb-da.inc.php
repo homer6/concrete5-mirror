@@ -1,4 +1,4 @@
-<?php  
+<?php 
 // Arne Eckmann bananstat#users.sourceforge.net
 $ADODB_LANG_ARRAY = array (
   	    'LANG'                      => 'da',

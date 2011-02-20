@@ -38,7 +38,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 	
 	<div class="fieldRow" style="margin-top:16px">
 		<?php  echo t('Notify me by email when people submit this form')?>: 
-		<input name="notifyMeOnSubmission" type="checkbox" value="1" <?php  echo (intval($miniSurveyInfo['notifyMeOnSubmission'])>=1)?'checked':''?> onchange="miniSurvey.showRecipient(this)" onclick="miniSurvey.showRecipient(this)" />
+		<input name="notifyMeOnSubmission" type="checkbox" value="1" <?php  echo (intval($miniSurveyInfo['notifyMeOnSubmission'])>=1)?'checked="checked"':''?> onchange="miniSurvey.showRecipient(this)" onclick="miniSurvey.showRecipient(this)" />
 		<div id="recipientEmailWrap" class="fieldRow" style=" <?php  echo (intval($miniSurveyInfo['notifyMeOnSubmission'])==0)?'display:none':''?>">
 			<div class="fieldLabel"><?php  echo t('Recipient Email')?>:</div>
 			<div class="fieldValues">
@@ -47,11 +47,17 @@ $uh = Loader::helper('concrete/urls'); ?>
 			<div class="spacer"></div>
 		</div>
 	</div> 
+	
+	<div class="fieldRow">
+		<?php echo t('Solving a <a href="%s" target="_blank">CAPTCHA</a> Required to Post?', 'http://en.wikipedia.org/wiki/Captcha')?>
+        <input name="displayCaptcha" value="1" <?php  echo (intval($miniSurveyInfo['displayCaptcha'])>=1)?'checked="checked"':''?> type="checkbox" />
+	</div>	
+	
 </div> 
 
-<input type="hidden" id="qsID" name="qsID" type="text" value="<?php  echo intval($miniSurveyInfo['questionSetId'])?>" />           
-<input type="hidden" id="bID" name="bID" type="text" value="<?php  echo intval($miniSurveyInfo['bID'])?>" />            
-<input type="hidden" id="msqID" name="msqID" type="text" value="<?php  echo intval($msqID)?>" />         
+<input type="hidden" id="qsID" name="qsID" type="text" value="<?php  echo intval($miniSurveyInfo['questionSetId'])?>" />
+<input type="hidden" id="bID" name="bID" type="text" value="<?php  echo intval($miniSurveyInfo['bID'])?>" />
+<input type="hidden" id="msqID" name="msqID" type="text" value="<?php  echo intval($msqID)?>" />
 
 <div id="ccm-formBlockPane-add" class="ccm-formBlockPane" style=" <?php  echo (intval($miniSurveyInfo['bID'])==0)?'display:block':''?> ">
 	<div id="newQuestionBox">
@@ -74,8 +80,8 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<input name="answerType" type="radio" value="field" /> <?php  echo t('Text Field')?> &nbsp; <br>
 				<input name="answerType" type="radio" value="text" /> <?php  echo t('Text Area')?> &nbsp; <br>
 				<input name="answerType" type="radio" value="radios" /> <?php  echo t('Radio Buttons ')?> &nbsp; <br>
-				<input name="answerType" type="radio" value="select" /> <?php  echo t('Select Box')?> &nbsp; <Br>
-				<input name="answerType" type="radio" value="list" /> <?php  echo t('List Box')?> &nbsp; 				
+				<input name="answerType" type="radio" value="select" /> <?php  echo t('Select Box')?> &nbsp; <br>
+				<input name="answerType" type="radio" value="checkboxlist" /> <?php  echo t('Checkbox List')?> &nbsp;
 			</div>
 			<div class="spacer"></div>
 		</div>
@@ -85,6 +91,15 @@ $uh = Loader::helper('concrete/urls'); ?>
 			<div class="fieldValues">
 				<textarea id="answerOptions" name="answerOptions" cols="50" rows="4" style="width:90%"></textarea><br />
 				<?php  echo t('Put each answer options on a new line')?>
+			</div>
+			<div class="spacer"></div>
+		</div>	
+		
+		<div class="fieldRow" id="answerSettings">
+			<div class="fieldLabel"><?php  echo t('Settings')?>: </div>
+			<div class="fieldValues">
+				<?php  echo t('Text Area Width')?>: <input id="width" name="width" type="text" value="50" size="3"/> <br />
+				<?php  echo t('Text Area Height')?>: <input id="height" name="height" type="text" value="3" size="2"/>
 			</div>
 			<div class="spacer"></div>
 		</div>	
@@ -123,8 +138,8 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<input name="answerTypeEdit" type="radio" value="field" /> <?php  echo t('Text Field')?> &nbsp; <br>
 				<input name="answerTypeEdit" type="radio" value="text" /> <?php  echo t('Text Area')?> &nbsp; <br>
 				<input name="answerTypeEdit" type="radio" value="radios" /> <?php  echo t('Radio Buttons')?> &nbsp; <br>
-				<input name="answerTypeEdit" type="radio" value="select" /> <?php  echo t('Select Box')?> &nbsp; <Br>
-				<input name="answerTypeEdit" type="radio" value="list" /> <?php  echo t('List Box')?> &nbsp; 				
+				<input name="answerTypeEdit" type="radio" value="select" /> <?php  echo t('Select Box')?> &nbsp; <br>
+				<input name="answerTypeEdit" type="radio" value="checkboxlist" /> <?php  echo t('Checkbox List')?> &nbsp;
 			</div>
 			<div class="spacer"></div>
 		</div>
@@ -138,6 +153,15 @@ $uh = Loader::helper('concrete/urls'); ?>
 			<div class="spacer"></div>
 		</div>
 			
+		<div class="fieldRow" id="answerSettingsEdit">
+			<div class="fieldLabel"><?php  echo t('Settings')?>: </div>
+			<div class="fieldValues">
+				<?php  echo t('Text Area Width')?>: <input id="widthEdit" name="width" type="text" value="50" size="3"/> <br />
+				<?php  echo t('Text Area Height')?>: <input id="heightEdit" name="height" type="text" value="3" size="2"/>
+			</div>
+			<div class="spacer"></div>
+		</div>	
+		
 		<input id="cancelEditQuestion" name="cancelEdit" type="button" value="Cancel"/>
 		<input id="editQuestion" name="edit" type="button" value="Save Changes &raquo;"/>
 	</div>

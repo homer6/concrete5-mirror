@@ -46,12 +46,18 @@ jQuery.fn.dialog.getOptions = function(settings, node) {
 		var _width = node.attr('dialog-width');
 		var _height = node.attr('dialog-height');
 		var _title = node.attr('dialog-title');
+		var _draggable = node.attr('dialog-draggable');
+		var _element = node.attr('dialog-element');
 		var href = node.attr('href');
 		var _replace = node.attr('dialog-replace');
 	}
 	
 	if (typeof(_replace) != 'undefined') {
 		options.replace = _replace;
+	}
+
+	if (typeof(_element) != 'undefined') {
+		options.element = _element;
 	}
 	
 	if (typeof(_width) != 'undefined') {
@@ -66,8 +72,14 @@ jQuery.fn.dialog.getOptions = function(settings, node) {
 	if (typeof(_modal) != 'undefined') {
 		options.modal = _modal;
 	}
+	if (typeof(_draggable) != 'undefined') {
+		options.draggable = _draggable;
+	}
+
 	options.modal = (options.modal == "true" || options.modal == true) ? true : false;
 	options.replace = (options.replace == "true" || options.replace == true) ? true : false;
+	options.draggable = (options.draggable == "true" || options.draggable == true) ? true : false;
+	
 	options.href = href;
 	
 	if (typeof(settings) != 'undefined') {
@@ -101,17 +113,42 @@ jQuery.fn.dialog.isMacFF = function(fnd) {
 	}
 }
 
+jQuery.fn.dialog.getTotalOpen = function() {
+	return jQuery.fn.dialog.totalDialogs;
+}
+
 jQuery.fn.dialog.load = function(fnd) {
-	var url = encodeURI(fnd.href);
-	$("#ccm-dialog-content" + fnd.n).load(url += "&random=" + (new Date().getTime()),function(){//to do a post change this load method
+	if (fnd.element != null) {
+		// we are loading some content on the page rather than through AJAX
 		jQuery.fn.dialog.position(fnd);
 		jQuery.fn.dialog.hideLoader();
-		//$("#ccm-dialog-content").remove();
+		$("#ccm-dialog-content" + fnd.n).append($(fnd.element));
+		if ($(fnd.element).css('display') == 'none') {
+			$(fnd.element).show();
+		}
 		$("#ccm-dialog-content" + fnd.n + " .ccm-dialog-close").click(function() {
 			jQuery.fn.dialog.close(fnd);
 		});
 		$("#ccm-dialog-content" + fnd.n + " .dialog-launch").dialog();
-	});
+	} else {
+		var qsi = "?";
+		if (fnd.href.indexOf('?') > -1) {
+			qsi = '&';
+		}
+		var url = encodeURI(fnd.href);
+		
+		$("#ccm-dialog-content" + fnd.n).load(url += qsi + "random=" + (new Date().getTime()),function(){//to do a post change this load method
+			jQuery.fn.dialog.position(fnd);
+			jQuery.fn.dialog.hideLoader();
+			$("#ccm-dialog-content" + fnd.n + " .ccm-dialog-close").click(function() {
+				jQuery.fn.dialog.close(fnd);
+			});
+			$("#ccm-dialog-content" + fnd.n + " .dialog-launch").dialog();
+		});
+	}
+	if (typeof(fnd.onLoad) == 'function') {
+		fnd.onLoad();
+	}
 }
 
 jQuery.fn.dialog.hideLoader = function() {
@@ -142,6 +179,11 @@ jQuery.fn.dialog.close = function(fnd) {
 	jQuery.fn.dialog.dialogs.splice(jQuery.fn.dialog.totalDialogs, 1);
 	$("#TB_imageOff").unbind("click");
 	$("#TB_closeWindowButton" + fnd.n).unbind("click");
+
+	if (typeof fnd.onClose == "function") {
+		fnd.onClose();
+	}
+
 	if (ccm_animEffects) {
 		$("#ccm-dialog-window" + jQuery.fn.dialog.totalDialogs).fadeOut("fast",function(){
 			$('#ccm-dialog-window' + jQuery.fn.dialog.totalDialogs).trigger("unload").unbind().remove();
@@ -156,7 +198,7 @@ jQuery.fn.dialog.close = function(fnd) {
 		if (ccm_initialSiteActivated) {
 			ccm_activateSite();
 		}
-		if (!ccm_initialHeaderDeactivated) {
+		if (!ccm_initialHeaderDeactivated && typeof(ccm_initialHeaderDeactivated) == 'function') {
 			ccm_activateHeader();
 		}
 	} else {
@@ -164,10 +206,6 @@ jQuery.fn.dialog.close = function(fnd) {
 		jQuery.fn.dialog.activate(jQuery.fn.dialog.totalDialogs-1);
 	}
 
-	if (typeof fnd.onClose == "function") {
-		fnd.onClose();
-	}
-	
 	document.onkeydown = "";
 	document.onkeyup = ""; 
 	ccm_dialogOpen=0;
@@ -187,11 +225,15 @@ jQuery.fn.dialog.position = function(fnd) {
 }
 
 jQuery.fn.dialog.loadShell = function(fnd) {
+	var dragCursor = "";
+	if (fnd.draggable && ccm_dialogCanDrag) {
+		dragCursor = "style='cursor: move'";
+	}
 	if($("#ccm-dialog-window" + fnd.n).css("display") != "block"){
 		if(fnd.modal == false){//ajax no modal
-			$("#ccm-dialog-window" + fnd.n).append("<div class='ccm-dialog-title-bar-l'><div class='ccm-dialog-title-bar-r'><div class='ccm-dialog-title-bar' id='ccm-dialog-title-bar" + fnd.n + "'><div class='ccm-dialog-title' id='ccm-dialog-title" + fnd.n + "'>"+fnd.title+"</div><a href='javascript:void(0)' class='ccm-dialog-close'>" + ccmi18n.closeWindow + "</a></div></div></div><div id='ccm-dialog-content-wrapper'><div class='ccm-dialog-content-l'><div class='ccm-dialog-content-r'><div class='ccm-dialog-content' id='ccm-dialog-content" + fnd.n + "' style='width:"+fnd.contentWidth+"px;height:"+fnd.contentHeight+"px'></div></div></div></div>");
+			$("#ccm-dialog-window" + fnd.n).append("<div class='ccm-dialog-title-bar-l' " + dragCursor + "><div class='ccm-dialog-title-bar-r'><div class='ccm-dialog-title-bar' id='ccm-dialog-title-bar" + fnd.n + "'><div class='ccm-dialog-title' id='ccm-dialog-title" + fnd.n + "'>"+fnd.title+"</div><a href='javascript:void(0)' class='ccm-dialog-close'>" + ccmi18n.closeWindow + "</a></div></div></div><div id='ccm-dialog-content-wrapper'><div class='ccm-dialog-content-l'><div class='ccm-dialog-content-r'><div class='ccm-dialog-content' id='ccm-dialog-content" + fnd.n + "' style='width:"+fnd.contentWidth+"px;height:"+fnd.contentHeight+"px'></div></div></div></div>");
 		}else{//ajax modal
-			$("#ccm-dialog-window" + fnd.n).append("<div class='ccm-dialog-title-bar-l'><div class='ccm-dialog-title-bar-r'><div class='ccm-dialog-title-bar' id='ccm-dialog-title-bar" + fnd.n + "'><div class='ccm-dialog-title' id='ccm-dialog-title" + fnd.n + "'>"+fnd.title+"</div></div></div></div><div id='ccm-dialog-content-wrapper'><div class='ccm-dialog-content-l'><div class='ccm-dialog-content-r'><div class='ccm-dialog-content' id='ccm-dialog-content" + fnd.n + "' class='TB_modal' style='width:"+fnd.contentWidth+"px;height:"+fnd.contentHeight+"px;'>");	
+			$("#ccm-dialog-window" + fnd.n).append("<div class='ccm-dialog-title-bar-l' " + dragCursor + "><div class='ccm-dialog-title-bar-r'><div class='ccm-dialog-title-bar' id='ccm-dialog-title-bar" + fnd.n + "'><div class='ccm-dialog-title' id='ccm-dialog-title" + fnd.n + "'>"+fnd.title+"</div></div></div></div><div id='ccm-dialog-content-wrapper'><div class='ccm-dialog-content-l'><div class='ccm-dialog-content-r'><div class='ccm-dialog-content' id='ccm-dialog-content" + fnd.n + "' class='TB_modal' style='width:"+fnd.contentWidth+"px;height:"+fnd.contentHeight+"px;'>");	
 		}
 	}else{//this means the window is already up, we are just loading new content via ajax
 		$("#ccm-dialog-content" + fnd.n)[0].style.width = fnd.contentWidth +"px";
@@ -204,20 +246,27 @@ jQuery.fn.dialog.loadShell = function(fnd) {
 	});
 	$("#ccm-dialog-window" + fnd.n).append("<div class='ccm-dialog-content-bl'><div class='ccm-dialog-content-br'><div class='ccm-dialog-content-b'></div></div></div>");
 	$("#ccm-dialog-window" + fnd.n).show();
+	
+	if (fnd.draggable && ccm_dialogCanDrag) {
+		$("#ccm-dialog-window" + fnd.n).draggable({'handle': $('#ccm-dialog-title-bar' + fnd.n)});
+	}
 
 }
 
 jQuery.fn.dialog.overlay = function(fnd) {
-
 	if (fnd.n == 0) {
-		ccm_initialHeaderDeactivated = ccm_topPaneDeactivated;
+		if (ccm_uiLoaded) {
+			ccm_initialHeaderDeactivated = ccm_topPaneDeactivated;
+		}
 		ccm_initialSiteActivated = ccm_siteActivated;
 	}
 
-	ccm_hideMenus();
+	if (ccm_uiLoaded) {
+		ccm_hideMenus();
+		ccm_deactivateHeader();
+	}
 	ccm_deactivateSite();
-	ccm_deactivateHeader();
-
+	
 	if (fnd.zIndex) {
 		sz = fnd.zIndex + fnd.n;
 	} else {
@@ -225,7 +274,7 @@ jQuery.fn.dialog.overlay = function(fnd) {
 	}
 	
 	fnd.realZ = sz;
-	$("body").append("<div class='ccm-dialog-window' id='ccm-dialog-window" + fnd.n + "' style='z-index: " + sz + "'></div>");
+	$("body").append("<div class='ccm-dialog-window' id='ccm-dialog-window" + fnd.n + "' style='display: none; z-index: " + sz + "'></div>");
 
 	if(jQuery.fn.dialog.isMacFF(fnd)){
 		$("#TB_overlay" + fnd.n).addClass("TB_overlayMacFFBGHack");//use png overlay so hide flash
@@ -245,6 +294,7 @@ jQuery.fn.dialog.defaults = {
 	modal: true,
 	width: 500,
 	height: 500,
+	draggable: true,
 	replace: false,
 	title: 'CCM Dialog',
 	href: null
@@ -256,7 +306,8 @@ jQuery.fn.dialog.startZindex = 202;
 jQuery.fn.dialog.loaderImage = CCM_IMAGE_PATH + "/throbber_white_32.gif";
 
 var ccm_initialHeaderDeactivated;
-	var ccm_initialOverlay;
+var ccm_initialOverlay;
+var ccm_dialogCanDrag = (typeof($.fn.draggable) == 'function' && (!$.browser.safari));
 
 $(document).ready(function(){   
 	imgLoader = new Image();// preload image

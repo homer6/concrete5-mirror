@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -146,7 +146,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$arHandle = $a->getAreaHandle();
 			$c = $a->getAreaCollectionObject();
 			$cID = $c->getCollectionID();
-			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;areaName={$arHandle}&amp;mode=edit&amp;btask=add" . $step;
+			$valt = Loader::helper('validation/token');
+			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;areaName={$arHandle}&amp;mode=edit&amp;btask=add" . $step . '&' . $valt->getParameter();
 			return $str;			
 		}
 		
@@ -155,7 +156,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$arHandle = $a->getAreaHandle();
 			$c = $a->getAreaCollectionObject();
 			$cID = $c->getCollectionID();
-			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;areaName={$arHandle}&amp;mode=edit&amp;btask=alias" . $step;
+			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;areaName={$arHandle}&amp;mode=edit&amp;btask=alias" . $step . '&' . $valt->getParameter();
 			return $str;			
 		}
 			
@@ -441,10 +442,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$dirp = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
 				$dir = $dirp . '/' . $pkgHandle . '/' . DIRNAME_BLOCKS . '/' . $this->getBlockTypeHandle();
 			} else {
-				if (is_dir(DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle())) {
-					$dir = DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle();
-				} else {
+				if (is_dir(DIR_FILES_BLOCK_TYPES . '/' . $this->getBlockTypeHandle())) {
 					$dir = DIR_FILES_BLOCK_TYPES . '/' . $this->getBlockTypeHandle();
+				} else {
+					$dir = DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle();
 				}
 			}
 			return $dir;	
@@ -494,6 +495,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			extract($args);
 			$bt = $this;
 			global $c;
+			global $a;
 			if ($this->getPackageID() > 0) {
 				if (is_dir(DIR_PACKAGES . '/' . $this->getPackageHandle())) {
 					include(DIR_PACKAGES . '/' . $this->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $this->getBlockTypeHandle() . '/' . $file);
@@ -609,11 +611,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$c = $a->getAreaCollectionObject();
 			$cID = $c->getCollectionID();
 			$arHandle = $a->getAreaHandle();
+			$valt = Loader::helper('validation/token');
+			
 			
 			if ($alternateHandler) {
-				$str = $alternateHandler . "?cID={$cID}&arHandle={$arHandle}&btID={$btID}&mode=edit" . $step;
+				$str = $alternateHandler . "?cID={$cID}&arHandle={$arHandle}&btID={$btID}&mode=edit" . $step . '&' . $valt->getParameter();
 			} else {
-				$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&arHandle={$arHandle}&btID={$btID}&mode=edit" . $step;
+				$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&arHandle={$arHandle}&btID={$btID}&mode=edit" . $step . '&' . $valt->getParameter();
 			}
 			return $str;			
 		}
@@ -652,4 +656,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 
 	}
+	
+	
+	
+
 ?>

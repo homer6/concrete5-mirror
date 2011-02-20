@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 $ADODB_LANG_ARRAY = array (
 			'LANG'                      => 'en',

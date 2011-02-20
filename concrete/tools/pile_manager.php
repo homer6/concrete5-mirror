@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $u = new User();
@@ -6,7 +6,7 @@ if (!$u->isRegistered()) {
 	die(_("Access Denied."));
 }
 Loader::model('pile');
-
+$p = false;
 if ($_REQUEST['btask'] == 'add' || $_REQUEST['ctask'] == 'add') {
 	// add a block to a pile
 	$c = Page::getByID($_REQUEST['cID']);
@@ -161,8 +161,8 @@ $sp = Pile::getDefault();
 
 ?>
 
-<?php  echo t('Block added to scrapbook.')?>
+<?php echo t('Block added to scrapbook.')?>
 
 <br/><br/>
 
-<a href="javascript:void(0)" class="ccm-dialog-close ccm-button-left cancel"><span><em class="ccm-button-close"><?php  echo t('Close Window')?></em></span></a>
+<a href="javascript:void(0)" class="ccm-dialog-close ccm-button-left cancel"><span><em class="ccm-button-close"><?php echo t('Close Window')?></em></span></a>

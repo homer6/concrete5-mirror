@@ -1,4 +1,4 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 /**
@@ -23,9 +23,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
  */
 	class BlockRecord extends ADOdb_Active_Record {
 		
-		public function __construct($tbl) {
-			$this->_table = $tbl;
-			parent::__construct();
+		public function __construct($tbl = null) {
+			if ($tbl) {
+				$this->_table = $tbl;
+				parent::__construct();
+			}
 		}
 		
 	}
@@ -58,7 +60,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		/**
 		 * Creates a URL that can be posted or navigated to that, when done so, will automatically run the corresponding method inside the block's controller.
 		 * <code>
-		 *     <a href="<?php  echo $this->action('get_results')?>">Get the results</a>
+		 *     <a href="<?php echo $this->action('get_results')?>">Get the results</a>
 		 * </code>
 		 * @param string $task
 		 * @param strign $extraParams Adds items onto the end of the query string. Useful for anchor links, etc...
@@ -81,7 +83,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		*/
 		public function inc($file, $args = array()) {
 			extract($args);
-			$base = $this->getBlockPath();
+			$base = $this->getBlockPath($file);
 			extract($this->controller->getSets());
 			extract($this->controller->getHelperObjects());
 
@@ -94,7 +96,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @access public
 		 * @return string
 		*/
-		public function getBlockPath() {
+		public function getBlockPath($filename = null) {
 
 			$obj = $this->blockRenderObj;
 			if ($obj->getPackageID() > 0) {
@@ -103,7 +105,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				} else {
 					$base = DIR_PACKAGES_CORE . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
 				}
-			} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle())) {
+			} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $filename)) {
 				$base = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle();
 			} else {
 				$base = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle();
@@ -183,12 +185,23 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if ($this->controller->getRenderOverride() != '') { 
 				$_filename = $this->controller->getRenderOverride() . '.php';
 			}
-			if (!in_array($view, array('view', 'add', 'edit'))) {
+			
+			if ($view == 'scrapbook') {
+				if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK)) {
+					$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK;
+				} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK)) {
+					$template = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK;
+				} else {
+					$view = 'view';
+				}
+			}
+			
+			if (!in_array($view, array('view', 'add', 'edit', 'scrapbook'))) {
 				// then we're trying to render a custom view file, which we'll pass to the bottom functions as $_filename
 				$_filename = $view . '.php';
 				$view = 'view';
 			}
-
+			
 			switch($view) {
 				case 'view':
 					if (!isset($_filename)) {
@@ -236,6 +249,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 			
 			if (!isset($template)) {
+				$base = $this->getBlockPath($_filename);
 				$template = $base . '/' . $_filename;
 			}
 			

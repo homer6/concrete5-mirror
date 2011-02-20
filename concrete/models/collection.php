@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -25,11 +25,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	class Collection extends Object {
 		
 		var $cID;
+		protected $attributes = array();
 		/* version specific stuff */
 
 		function loadVersionObject($cvID = "ACTIVE") {
-			$this->vObj = new Version($this, $cvID);
-			$vp = new Permissions($this->vObj);
+			$cvID = CollectionVersion::getNumericalVersionID($this->getCollectionID(), $cvID);
+			$this->vObj = CollectionVersion::get($this, $cvID);
+			$vp = new Permissions($this->vObj);			
 			return $vp;
 		}
 		
@@ -77,7 +79,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					// duplicate them to our collection object (which is actually the same collection,
 					// but different version)
 					$b = Block::getByID($row['bID'], $this, $row['arHandle']);
-					$b->alias($nc);
+					if (is_object($b)) {
+						$b->alias($nc);
+					}
 				}
 			}
 
@@ -88,6 +92,24 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		/* attribute stuff */
+		
+		public function getAttribute($akHandle) {
+			if (is_object($this->vObj)) {
+				return $this->vObj->getAttribute($akHandle);
+			}
+		}
+		
+		public function getCollectionAttributeValue($ak) {
+			if (is_object($this->vObj)) {
+				if (is_object($ak)) {
+					return $this->vObj->getAttribute($ak->getCollectionAttributeKeyHandle());
+				} else {
+					return $this->vObj->getAttribute($ak);
+				}
+			}
+		}
+		
+		/*
 		
 		function getCollectionAttributeValue($ak) {
 			$db = Loader::db();
@@ -122,6 +144,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function getAttribute($akHandle) {
 			return $this->getCollectionAttributeValue($akHandle);
 		}
+		*/
+		
 		
 		public function setAttribute($akHandle, $value) {
 			$db = Loader::db();
@@ -135,6 +159,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				),
 				array('cID', 'cvID', 'akID'), true);
 			}
+			
+			$this->refreshCache();
 		}
 		
 		// get's an array of collection attribute objects that are attached to this collection. Does not get values
@@ -175,8 +201,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$value = implode("[|]", $_sub);
 				}
 			}
-
-		
+			$this->refreshCache();
 		}
 
 		/* area stuff */
@@ -350,19 +375,33 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 		}
 		
-		public function getBlocks($arHandle) {
+		public function refreshCache() {
+			$vo = $this->getVersionObject();
+			Cache::delete('page', $this->getCollectionID());
+			if (is_object($vo)) {
+				$vo->refreshCache();
+			}
+		}
+		
+		public function getBlocks($arHandle = false) {
 			
 			$db = Loader::db();
 			
-			$v = array($arHandle, $this->getCollectionID(), $this->getVersionID());
-			$q = "select Blocks.bID, Blocks.btID, BlockTypes.btHandle, BlockTypes.pkgID, Blocks.bIsActive, bName, bDateAdded, bDateModified, bFilename, Blocks.uID, CollectionVersionBlocks.cbOverrideAreaPermissions, CollectionVersionBlocks.isOriginal ";
-			$q .= "from CollectionVersionBlocks inner join Blocks on (CollectionVersionBlocks.bID = Blocks.bID) inner join BlockTypes on (Blocks.btID = BlockTypes.btID) where CollectionVersionBlocks.arHandle = ? ";
-			$q .= "and CollectionVersionBlocks.cID = ? and (CollectionVersionBlocks.cvID = ? or CollectionVersionBlocks.cbIncludeAll=1) order by CollectionVersionBlocks.cbDisplayOrder asc";
+			$v = array($this->getCollectionID(), $this->getVersionID());
+			if ($arHandle != false) {
+				$v[] = $arHandle;
+			}
+			$q = "select Blocks.bID, CollectionVersionBlocks.arHandle ";
+			$q .= "from CollectionVersionBlocks inner join Blocks on (CollectionVersionBlocks.bID = Blocks.bID) inner join BlockTypes on (Blocks.btID = BlockTypes.btID) where CollectionVersionBlocks.cID = ? and (CollectionVersionBlocks.cvID = ? or CollectionVersionBlocks.cbIncludeAll=1) ";
+			if ($arHandle != false) {
+				$q .= 'and CollectionVersionBlocks.arHandle = ? ';
+			}
+			$q .= "order by CollectionVersionBlocks.cbDisplayOrder asc";
 
 			$r = $db->query($q, $v);
 			$blocks = array();
 			while ($row = $r->fetchRow()) {
-				$ab = Block::populateManually($row, $this, $arHandle);
+				$ab = Block::getByID($row['bID'], $this, $row['arHandle']);
 				$btHandle = $ab->getBlockTypeHandle();
 				$blocks[] = $ab;
 			}

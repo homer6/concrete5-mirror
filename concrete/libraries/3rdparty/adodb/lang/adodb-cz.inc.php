@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 # Czech language, encoding by ISO 8859-2 charset (Iso Latin-2)
 # For convert to MS Windows use shell command:

@@ -1,11 +1,11 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 error_reporting(E_ALL ^ E_NOTICE);
 ini_set('display_errors', 1);
 if (!ini_get('safe_mode')) {
 	@set_time_limit(120);
 }
-
+define('ENABLE_CACHE', false);
 class InstallController extends Controller {
 
 	public $helpers = array('form', 'html');
@@ -23,6 +23,8 @@ class InstallController extends Controller {
 			"DIR_FILES_UPLOADED_ONSTATES"=>DIR_FILES_UPLOADED_ONSTATES,
 			"DIR_FILES_TRASH"=>DIR_FILES_TRASH,
 			"DIR_FILES_CACHE"=>DIR_FILES_CACHE,
+			"DIR_FILES_CACHE_CORE"=>DIR_FILES_CACHE_CORE,
+			"DIR_FILES_CACHE_DB"=>DIR_FILES_CACHE_DB,
 			"DIR_FILES_AVATARS"=>DIR_FILES_AVATARS,
 			"USER_SUPER_ID"=>USER_SUPER_ID,
 			"USER_SUPER"=>USER_SUPER,
@@ -162,6 +164,12 @@ class InstallController extends Controller {
 				if (!is_dir($this->installData['DIR_FILES_CACHE'])) {
 					mkdir($this->installData['DIR_FILES_CACHE']);
 				}
+				if (!is_dir($this->installData['DIR_FILES_CACHE_CORE'])) {
+					mkdir($this->installData['DIR_FILES_CACHE_CORE']);
+				}
+				if (!is_dir($this->installData['DIR_FILES_CACHE_DB'])) {
+					mkdir($this->installData['DIR_FILES_CACHE_DB']);
+				}
 				if (!is_dir($this->installData['DIR_FILES_AVATARS'])) {
 					mkdir($this->installData['DIR_FILES_AVATARS']);
 				}
@@ -298,19 +306,28 @@ class InstallController extends Controller {
 				
 						$d1 = SinglePage::add('/dashboard/sitemap');
 						$d2 = SinglePage::add('/dashboard/mediabrowser');
-						$d3 = SinglePage::add('/dashboard/form_results');
+						$d3 = SinglePage::add('/dashboard/reports');
+						$d3a = SinglePage::add('/dashboard/reports/forms');
+						$d3b = SinglePage::add('/dashboard/reports/logs');
+						$d3c = SinglePage::add('/dashboard/reports/database');
 						$d4 = SinglePage::add('/dashboard/users');
-						$d5 = SinglePage::add('/dashboard/users/attributes');
-						$d6 = SinglePage::add('/dashboard/groups');
-						$d7 = SinglePage::add('/dashboard/collection_types');
-						$d8 = SinglePage::add('/dashboard/collection_types/attributes');
-						$d9 = SinglePage::add('/dashboard/themes');
-						$d9a = SinglePage::add('/dashboard/themes/add');
-						$d9b = SinglePage::add('/dashboard/themes/inspect');
-						$d10 = SinglePage::add('/dashboard/install');
-						$d11 = SinglePage::add('/dashboard/jobs');
-						$d12 = SinglePage::add('/dashboard/logs');
-						$d13 = SinglePage::add('/dashboard/settings');
+						$d4a = SinglePage::add('/dashboard/users/search');
+						$d4b = SinglePage::add('/dashboard/users/add');
+						$d4c = SinglePage::add('/dashboard/users/groups');
+						$d4d = SinglePage::add('/dashboard/users/attributes');
+						$d7 = SinglePage::add('/dashboard/pages');
+						$d71 = SinglePage::add('/dashboard/pages/themes');
+						$d7a = SinglePage::add('/dashboard/pages/themes/add');
+						$d7b = SinglePage::add('/dashboard/pages/themes/inspect');
+						$d7c = SinglePage::add('/dashboard/pages/themes/customize');
+						$d7d = SinglePage::add('/dashboard/pages/themes/marketplace');
+						$d7e = SinglePage::add('/dashboard/pages/types');
+						$d7f = SinglePage::add('/dashboard/pages/types/attributes');
+						$d7g = SinglePage::add('/dashboard/pages/single');
+
+						$d8 = SinglePage::add('/dashboard/install');
+						$d9 = SinglePage::add('/dashboard/jobs');
+						$d10 = SinglePage::add('/dashboard/settings');
 						
 						// add home page
 						$dl1 = SinglePage::add('/download_file');
@@ -318,17 +335,23 @@ class InstallController extends Controller {
 						
 						$d1->update(array('cName'=>t('Sitemap'), 'cDescription'=>t('Whole world at a glance.')));
 						$d2->update(array('cName'=>t('File Manager'), 'cDescription'=>t('All documents and images.')));
-						$d3->update(array('cName'=>t('Form Results'), 'cDescription'=>t('Get submission data.')));
-						$d4->update(array('cName'=>t('Users'), 'cDescription'=>t('Add and manage people.')));
-						$d5->update(array('cName'=>t('User Attributes')));
-						$d6->update(array('cName'=>t('Groups'), 'cDescription'=>t('Permission levels for users.')));
-						$d7->update(array('cName'=>t('Page Types'), 'cDescription'=>t('What goes in your site.')));
-						$d8->update(array('cName'=>t('Custom Page Attributes'), 'cDescription'=>t('Setup Special Metadata for Pages')));
-						$d9->update(array('cName'=>t('Themes'), 'cDescription'=>t('Reskin your site.')));	
-						$d10->update(array('cName'=>t('Add Functionality'), 'cDescription'=>t('Install blocks to extend your site.')));
-						$d11->update(array('cName'=>t('Maintenance'), 'cDescription'=>t('Run common cleanup tasks.')));
-						$d12->update(array('cName'=>t('Logging'), 'cDescription'=>t('Keep tabs on your site.')));
-						$d13->update(array('cName'=>t('Sitewide Settings'), 'cDescription'=>t('Secure and setup your site.')));
+						$d3->update(array('cName'=>t('Reports'), 'cDescription'=>t('Get data from forms and logs.')));
+						$d3a->update(array('cName'=>t('Form Results'), 'cDescription'=>t('Get submission data.')));
+						$d3b->update(array('cName'=>t('Logs')));
+						$d3c->update(array('cName'=>t('Database')));						
+						$d4->update(array('cName'=>t('Users and Groups'), 'cDescription'=>t('Add and manage people.')));
+						$d4a->update(array('cName'=>t('Find Users')));
+						$d4b->update(array('cName'=>t('Add User')));
+						$d4c->update(array('cName'=>t('Groups')));
+						$d4d->update(array('cName'=>t('User Attributes')));
+						$d7->update(array('cName'=>t('Pages and Themes'), 'cDescription'=>t('Reskin your site.')));	
+						$d71->update(array('cName'=>t('Themes'), 'cDescription'=>t('Reskin your site.')));	
+						$d7e->update(array('cName'=>t('Page Types'), 'cDescription'=>t('What goes in your site.')));	
+						$d7g->update(array('cName'=>t('Single Pages')));	
+
+						$d8->update(array('cName'=>t('Add Functionality'), 'cDescription'=>t('Install blocks to extend your site.')));
+						$d9->update(array('cName'=>t('Maintenance'), 'cDescription'=>t('Run common cleanup tasks.')));
+						$d10->update(array('cName'=>t('Sitewide Settings'), 'cDescription'=>t('Secure and setup your site.')));
 				
 						// dashboard homepage
 						$dh2 = new DashboardHomepageView();
@@ -505,12 +528,16 @@ class InstallController extends Controller {
 						$fimage3 = $image3->getInstance();
 						$fimage4 = $image4->getInstance();
 						
-						
+						// this is an irritating hack.
 						if(DIR_FILES_UPLOADED != $this->installData['DIR_FILES_UPLOADED']) { // if we're calling install from another c5 install - move the file to the new install
 							rename(DIR_FILES_UPLOADED."/".$fimage1->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage1->getFilename());
 							rename(DIR_FILES_UPLOADED."/".$fimage2->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage2->getFilename());
 							rename(DIR_FILES_UPLOADED."/".$fimage3->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage3->getFilename());
 							rename(DIR_FILES_UPLOADED."/".$fimage4->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage4->getFilename());
+							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage1->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage1->getFilename());
+							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage2->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage2->getFilename());
+							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage3->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage3->getFilename());
+							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage4->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage4->getFilename());
 						}
 						
 						$jsData['fileNames'] = array(
@@ -650,7 +677,7 @@ class InstallController extends Controller {
 						//Job::runAllJobs();
 
 						// write the config file
-						$configuration = "<?php  \n";
+						$configuration = "<?php \n";
 						$configuration .= "define('DB_SERVER', '" . addslashes($_POST['DB_SERVER']) . "');\n";
 						$configuration .= "define('DB_USERNAME', '" . addslashes($_POST['DB_USERNAME']) . "');\n";
 						$configuration .= "define('DB_PASSWORD', '" . addslashes($_POST['DB_PASSWORD']) . "');\n";

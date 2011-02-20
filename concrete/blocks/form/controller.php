@@ -51,10 +51,10 @@ class FormBlockController extends BlockController {
 			$q = "select count(*) as total from {$this->btTable} where bID = ".intval($this->bID);
 			$total = $db->getOne($q);
 		}else $total = 0;
-		$v = array( $data['qsID'], $data['surveyName'], intval($data['notifyMeOnSubmission']), $data['recipientEmail'], $data['thankyouMsg'], intval($this->bID) );
+		$v = array( $data['qsID'], $data['surveyName'], intval($data['notifyMeOnSubmission']), $data['recipientEmail'], $data['thankyouMsg'], intval($data['displayCaptcha']), intval($this->bID) );
 		
-		$q = ($total > 0) ? "update {$this->btTable} set questionSetId = ?, surveyName=?, notifyMeOnSubmission=?, recipientEmail=?, thankyouMsg=? where bID = ?"
-			: "insert into {$this->btTable} (questionSetId,surveyName, notifyMeOnSubmission, recipientEmail, thankyouMsg, bID) values (?, ?, ?, ?, ?, ?)";		
+		$q = ($total > 0) ? "update {$this->btTable} set questionSetId = ?, surveyName=?, notifyMeOnSubmission=?, recipientEmail=?, thankyouMsg=?, displayCaptcha=? where bID = ?"
+			: "insert into {$this->btTable} (questionSetId, surveyName, notifyMeOnSubmission, recipientEmail, thankyouMsg, displayCaptcha, bID) values (?, ?, ?, ?, ?, ?, ?)";		
 
 		$rs = $db->query($q,$v); 
 		
@@ -83,8 +83,8 @@ class FormBlockController extends BlockController {
 			//duplicate questions records
 			$rs=$db->query("SELECT * FROM {$this->btQuestionsTablename} WHERE questionSetId=$oldQuestionSetId");
 			while( $row=$rs->fetchRow() ){
-				$v=array($newQuestionSetId,$row['question'],$row['inputType'],$row['options'],$row['position']);
-				$sql='INSERT INTO {$this->btQuestionsTablename} (questionSetId,question,inputType,options,position) VALUES (!,?,?,?,!)';
+				$v=array($newQuestionSetId,$row['question'],$row['inputType'],$row['options'],$row['position'],$row['width'],$row['height']);
+				$sql='INSERT INTO {$this->btQuestionsTablename} (questionSetId,question,inputType,options,position,width,height) VALUES (!,?,?,?,!,?,?)';
 			}
 		}
 	}
@@ -94,56 +94,81 @@ class FormBlockController extends BlockController {
 		$txt = Loader::helper('text');
 		$db = Loader::db();
 		//question set id
-		$qsID=intval($_POST['qsID']);	
+		$qsID=intval($_POST['qsID']); 
 		if($qsID==0)
 			throw new Exception(t("Oops, something is wrong with the form you posted (it doesn't have a question set id)."));
-		
-		//save main survey record	
-		$q="insert into {$this->btAnswerSetTablename} (questionSetId) values (?)";
-		$db->query($q,array($qsID));
-		$answerSetID=$db->Insert_ID();
-		
-		//get all questions for this question set
-		$rs=$db->query("SELECT * FROM {$this->btQuestionsTablename} WHERE questionSetId=?", array($qsID));
-		
-		$questionAnswerPairs=array();
-		
-		//loop through each question and get the answers 
-		while( $row=$rs->fetchRow() ){	
-			//save each answer
-			if($row['inputType']=='text'){
-				$answerLong=$txt->sanitize($_POST['Question'.$row['msqID']]);
-				$answer='';
-			}else{
-				$answerLong="";
-				$answer=$txt->sanitize($_POST['Question'.$row['msqID']]);
+
+		// check captcha if activated
+		if ($this->displayCaptcha) {
+			$captcha = Loader::helper('validation/captcha');
+			if (!$captcha->check()) {
+				$errors['captcha'] = t("Incorrect captcha code");
+				$_REQUEST['ccmCaptchaCode']='';
 			}
-			
-			$questionAnswerPairs[$row['msqID']]['question']=$row['question'];
-			$questionAnswerPairs[$row['msqID']]['answer']=$txt->sanitize($_POST['Question'.$row['msqID']]);
-			
-			if( is_array($answer) ) 
-				$answer=join(',',$answer);
-			$v=array($row['msqID'],$answerSetID,$answer,$answerLong);
-			$q="insert into {$this->btAnswersTablename} (msqID,asID,answer,answerLong) values (?,?,?,?)";
-			$db->query($q,$v);
-		}
-		$refer_uri=$_POST['pURI'];
-		if(!strstr($refer_uri,'?')) $refer_uri.='?';
+		}		
 		
-		if(intval($this->notifyMeOnSubmission)>0){
-			$mh = Loader::helper('mail');
-			$mh->to( $this->recipientEmail ); 
-			$mh->addParameter('formName', $this->surveyName);
-			$mh->addParameter('questionSetId', $this->questionSetId);
-			$mh->addParameter('questionAnswerPairs', $questionAnswerPairs); 
-			$mh->load('block_form_submission');
-			$mh->setSubject($this->surveyName.' '.t('Form Submission') ); 
-			//echo $mh->body.'<br>';
-			@$mh->sendMail(); 
-		} 
-		header("Location: ".$refer_uri."&surveySuccess=1&qsid=".$this->questionSetId);
-		die;
+		if(count($errors)){			
+			$this->set('formResponse', t('Please correct the following errors:') );
+			$this->set('errors',$errors);
+			$this->set('Entry',$E);			
+		}else{ //no form errors			
+			//save main survey record	
+			$q="insert into {$this->btAnswerSetTablename} (questionSetId) values (?)";
+			$db->query($q,array($qsID));
+			$answerSetID=$db->Insert_ID();
+			
+			//get all questions for this question set
+			$rs=$db->query("SELECT * FROM {$this->btQuestionsTablename} WHERE questionSetId=?", array($qsID));
+			
+			$questionAnswerPairs=array();
+			
+			//loop through each question and get the answers 
+			while( $row=$rs->fetchRow() ){	
+				//save each answer
+				if($row['inputType']=='checkboxlist'){
+					$answer = Array();
+					$answerLong="";
+					$keys = array_keys($_POST);
+					foreach ($keys as $key){
+						if (strpos($key, 'Question'.$row['msqID'].'_') === 0){
+							$answer[]=$txt->sanitize($_POST[$key]);
+						}
+					}
+				}else if($row['inputType']=='text'){
+					$answerLong=$txt->sanitize($_POST['Question'.$row['msqID']]);
+					$answer='';
+				}else{
+					$answerLong="";
+					$answer=$txt->sanitize($_POST['Question'.$row['msqID']]);
+				}
+				
+				$questionAnswerPairs[$row['msqID']]['question']=$row['question'];
+				$questionAnswerPairs[$row['msqID']]['answer']=$txt->sanitize($_POST['Question'.$row['msqID']]);
+				
+				if( is_array($answer) ) 
+					$answer=join(',',$answer);
+				$v=array($row['msqID'],$answerSetID,$answer,$answerLong);
+				$q="insert into {$this->btAnswersTablename} (msqID,asID,answer,answerLong) values (?,?,?,?)";
+				$db->query($q,$v);
+			}
+			$refer_uri=$_POST['pURI'];
+			if(!strstr($refer_uri,'?')) $refer_uri.='?';
+			
+			if(intval($this->notifyMeOnSubmission)>0){
+				$mh = Loader::helper('mail');
+				$mh->to( $this->recipientEmail ); 
+				$mh->addParameter('formName', $this->surveyName);
+				$mh->addParameter('questionSetId', $this->questionSetId);
+				$mh->addParameter('questionAnswerPairs', $questionAnswerPairs); 
+				$mh->load('block_form_submission');
+				$mh->setSubject($this->surveyName.' '.t('Form Submission') ); 
+				//echo $mh->body.'<br>';
+				@$mh->sendMail(); 
+			} 
+			//$_REQUEST=array();			
+			header("Location: ".$refer_uri."&surveySuccess=1&qsid=".$this->questionSetId);
+			die;
+		}
 	}		
 	
 	function delete() {
@@ -181,7 +206,7 @@ class FormBlockController extends BlockController {
  *
  * @package Blocks
  * @subpackage BlockTypes
- * @author 
+ * @author Tony Trupp <tony@concrete5.org>
  * @copyright  Copyright (c) 2003-2008 Concrete5. (http://www.concrete5.org)
  * @license    http://www.concrete5.org/license/     MIT License
  *
@@ -266,6 +291,7 @@ class MiniSurvey{
 		function addEditQuestion($values,$withOutput=1){
 			$jsonVals=array();
 			$values['options']=str_replace(array("\r","\n"),'%%',$values['options']); 
+			if(strtolower($values['inputType'])=='undefined')  $values['inputType']='field';
 			
 			//set question set id, or create a new one if none exists
 			if(intval($values['qsID'])==0) $values['qsID']=time();
@@ -277,14 +303,19 @@ class MiniSurvey{
 				$jsonVals['noRequired']=1;
 			}else{
 				if(intval($values['msqID'])>0){ 
+					$width = $height = 0;
+					if ($values['inputType'] == 'text'){
+						$width  = $this->limitRange(intval($values['width']), 20, 500);
+						$height = $this->limitRange(intval($values['height']), 1, 100); 
+					}
 					$dataValues=array(intval($values['qsID']), trim($values['question']), $values['inputType'],
-								      $values['options'], intval($values['position']), intval($values['msqID']) );			
-					$sql='UPDATE btFormQuestions SET questionSetId=?, question=?, inputType=?, options=?, position=? WHERE msqID=?';
+								      $values['options'], intval($values['position']), $width, $height, intval($values['msqID']) );			
+					$sql='UPDATE btFormQuestions SET questionSetId=?, question=?, inputType=?, options=?, position=?, width=?, height=? WHERE msqID=?';
 					$jsonVals['mode']='"Edit"';
 				}else{ 
-					$dataValues=array( intval($values['qsID']), trim($values['question']), $values['inputType'],
-								      $values['options'], 1000 );			
-					$sql='INSERT INTO btFormQuestions (questionSetId,question,inputType,options,position) VALUES (?,?,?,?,?)';
+					$dataValues=array(intval($values['qsID']), trim($values['question']), $values['inputType'],
+								     $values['options'], 1000, intval($values['width']), intval($values['height']) );			
+					$sql='INSERT INTO btFormQuestions (questionSetId,question,inputType,options,position,width,height) VALUES (?,?,?,?,?,?,?)';
 					$jsonVals['mode']='"Add"';
 				}
 				$result=$this->db->query($sql,$dataValues); 
@@ -323,20 +354,50 @@ class MiniSurvey{
 			return $db->getOne( 'SELECT count(*) FROM btFormAnswerSet WHERE questionSetId='.intval($qsID) );
 		}		
 		
-		function loadSurvey($qsID,$showEdit=false){
+		function loadSurvey($qsID,$showEdit=false,$bID=0){
 			//loading questions	
 			$questionsRS=self::loadQuestions($qsID);
 		
 			if(!$showEdit){
 				echo '<table class="formBlockSurveyTable">';					
 				while( $questionRow=$questionsRS->fetchRow() ){	
-					echo '<tr>
-							<td valign="top" class="question">'.$questionRow['question'].'</td>
-							<td valign="top">'.$this->loadInputType($questionRow,$showEdit).'</td>';
-					echo '</tr>';
+					// this special view logic for the checkbox list isn't doing it for me
+					/*
+					if ($questionRow['inputType'] == 'checkboxlist' && strpos($questionRow['options'], '%%') === false){
+						echo '<tr>
+						        <td valign="top" colspan="2" class="question">
+						          <div class="checkboxItem">
+						            <div class="checkboxPair">'.$this->loadInputType($questionRow,$showEdit).$questionRow['question'].'</div>
+						          </div>
+						        </td>
+						      </tr>';
+					} else { */
+						echo '<tr>
+						        <td valign="top" class="question">'.$questionRow['question'].'</td>
+						        <td valign="top">'.$this->loadInputType($questionRow,showEdit).'</td>
+						      </tr>';
+					//}
 				}			
+				$surveyBlockInfo = $this->getMiniSurveyBlockInfoByQuestionId($qsID,intval($bID));
+				
+				if($surveyBlockInfo['displayCaptcha']) {
+				  echo '<tr><td colspan="2">';
+   				echo(t('Please type the letters and numbers shown in the image.'));	
+   				echo '</td></tr><tr><td>&nbsp;</td><td>';
+   				
+   				$captcha = Loader::helper('validation/captcha');				
+   				$captcha->display();
+   				print '<br/>';
+   				$captcha->showInput();		
+   
+   				//echo isset($errors['captcha'])?'<span class="error">' . $errors['captcha'] . '</span>':'';
+				  echo '</td></tr>';
+   				
+   			}
+			
 				echo '<tr><td>&nbsp;</td><td><input class="formBlockSubmitButton" name="Submit" type="submit" value="'.t('Submit').'" /></td></tr>';
 				echo '</table>';
+				
 			}else{
 				echo '<div id="miniSurveyTableWrap"><div id="miniSurveyPreviewTable" class="miniSurveyTable">';					
 				while( $questionRow=$questionsRS->fetchRow() ){	 ?>
@@ -359,34 +420,55 @@ class MiniSurvey{
 		}
 		
 		function loadInputType($questionData,$showEdit){
-			$options=explode('%%',$questionData['options']);				
+			$options=explode('%%',$questionData['options']);
+			$msqID=intval($questionData['msqID']);
 			switch($questionData['inputType']){			
-				case 'list': 
-					// return 'what to do with lists?'; 				
-					foreach($options as $option)
-						$html.= '<option >'.trim($option).'</option>';
-					return '<select name="Question'.$questionData['msqID'].'[]" size="4" multiple >'.$html.'</select>';							
-			
+				case 'checkboxlist': 
+					// this is looking really crappy so i'm going to make it behave the same way all the time - andrew
+					/*
+					if (count($options) == 1){
+						if(strlen(trim($options[0]))==0) continue;
+						$checked=($_REQUEST['Question'.$msqID.'_0']==trim($options[0]))?'checked':'';
+						$html.= '<input name="Question'.$msqID.'_0" type="checkbox" value="'.trim($options[0]).'" '.$checked.' />';
+					}else{
+					*/
+					$html.= '<div class="checkboxList">'."\r\n";
+					for ($i = 0; $i < count($options); $i++) {
+						if(strlen(trim($options[$i]))==0) continue;
+						$checked=($_REQUEST['Question'.$msqID.'_'.$i]==trim($options[$i]))?'checked':'';
+						$html.= '  <div class="checkboxPair"><input name="Question'.$msqID.'_'.$i.'" type="checkbox" value="'.trim($options[$i]).'" '.$checked.' />&nbsp;'.$options[$i].'</div>'."\r\n";
+					}
+					$html.= '</div>';
+					//}
+					return $html;
+
 				case 'select':
-					if($this->frontEndMode)
-						$html.= '<option value="">----</option>';					
-					foreach($options as $option)
-						$html.= '<option >'.trim($option).'</option>';
-					return '<select name="Question'.$questionData['msqID'].'" >'.$html.'</select>';
+					if($this->frontEndMode){
+						$selected=(!$_REQUEST['Question'.$msqID])?'selected':'';
+						$html.= '<option value="" '.$selected.'>----</option>';					
+					}
+					foreach($options as $option){
+						$checked=($_REQUEST['Question'.$msqID]==trim($option))?'selected':'';
+						$html.= '<option '.$checked.'>'.trim($option).'</option>';
+					}
+					return '<select name="Question'.$msqID.'" >'.$html.'</select>';
 								
 				case 'radios':
 					foreach($options as $option){
 						if(strlen(trim($option))==0) continue;
-						$html.= '<div class="radioPair"><input name="Question'.$questionData['msqID'].'" type="radio" value="'.trim($option).'" />&nbsp;'.$option.'</div>';
+						$checked=($_REQUEST['Question'.$msqID]==trim($option))?'checked':'';
+						$html.= '<div class="radioPair"><input name="Question'.$msqID.'" type="radio" value="'.trim($option).'" '.$checked.' />&nbsp;'.$option.'</div>';
 					}
 					return $html;
 					
 				case 'text':
-					return '<textarea name="Question'.$questionData['msqID'].'" cols="50" rows="4" style="width:95%"></textarea>';
-					
+					$val=($_REQUEST['Question'.$msqID])?$_REQUEST['Question'.$msqID]:'';
+					return '<textarea name="Question'.$msqID.'" cols="'.$questionData['width'].'" rows="'.$questionData['height'].'" style="width:95%">'.$val.'</textarea>';
+					;
 				case 'field':
 				default:
-					return '<input name="Question'.$questionData['msqID'].'" type="field" />';
+					$val=($_REQUEST['Question'.$msqID])?$_REQUEST['Question'.$msqID]:'';
+					return '<input name="Question'.$msqID.'" type="text" value="'.stripslashes(htmlspecialchars($val)).'" />';
 			}
 		}
 		
@@ -394,6 +476,14 @@ class MiniSurvey{
 			$rs=$this->db->query('SELECT * FROM btForm WHERE bID='.intval($bID).' LIMIT 1' );
 			return $rs->fetchRow();
 		}
+		
+		function getMiniSurveyBlockInfoByQuestionId($qsID,$bID=0){
+			$sql='SELECT * FROM btForm WHERE questionSetId='.intval($qsID);
+			if(intval($bID)>0) $sql.=' AND bID='.$bID;
+			$sql.=' LIMIT 1'; 
+			$rs=$this->db->query( $sql );
+			return $rs->fetchRow();
+		}		
 		
 		function reorderQuestions($qsID=0,$qIDs){
 			$qIDs=explode(',',$qIDs);
@@ -406,5 +496,11 @@ class MiniSurvey{
 				$positionNum++;
 			}
 		}		
+
+		function limitRange($val, $min, $max){
+			$val = ($val < $min) ? $min : $val;
+			$val = ($val > $max) ? $max : $val;
+			return $val;
+		}
 }	
 ?>

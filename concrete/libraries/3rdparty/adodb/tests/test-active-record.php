@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 	include_once('../adodb.inc.php');
 	include_once('../adodb-active-record.inc.php');

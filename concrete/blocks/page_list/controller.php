@@ -1,11 +1,11 @@
-<?php  
+<?php 
 
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	class PageListBlockController extends BlockController {
 
 		protected $btTable = 'btPageList';
-		protected $btInterfaceWidth = "430";
-		protected $btInterfaceHeight = "300";
+		protected $btInterfaceWidth = "500";
+		protected $btInterfaceHeight = "350";
 		
 		/** 
 		 * Used for localization. If we want to localize the name/description we have to include this
@@ -25,6 +25,7 @@
 		}
 		
 		function getPages($query = null) {
+			Loader::model('page_list');
 			$db = Loader::db();
 			$bID = $this->bID;
 			if ($this->bID) {
@@ -43,78 +44,60 @@
 			}
 			
 
+			$pl = new PageList();
+			
 			$cArray = array();
 
 			switch($row['orderBy']) {
 				case 'display_asc':
-					$orderBy = "order by Pages.cDisplayOrder asc";
+					$pl->sortByDisplayOrder();
 					break;
 				case 'display_desc':
-					$orderBy = "order by Pages.cDisplayOrder desc";
+					$pl->sortByDisplayOrderDescending();
 					break;
 				case 'chrono_asc':
-					$orderBy = "order by cvDatePublic asc";
+					$pl->sortByPublicDate();
 					break;
 				case 'alpha_asc':
-					$orderBy = "order by cvName asc";
+					$pl->sortByName();
 					break;
 				case 'alpha_desc':
-					$orderBy = "order by cvName desc";
+					$pl->sortByNameDescending();
 					break;
 				default:
-					$orderBy = "order by cvDatePublic desc";
+					$pl->sortByPublicDateDescending();
 					break;
 			}
 
 			$num = (int) $row['num'];
+			
+			if ($num > 0) {
+				$pl->setItemsPerPage($num);
+			}
 
 			$cParentID = ($row['cThis']) ? $this->cID : $row['cParentID'];
 			
-			$filter = "where Pages.cPointerExternalLink is null and Pages.cIsTemplate = 0 ";
-			$filter .= " AND  CollectionVersions.cvName!='' ";
+			if ($this->displayFeaturedOnly == 1) {
+				$pl->filterByIsFeatured(1);
+			}
 			
+			$pl->filter('cvName', '', '!=');			
+		
 			if ($row['ctID']) {
-				$filter .= "and Pages.ctID = '{$row['ctID']}' ";
+				$pl->filterByCollectionTypeID($row['ctID']);
 			}
 
 			if ($row['cParentID'] != 0) {
-				$filter .= "and Pages.cParentID = '{$cParentID}' and Pages.cIsTemplate = 0 ";
-			}
-			
-			if (($query != null) || ($query != "")) {
-				$filter .= "and ((";
-				$filter .= "CollectionVersions.cvName like '%{$query}%'";
-				$filter .= ") or (";
-				$filter .= "CollectionVersions.cvDescription like '%{$query}%'";
-				$filter .= "))";
+				$pl->filterByParentID($cParentID);
 			}
 
-			$q = "select DISTINCT Pages.cID from Pages
-			left join PagePaths on (Pages.cID = PagePaths.cID)
-			left join PagePermissions on (Pages.cID = PagePermissions.cID)
-			left join CollectionVersions on (CollectionVersions.cID = Pages.cID and CollectionVersions.cvIsApproved = 1)
-			{$filter} {$orderBy} ";
-
-			//echo $q;
-			
-			$r2 = $db->query($q);
-			
-			if ($r2) {
-				while ($row = $r2->fetchRow()) {
-					$nc = Page::getByID($row['cID']);
-					$nc->loadVersionObject();
-					if ($nc->isSystemPage()) {
-						continue;
-					}
-					$cArray[] = $nc;
-					if (count($cArray) == $num) {
-						break;
-					}
-				}
-				$r2->free();
-				return $cArray;
+			if ($num > 0) {
+				$pages = $pl->getPage();
+			} else {
+				$pages = $pl->get();
 			}
-			$r->free();
+			
+			return $pages;
 		}
 		
 		public function view() {
@@ -136,6 +119,7 @@
 			$args['cThis'] = ($args['cParentID'] == $this->cID) ? '1' : '0';
 			$args['cParentID'] = ($args['cParentID'] == 'OTHER') ? $args['cParentIDValue'] : $args['cParentID'];
 			$args['truncateSummaries'] = ($args['truncateSummaries']) ? '1' : '0';
+			$args['displayFeaturedOnly'] = ($args['displayFeaturedOnly']) ? '1' : '0';
 			$args['truncateChars'] = intval($args['truncateChars']); 
 
 			parent::save($args);
@@ -147,7 +131,9 @@
 			if(!$b) return '';
 			$btID = $b->getBlockTypeID();
 			$bt = BlockType::getByID($btID);
-			$rssUrl = $uh->getBlockTypeToolsURL($bt)."/rss?bID=".$b->getBlockID()."&cID=".$b->getBlockCollectionID()."&arHandle=".$b->getAreaHandle();
+			$c = $b->getBlockCollectionObject();
+			$a = $b->getBlockAreaObject();
+			$rssUrl = $uh->getBlockTypeToolsURL($bt)."/rss?bID=".$b->getBlockID()."&cID=".$c->getCollectionID()."&arHandle=" . $a->getAreaHandle();
 			return $rssUrl;
 		}
 	}

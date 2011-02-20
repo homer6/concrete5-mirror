@@ -1,6 +1,6 @@
 /* HTML Tag Redefinition */
 html, body {height: 100%;  }
-body {background: #fff; text-align: center; padding: 0px; margin: 0px; }
+body {/* customize_background */ background-color: #ffffff; /* customize_background */ text-align: center; padding: 0px; margin: 0px; }
 img {border: 0px}
 a { cursor:pointer}
 
@@ -11,8 +11,11 @@ div.ccm-error-response {color: #f00; margin-bottom: 12px}
 #page{ width:800px; margin:auto; text-align:left }
 #page #headerSpacer{ height:64px }
 #page #header{ position:relative; } 
-#page #header #logo{ color:#999; font-size:32px; font-family:Arial, Helvetica, sans-serif; line-height: auto; margin-bottom: 0px; padding: 0px; margin-top:8px; cursor:pointer;  left:0px ; z-index:10; width:auto; float:left; position: relative }
-#page #header #logo a{ color:#999; text-decoration:none;}
+#page #header #logo{ color:#999; font-size:32px; 
+	font-family:Arial, Helvetica, sans-serif; 
+	line-height: auto; 
+	margin-bottom: 0px; padding: 0px; margin-top:8px; cursor:pointer;  left:0px ; z-index:10; width:auto; float:left; position: relative }
+#page #header #logo a{ /* customize_header_logo */color:#999; /* customize_header_logo */ text-decoration:none;}
 
 #page #header #headerNav{ position: absolute; top: 14px; right: 0px; z-index:2; width:100%; overflow:visible;}
 #page #header ul.nav-header{ list-style:none; margin:0px; padding:0px; width:auto; z-index:2; overflow:visible; float: right}
@@ -66,3 +69,5 @@ div.ccm-error-response {color: #f00; margin-bottom: 12px}
 div.code {border: 1px solid #ddd; background: #eee; padding: 10px}
 div.spacer,div.ccm-spacer{ clear:both; font-size:1px; line-height:1px }
 .noTopSpace{margin-top:0px; padding-top:0px}
+
+/* customize_miscellaneous */ /* customize_miscellaneous */

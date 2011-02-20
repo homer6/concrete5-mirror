@@ -1,7 +1,7 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
-$uc = Page::getByPath("/dashboard/groups");
+$uc = Page::getByPath("/dashboard/users/groups");
 $ucp = new Permissions($uc);
 if (!$ucp->canRead()) {
 	die(_("You have no access to groups."));
@@ -9,58 +9,62 @@ if (!$ucp->canRead()) {
 
 if (!$_REQUEST['group_submit_search']) { ?>
 <div id="ccm-group-search-wrapper">
-<?php   } ?>
+<?php  } ?>
 
-<?php   
+<?php  
 Loader::model('search/group');
-$gl = new GroupSearch($_GET);
-if ($gl->getTotal() > 0) {
-	$gResults = $gl->getResult($_GET['sort'], $_GET['start'], $_GET['order'], 40);
-	$pOptions = $gl->paging($_GET['start'], $_GET['order'], 10);
+$gl = new GroupSearch();
+if (isset($_GET['gKeywords'])) {
+	$gl->filterByKeywords($_GET['gKeywords']);
 }
+
+$gResults = $gl->getPage();
 
 ?>
 
-<form id="ccm-group-search" method="get" action="<?php  echo REL_DIR_FILES_TOOLS_REQUIRED?>/select_group/">
+<form id="ccm-group-search" method="get" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/select_group/">
 <div id="ccm-group-search-fields">
-<input type="text" id="ccm-group-search-keywords" name="gKeywords" value="<?php  echo $_REQUEST['gKeywords']?>" class="ccm-text" style="width: 100px" />
-<input type="submit" value="<?php  echo t('Search')?>" />
+<input type="text" id="ccm-group-search-keywords" name="gKeywords" value="<?php echo $_REQUEST['gKeywords']?>" class="ccm-text" style="width: 100px" />
+<input type="submit" value="<?php echo t('Search')?>" />
 <input type="hidden" name="group_submit_search" value="1" />
 </div>
 </form>
 
-<?php   if ($gl->getTotal() > 0) { ?>
+<?php  if (count($gResults) > 0) { 
 
-<?php   foreach ($gResults as $g) { ?>
+	$gl->displaySummary();
+
+	foreach ($gResults as $g) { ?>
 
 	<div class="ccm-group">
-		<a class="ccm-group-inner" id="g<?php  echo $g['gID']?>" group-id="<?php  echo $g['gID']?>" group-name="<?php  echo $g['gName']?>" href="javascript:void(0)" style="background-image: url(<?php  echo ASSETS_URL_IMAGES?>/icons/group.png)"><?php  echo $g['gName']?></a>
-		<div class="ccm-group-description"><?php  echo $g['gDescription']?></div>
+		<a class="ccm-group-inner" id="g<?php echo $g['gID']?>" group-id="<?php echo $g['gID']?>" group-name="<?php echo $g['gName']?>" href="javascript:void(0)" style="background-image: url(<?php echo ASSETS_URL_IMAGES?>/icons/group.png)"><?php echo $g['gName']?></a>
+		<div class="ccm-group-description"><?php echo $g['gDescription']?></div>
 	</div>
 
 
-<?php   }
+<?php  } ?>
 
-if ($pOptions['needPaging']) { 
-	$pOptions['script'] = REL_DIR_FILES_TOOLS_REQUIRED . '/select_group';	?>
-	<div id="ccm-group-paging">
-	<?php   include(DIR_FILES_ELEMENTS_CORE . '/search_results_paging.php'); ?>
-	</div>
-<?php   }
+<div id="ccm-group-paging">
+<?php 
+$url = REL_DIR_FILES_TOOLS_REQUIRED . '/select_group?gKeywords=' . $_REQUEST['gKeywords'] . '&ccm_paging_p=%pageNum%';
+$gl->displayPaging($url);
+?>
+</div>
 
+<?php 
 
 } else { ?>
 
-	<p><?php  echo t('No groups found.')?></p>
+	<p><?php echo t('No groups found.')?></p>
 	
-<?php   } ?>
+<?php  } ?>
 
-<?php   if (!$_REQUEST['group_submit_search']) { ?>
+<?php  if (!$_REQUEST['group_submit_search']) { ?>
 
 </div>
 
 
-<?php   } ?>
+<?php  } ?>
 
 <script type="text/javascript">
 $(function() {

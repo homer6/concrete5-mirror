@@ -1,4 +1,4 @@
-<?php  
+<?php 
 #
 # Markdown  -  A text-to-HTML conversion tool for web writers
 #
@@ -328,7 +328,7 @@ class Markdown_Parser {
 							  [ ]*
 							  \n?				# maybe *one* newline
 							  [ ]*
-							<?php  (\S+?)>?			# url = $2
+							<?php (\S+?)>?			# url = $2
 							  [ ]*
 							  \n?				# maybe one newline
 							  [ ]*
@@ -473,7 +473,7 @@ class Markdown_Parser {
 					[ ]*
 					(?=\n{2,}|\Z)		# followed by a blank line or end of document
 			
-			| # PHP and ASP-style processor instructions (<?php   and <%)
+			| # PHP and ASP-style processor instructions (<?php  and <%)
 			
 					[ ]{0,'.$less_than_tab.'}
 					(?s:

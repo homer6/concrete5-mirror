@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -68,24 +68,38 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (is_array($args)) {
 				extract($args);
 			}
-			if (file_exists(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php')) {
-				include(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php');
-			} else {
+			if (file_exists(DIR_FILES_ELEMENTS . '/' . $file . '.php')) {
 				include(DIR_FILES_ELEMENTS . '/' . $file . '.php');
+			} else {
+				include(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php');
 			}
 		}
 
 		/** 
 		 * Loads a block's controller/class into memory. 
 		 * <code>
-		 * <?php   Loader::block('autonav'); ?>
+		 * <?php  Loader::block('autonav'); ?>
 		 * </code>
 		 */
 		public function block($bl) {
 			if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER)) {
 				require_once(DIR_FILES_BLOCK_TYPES . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER);
-			} else {
+			} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER)) {
 				require_once(DIR_FILES_BLOCK_TYPES_CORE . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER);
+			} else {
+				// we haven't found it anywhere so we need to try applications
+				// this is last because it's kind of a performance drain to run all the time
+				// but that will be less of a problem when we cache the block types request
+				$bt = BlockType::getByHandle($bl);
+				if (is_object($bt)) { 
+					$pkg = $bt->getPackageHandle();
+					
+					if (file_exists(DIR_PACKAGES . '/' . $pkg . '/' . DIRNAME_BLOCKS . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER)) {
+						require_once(DIR_PACKAGES . '/' . $pkg . '/' . DIRNAME_BLOCKS . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER);		
+					} else if (file_exists(DIR_PACKAGES . '/' . $pkg . '/' . DIRNAME_BLOCKS . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER)) {
+						require_once(DIR_PACKAGES_CORE . '/' . $pkg . '/' . DIRNAME_BLOCKS . '/' . $bl . '/' . FILENAME_BLOCK_CONTROLLER);
+					}
+				}
 			}
 		}
 		
@@ -104,7 +118,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		/** 
 		 * Returns the database object, or loads it if not yet created
 		 * <code>
-		 * <?php  
+		 * <?php 
 		 * $db = Loader::db();
 		 * $db->query($sql);
 		 * </code>
@@ -126,7 +140,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						$_db->setDatabaseObject($_dba);
 					} else if (defined('DB_SERVER')) {
 						$v = View::getInstance();
-						$v->renderError(t('Unable to connect to database.'), t('A database error occurred while processing this request.'), $e);
+						$v->renderError(t('Unable to connect to database.'), t('A database error occurred while processing this request.'));
 					}
 				} else {
 					return false;
@@ -139,9 +153,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		/** 
 		 * Loads a helper file. If the same helper file is contained in both the core concrete directory and the site's directory, it will load the site's first, which could then extend the core.
 		 */
-		public function helper($file) {
+		public function helper($file, $pkgHandle = false) {
 			// loads and instantiates the object
-			if (file_exists(DIR_HELPERS . '/' . $file . '.php')) {
+			if ($pkgHandle != false) {
+				$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
+				$class = Object::camelcase($file) . "Helper";
+				require_once($dir . '/' . $pkgHandle . '/' . DIRNAME_HELPERS . '/' . $file . '.php');
+			} else if (file_exists(DIR_HELPERS . '/' . $file . '.php')) {
 				// first we check if there's an object of the SAME kind in the core. If so, then we load the core first, then, we load the second one (site)
 				// and we hope the second one EXTENDS the first
 				if (file_exists(DIR_HELPERS_CORE . '/' . $file . '.php')) {
@@ -230,13 +248,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		/** 
 		 * Gets the path to a particular page type controller
 		 */
-		public function pageTypeControllerPath($ctHandle, $pkgHandle = null) {
+		public function pageTypeControllerPath($ctHandle) {
+			
+			Loader::model('collection_types');
+			$ct = CollectionType::getByHandle($ctHandle);
+			$pkgHandle = $ct->getPackageHandle();
+
 			if ($pkgHandle != '') {
 				$packageDir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
 			}
+
 			if (file_exists(DIR_FILES_CONTROLLERS . "/" . DIRNAME_PAGE_TYPES . "/{$ctHandle}.php")) {
 				$path = DIR_FILES_CONTROLLERS . "/" . DIRNAME_PAGE_TYPES . "/{$ctHandle}.php";
-			} else if (isset($packageDir) && (file_exists($packageDir . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php'))) {
+			} else if (isset($packageDir) && (file_exists($packageDir . '/' . $pkgHandle . '/' . DIRNAME_CONTROLLERS . '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php'))) {
 				$path = $packageDir . '/' . $pkgHandle . '/' . DIRNAME_CONTROLLERS . '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php';
 			} else if (file_exists(DIR_FILES_CONTROLLERS_REQUIRED . "/" . DIRNAME_PAGE_TYPES . "/{$ctHandle}.php")) {
 				$path = DIR_FILES_CONTROLLERS_REQUIRED . "/" . DIRNAME_PAGE_TYPES . "/{$ctHandle}.php";

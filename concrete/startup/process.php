@@ -1,4 +1,4 @@
-<?php  
+<?php 
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	
 	# Filename: _process.php
@@ -11,10 +11,14 @@
 	// Modification for step editing
 	$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
 	
+	// if we don't have a valid token we die
+	$valt = Loader::helper('validation/token');
+	$token = '&' . $valt->getParameter();
+	
 	// If the user has checked out something for editing, we'll increment the lastedit variable within the database
 	$u = new User();
 	$u->refreshCollectionEdit($c);
-	if ($_REQUEST['btask']) {
+	if ($_REQUEST['btask'] && $valt->validate()) {
 	
 		// these are tasks dealing with blocks (moving up, down, removing)
 		
@@ -133,8 +137,8 @@
 		}
 	}
 	
-	if ($_GET['atask']) {
-		switch($_GET['atask']) { 
+	if ($_GET['atask'] && $valt->validate()) {
+		switch($_GET['atask']) {
 			case 'update':
 				if ($cp->canAdminPage()) {
 					$area = Area::get($c, $_GET['arHandle']);
@@ -153,9 +157,9 @@
 		}
 	}
 	
-	if ($_GET['ctask']) {
+	if ($_REQUEST['ctask'] && $valt->validate()) {
 		
-		switch ($_GET['ctask']) {
+		switch ($_REQUEST['ctask']) {
 			case 'delete':
 				if ($cp->canDeleteCollection() && $c->getCollectionID != '1' && (!$c->isMasterCollection())) {
 					$children = $c->getNumChildren();
@@ -229,7 +233,7 @@
 			case 'check-in':
 				if ($cp->canWrite()) {
 					// checking out the collection for editing
-					$v = new Version($c, "RECENT");
+					$v = CollectionVersion::get($c, "RECENT");
 					
 					$v->setComment($_REQUEST['comments']);
 					if ($_REQUEST['approve'] == 'APPROVE' && $cp->canApproveCollection()) {
@@ -250,62 +254,22 @@
 			case 'approve-recent':
 				if ($cp->canApproveCollection()) {
 					// checking out the collection for editing
-					$v = new Version($c, "RECENT");
+					$v = CollectionVersion::get($c, "RECENT");
 					$v->setComment($_REQUEST['comments']);
 					$v->approve();
 					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $c->getCollectionID() . $step);
 					exit;
 				}
 				break;
-			case 'edit_master':
-				$u = new User();
-				if ($u->isSuperUser()) {
-					// then we can edit the master collection
-					
-					if ($c->isMasterCollection()) {
-						$mcID = $c->getCollectionID();
-					} else {
-						$mcID = $c->getMasterCollectionID();
-					}
-
-					$u->loadMasterCollectionEdit($mcID, $c->getCollectionID());
-					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $mcID . '&mode=edit' . $step);
-					exit;				
-				}
-				break;
 
 		}
 	}			
 	
-	if ($_REQUEST['ptask']) {
+	if ($_REQUEST['ptask'] && $valt->validate()) {
 		Loader::model('pile');
 
 		// piles !
 		switch($_REQUEST['ptask']) {
-			case 'remove':
-				$pc = PileContent::get($_REQUEST['pcID']);
-				$p = $pc->getPile();
-				if ($p->isMyPile()) {
-					$res = $pc->delete();
-					if ($res) {
-						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $c->getCollectionID() . $step);
-						exit;	
-					}
-				}
-				break;
-			case 'add':
-				$p = Pile::getDefault();
-				$pcID = null;
-				if ($_REQUEST['p_cID'] > 0) {
-					$nc = Page::getByID($_REQUEST['p_cID'], 'ACTIVE');
-					$pcID = $p->add($nc);
-				}
-				if ($pcID) {
-					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $c->getCollectionID() . $step);
-					exit;	
-				}
-				break;
-			
 			case 'delete_content':
 				if ($_REQUEST['pcID'] > 0) {
 					$pc = PileContent::get($_REQUEST['pcID']);
@@ -319,19 +283,10 @@
 					}
 				}
 				break;
-			case 'output':
-				$p = ($_GET['pID']) ? Pile::get($_GET['pID']) : PIle::getDefault();
-				if (is_object($p)) {
-					if ($p->isMyPile()) {
-						$p->output($_GET['module']);
-						exit;
-					}
-				}
-				break;
 		}
 	}
 	
-	if ($_REQUEST['processBlock']) {
+	if ($_REQUEST['processBlock'] && $valt->validate()) {
 
 		
 		// some admin (or unscrupulous person) is doing something to a block of content on the site
@@ -458,8 +413,10 @@
 		}	
 	}
 
-	if ($_POST['processCollection']) { 
+	if ($_POST['processCollection'] && $valt->validate()) { 
+
 	
+		/*
 		if ($_POST['ctask'] == 'copy') {
 			if ($cp->canWrite()) {
 				if ($_POST['cParentID']) {
@@ -514,8 +471,10 @@
 					}
 				}
 			}	
-		} else if ($_POST['update_theme']) { 
-			if ($cp->canWrite()) {
+		} else */
+		
+		if ($_POST['update_theme']) { 
+			if ($cp->canAdminPage()) {
 				$nvc = $c->getVersionToModify();
 				
 				$data = array();
@@ -525,8 +484,22 @@
 				if (!$c->isGeneratedCollection()) {
 				
 					if ($_POST['ctID']) {
-						$data['ctID'] = $_POST['ctID'];
-						$nvc->update($data);
+						// now we have to check to see if you're allowed to update this page to this page type.
+						// We do this by checking to see whether the PARENT page allows you to add this page type here.
+						// if this is the home page then we assume you are good
+						
+						if ($c->getCollectionID() > 1) {
+							Loader::model('collection_types');
+							$parentC = Page::getByID($c->getCollectionParentID());
+							$parentCP = new Permissions($parentC);
+							$ct = CollectionType::getByID($_POST['ctID']);
+						}
+						
+						if ($c->getCollectionID() == 1 || $parentCP->canAddSubCollection($ct)) {
+							$data['ctID'] = $_POST['ctID'];
+							$nvc->update($data);
+						}
+						
 					}
 				
 				}
@@ -566,7 +539,7 @@
 				foreach($_POST['selectedAKIDs'] as $akID) {
 					if ($akID > 0) {
 						$ak = CollectionAttributeKey::getByID($akID);
-						$submittedValue = $_POST['akID_' . $ak->getCollectionAttributeKeyID()];
+						$submittedValue = $ak->getValueFromPost();
 						if (isset($submittedValue)) {
 							$nvc->addAttribute($ak, $submittedValue);
 						}
@@ -575,7 +548,7 @@
 				
 				if ($_POST['rel'] == 'SITEMAP') { 
 					if ($cp->canApproveCollection()) {
-						$v = new Version($c, "RECENT");
+						$v = CollectionVersion::get($c, "RECENT");
 						$v->approve();
 						$u = new User();
 						$u->unloadCollectionEdit($c);
@@ -647,7 +620,7 @@
 				if (is_object($nc)) {
 					if ($_POST['rel'] == 'SITEMAP') { 
 						if ($cp->canApproveCollection()) {
-							$v = new Version($nc, "RECENT");
+							$v = CollectionVersion::get($nc, "RECENT");
 							$v->approve();
 							$u = new User();
 							$u->unloadCollectionEdit($nc);
@@ -655,7 +628,7 @@
 						header('Location: ' . URL_SITEMAP);
 						exit;
 					} else {
-						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $nc->getCollectionID() . '&mode=edit&ctask=check-out-first' . $step);
+						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $nc->getCollectionID() . '&mode=edit&ctask=check-out-first' . $step . $token);
 						exit;
 					}
 				}

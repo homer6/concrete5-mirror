@@ -1,4 +1,4 @@
-<?php  
+<?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 /**
@@ -119,6 +119,17 @@ class Request {
 				$this->btHandle = $matches[1];
 			}
 			$this->includeType = 'BLOCK_TOOL';
+			return;
+		}
+
+		// theme-based css
+		if (preg_match("/^tools\/css\/themes\/(.[^\/]*)\/(.[^\.]*).css/i", $path, $matches)) {
+			$this->filename = 'css.php';
+			$this->includeType = 'CONCRETE_TOOL';
+			$this->auxData = new stdClass;
+			$this->auxData->theme = $matches[1];
+			$this->auxData->file = $matches[2] . '.css';
+			
 			return;
 		}
 
@@ -263,6 +274,13 @@ class Request {
 	 */
 	public function getBlock() {
 		return $this->btHandle;
+	}
+	
+	/** 
+	 * Auxiliary data is anything that the request specifies that doesn't really fit inside the request object, but gets passed along anyway
+	 */
+	public function getAuxiliaryData() {
+		return $this->auxData;
 	}
 	
 	/** 

@@ -1,4 +1,4 @@
-<?php  
+<?php 
 /**
  * @package Helpers
  * @category Concrete
@@ -31,6 +31,7 @@ class PaginationHelper {
 	var $classCurrent='currentPage';		
 	var $URL=''; //%pageNum% for page number
 	var $jsFunctionCall='';
+	var $queryStringPagingVariable = 'ccm_paging_p';
 	
 	function PaginationHelper(){
 	
@@ -41,7 +42,11 @@ class PaginationHelper {
 		if($page_num>0) $page_num--;
 		$this->current_page=$page_num;
 		$this->result_count=intval($num_results);
-		$this->URL=$URL;						
+		if ($URL == false || $URL == '') {
+			$this->URL = $this->getBaseURL();
+		} else {
+			$this->URL=$URL;
+		}
 		$this->page_size=intval($size); 
 		//calulate the number of pages
 		if ($this->page_size==0) $this->page_size=1;
@@ -50,6 +55,21 @@ class PaginationHelper {
 		$this->result_offset=($this->current_page)*$this->page_size;
 		$this->recalc($num_results);
 		if($jsFunctionCall) $this->jsFunctionCall=$jsFunctionCall;
+	}
+	
+	private function getBaseURL() {
+		$base= trim($_SERVER['REQUEST_URI'], '?');
+
+		// strip out existing paging
+		$base = preg_replace('/[&|?]' . $this->queryStringPagingVariable . '=[0-9]/', '', $base);
+
+		if (strpos($base, '?') === false) {
+			$base .= '?';
+		} else {
+			$base .= '&';
+		}
+		$base .= $this->queryStringPagingVariable . '=%pageNum%';
+		return $base;
 	}
 	
 	function recalc($num_results){
@@ -77,11 +97,19 @@ class PaginationHelper {
 	}
 	
 	function getCurrentURL(){
-		return str_replace("%pageNum%",$this->current_page, $this->URL);; 
+		return str_replace("%pageNum%",$this->current_page, $this->URL);
 	}
 	
 	function getCurrentPage() {
 		return $this->current_page;
+	}
+	
+	function getRequestedPage() {
+		if (isset($_REQUEST[$this->queryStringPagingVariable])) {
+			return $_REQUEST[$this->queryStringPagingVariable];
+		} else {
+			return 1;
+		}
 	}
 	
 	function getTotalPages() {

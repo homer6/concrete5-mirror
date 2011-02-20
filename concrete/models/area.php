@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -90,17 +90,25 @@ class Area extends Object {
 	function getMaximumBlocks() {return $this->maximumBlocks;}
 	
 	function getAreaUpdateAction($alternateHandler = null) {
+		$valt = Loader::helper('validation/token');
+		$token = '&' . $valt->getParameter();
 		$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
 		$c = $this->getAreaCollectionObject();
 		if ($alternateHandler) {
-			$str = $alternateHandler . "?atask=update&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step;
+			$str = $alternateHandler . "?atask=update&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step . $token;
 		} else {
-			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?atask=update&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step;
+			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?atask=update&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step . $token;
 		}
 		return $str;
 	}
 
 	function get(&$c, $arHandle) {
+		$ca = new Cache();
+		$a = Cache::get('area', $c->getCollectionID() . ':' . $arHandle);
+		if ($a instanceof Area) {
+			return $a;
+		}
+		
 		$db = Loader::db();
 		// First, we verify that this is a legitimate area
 		$v = array($c->getCollectionID(), $arHandle);
@@ -114,6 +122,8 @@ class Area extends Object {
 			$area->arInheritPermissionsFromAreaOnCID = $arRow['arInheritPermissionsFromAreaOnCID'];
 			$area->cID = $c->getCollectionID();
 			$area->c = &$c;
+			
+			Cache::set('area', $c->getCollectionID() . ':' . $arHandle, $area);
 			
 			return $area;
 		}
@@ -132,7 +142,10 @@ class Area extends Object {
 			return $area;
 		}
 
-		$cID = ($c->getCollectionInheritance()) ? $c->getCollectionID() : $c->getParentPermissionsCollectionID();
+		// I'm pretty sure this next line is meaningless
+		// because this will ALWAYS be true.
+		// $cID = ($c->getCollectionInheritance()) ? $c->getCollectionID() : $c->getParentPermissionsCollectionID();
+		$cID = $c->getCollectionID();
 		$v = array($cID, $arHandle);
 		$q = "insert into Areas (cID, arHandle) values (?, ?)";
 		$db->query($q, $v);
@@ -195,6 +208,9 @@ class Area extends Object {
 			// now we scan sub areas
 			$this->rescanSubAreaPermissions();
 		}
+		
+		$ca = new Cache();
+		$a = Cache::delete('area', $this->getCollectionID() . ':' . $this->getAreaHandle());
 	}
 	
 	function rescanAreaPermissionsChain() {
@@ -207,38 +223,42 @@ class Area extends Object {
 		}
 		// first, we obtain the inheritance of permissions for this particular collection
 		$areac = $this->getAreaCollectionObject();
-		if ($areac->getCollectionInheritance() == 'PARENT') {
-			
-			// now we go up the tree
-			
-			
-			$cIDToCheck = $areac->getCollectionParentID();
-			
-			while ($cIDToCheck > 0) {
-				$row = $db->getRow("select c.cParentID, c.cID, a.arHandle, a.arOverrideCollectionPermissions, a.arID from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($cIDToCheck, $this->getAreaHandle()));
-				if ($row['arOverrideCollectionPermissions'] == 1) {
-					break;
-				} else {
-					$cIDToCheck = $row['cParentID'];
+		if (is_a($areac, 'Page')) {
+			if ($areac->getCollectionInheritance() == 'PARENT') {
+				
+				// now we go up the tree
+				
+				
+				$cIDToCheck = $areac->getCollectionParentID();
+				
+				while ($cIDToCheck > 0) {
+					$row = $db->getRow("select c.cParentID, c.cID, a.arHandle, a.arOverrideCollectionPermissions, a.arID from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($cIDToCheck, $this->getAreaHandle()));
+					if ($row['arOverrideCollectionPermissions'] == 1) {
+						break;
+					} else {
+						$cIDToCheck = $row['cParentID'];
+					}
 				}
-			}
-			
-			if (is_array($row)) {
-				if ($row['arOverrideCollectionPermissions']) {
-					// then that means we have successfully found a parent area record that we can inherit from. So we set
-					// out current area to inherit from that COLLECTION ID (not area ID - from the collection ID)
-					$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($row['cID'], $this->getAreaID()));
-					$this->arInheritPermissionsFromAreaOnCID = $row['cID']; 
+				
+				if (is_array($row)) {
+					if ($row['arOverrideCollectionPermissions']) {
+						// then that means we have successfully found a parent area record that we can inherit from. So we set
+						// out current area to inherit from that COLLECTION ID (not area ID - from the collection ID)
+						$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($row['cID'], $this->getAreaID()));
+						$this->arInheritPermissionsFromAreaOnCID = $row['cID']; 
+					}
 				}
+			} else if ($areac->getCollectionInheritance() == 'TEMPLATE') {
+				 // we grab an area on the master collection (if it exists)
+				$doOverride = $db->getOne("select arOverrideCollectionPermissions from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($areac->getPermissionsCollectionID(), $this->getAreaHandle()));
+				if ($doOverride) {
+					$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($areac->getPermissionsCollectionID(), $this->getAreaID()));
+					$this->arInheritPermissionsFromAreaOnCID = $areac->getPermissionsCollectionID();
+				}			
 			}
-		} else if ($areac->getCollectionInheritance() == 'TEMPLATE') {
-			 // we grab an area on the master collection (if it exists)
-			$doOverride = $db->getOne("select arOverrideCollectionPermissions from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($areac->getPermissionsCollectionID(), $this->getAreaHandle()));
-			if ($doOverride) {
-				$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($areac->getPermissionsCollectionID(), $this->getAreaID()));
-				$this->arInheritPermissionsFromAreaOnCID = $areac->getPermissionsCollectionID();
-			}			
 		}
+		
+		Cache::delete('area', $this->getCollectionID() . ':' . $this->getAreaHandle());
 	}
 	
 	function rescanSubAreaPermissions($cIDToCheck = null) {
@@ -463,6 +483,9 @@ class Area extends Object {
 		} else {
 			$this->rescanSubAreaPermissions();
 		}
+
+		$a = Cache::delete('area', $this->getCollectionID() . ':' . $this->getAreaHandle());
+
 	}
 }
 

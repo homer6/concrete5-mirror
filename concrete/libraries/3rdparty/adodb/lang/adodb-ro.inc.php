@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 /* Romanian - by "bogdan stefan" <sbogdan#rsb.ro> */
 

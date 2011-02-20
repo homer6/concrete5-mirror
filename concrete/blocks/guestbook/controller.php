@@ -1,4 +1,4 @@
-<?php  
+<?php 
 /**
  * @package Blocks
  * @subpackage BlockTypes
@@ -22,12 +22,8 @@
  *
  */
 	defined('C5_EXECUTE') or die(_("Access Denied."));
-	class GuestBookBlockController extends BlockController {
+	class GuestbookBlockController extends BlockController {
 		
-		/** 
-		* @var object
-		*/
-		var $pobj;
 		  
 		protected $btTable = 'btGuestBook';
 		protected $btInterfaceWidth = "300";
@@ -48,7 +44,9 @@
 			
 		function delete() {
 			$E = new GuestBookBlockEntry($this->bID);
-			$E->removeAllEntries( $this->pobj->getBlockCollectionID() );
+			$bo = $this->getBlockObject();
+			global $c;
+			$E->removeAllEntries( $c->getCollectionID() );
 			parent::delete();
 		}
 		
@@ -84,7 +82,9 @@
 		*/	
 		function action_form_save_entry() {			
 			// get the cID from the block Object
-			$cID = $this->pobj->getBlockCollectionID();
+			$bo = $this->getBlockObject();
+			global $c;
+			$cID = $c->getCollectionID();
 		
 			$v = Loader::helper('validation/strings');
 			$errors = array();
@@ -95,18 +95,26 @@
 					$errors['notLogged'] = '- '.t("Your session has expired.  Please log back in."); 
 			}elseif(!$this->authenticationRequired){		
 				if(!$v->email($_POST['email'])) {
-					$errors['email'] = '- '.t("invalid email address");
+					$errors['email'] = '- '.t("Invalid Email Address");
 				}
 				if(!$v->notempty($_POST['name'])) {
-					$errors['name'] = '- '.t("name is required");
+					$errors['name'] = '- '.t("Name is required");
 				}
 			}
 			
+			// check captcha if activated
+			if ($this->displayCaptcha) {
+			   $captcha = Loader::helper('validation/captcha');
+			   if (!$captcha->check()) {
+			      $errors['captcha'] = '- '.t("Incorrect captcha code");
+			   }
+			}
+
 			if(!$v->notempty($_POST['commentText'])) {
 				$errors['commentText'] = '- '.t("a comment is required");
 			}
 			
-			if(count($errors)) {
+			if(count($errors)){
 				$E = new GuestBookBlockEntry($this->bID);
 				$E->user_name = $_POST['name'].'';
 				$E->user_email = $_POST['email'].'';
@@ -168,7 +176,9 @@
 		 * @return array
 		*/
 		function getEntries($order = "ASC") {
-			return GuestBookBlockEntry::getAll($this->bID, $this->pobj->getBlockCollectionID(), $order);
+			$bo = $this->getBlockObject();
+			global $c;
+			return GuestBookBlockEntry::getAll($this->bID, $c->getCollectionID(), $order);
 		}
 		
 		
@@ -310,7 +320,7 @@
 	 	function updateEntry($entryID, $comment, $name, $email, $uID=0 ) {
 			$db = Loader::db();
 			$txt = Loader::helper('text');
-			$query = "UPDATE btGuestBookEntries SET user_name=?, uID=? user_email=?, commentText=? WHERE entryID=? AND bID=?";
+			$query = "UPDATE btGuestBookEntries SET user_name=?, uID=?, user_email=?, commentText=? WHERE entryID=? AND bID=?";
 			$res = $db->query($query, array($txt->sanitize($name), intval($uID), $txt->sanitize($email),$txt->sanitize($comment),$entryID,$this->bID));
 		}
  		

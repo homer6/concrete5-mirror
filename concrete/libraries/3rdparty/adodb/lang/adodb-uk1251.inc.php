@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 // Ukrainian language file contributed by  Alex Rootoff rootoff{AT}pisem.net.
 

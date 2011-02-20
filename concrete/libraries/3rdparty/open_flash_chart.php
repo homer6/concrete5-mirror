@@ -1,4 +1,4 @@
-<?php  
+<?php 
 
 /**
  * This class manages all functions of the open flash chart api.

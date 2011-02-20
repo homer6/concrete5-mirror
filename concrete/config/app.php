@@ -1,4 +1,4 @@
-<?php  
+<?php 
 /**
  *
  * When this file is run it basically queries the database for site config items and sets those up, possibly overriding items in the base.php.
@@ -8,6 +8,12 @@
  * 3. Otherwise, we setup the defaults below.
  **/
 defined('C5_EXECUTE') or die(_("Access Denied.")); 
+
+// We define these here because we want to be able to turn them off during installation
+if (!defined('ENABLE_CACHE')) {
+	define('ENABLE_CACHE', true);
+}
+
 # permissions model - valid options are 'advanced' or 'simple'
 if (!defined('PERMISSIONS_MODEL')) {
 	Config::getOrDefine('PERMISSIONS_MODEL', 'simple');
@@ -34,11 +40,25 @@ if (!defined('URL_REWRITING')) {
 	Config::getOrDefine('URL_REWRITING', false);
 }
 
-if (!defined('URL_REWRITING_ALL')) {
+# Default marketplace support
+if (!defined('ENABLE_MARKETPLACE_SUPPORT')){  
+	$marketplace_enabled=Config::get('ENABLE_MARKETPLACE_SUPPORT');
+	if( $marketplace_enabled==NULL ){ 
+		Config::save('ENABLE_MARKETPLACE_SUPPORT', 1 );
+		$marketplace_enabled==true;
+	} 
+	define('MARKETPLACE_CONFIG_OVERRIDE',false);
+	define('ENABLE_MARKETPLACE_SUPPORT',$marketplace_enabled); 
+	//Config::getOrDefine('MARKETPLACE_ENABLED', true);	
+}else{
+	define('MARKETPLACE_CONFIG_OVERRIDE',true);
+}
+
+if (!defined('URL_REWRITING_ALL')) { 
 	define("URL_REWRITING_ALL", false);
 }
 
-if (URL_REWRITING == true) {
+if (URL_REWRITING_ALL == true) {
 	define('URL_SITEMAP', BASE_URL . DIR_REL . '/dashboard/sitemap');
 	define('REL_DIR_FILES_TOOLS', DIR_REL . '/tools');
 	define('REL_DIR_FILES_TOOLS_REQUIRED', DIR_REL . '/tools/required'); // front-end
