@@ -33,7 +33,7 @@ $txt = Loader::helper('text');
 		</select>
 		<div class="ccm-buttons">
 		<a href="#" class="ccm-dialog-close ccm-button-left cancel"><span><em class="ccm-button-close"><?php echo t('Cancel')?></em></span></a>
-		<a href="javascript:$('#ccmCustomTemplateForm').get(0).submit()" class="ccm-button-right accept"><span><?php echo t('Update')?></span></a>
+		<a href="javascript:void(0)" onclick="$('#ccmCustomTemplateForm').submit()" class="ccm-button-right accept"><span><?php echo t('Update')?></span></a>
 		</div>
 		
 	<?php  } ?>
@@ -42,3 +42,11 @@ $valt = Loader::helper('validation/token');
 $valt->output();
 ?>
 </form>
+
+<script type="text/javascript">
+$(function() {
+	$('#ccmCustomTemplateForm').each(function() {
+		ccm_setupBlockForm($(this), '<?php echo $b->getBlockID()?>', 'edit');
+	});
+});
+</script>

@@ -27,6 +27,36 @@ class MailHelper {
 	public $body = '';
 	protected $template; 
 	
+	public static function getMailerObject(){
+		Loader::library('3rdparty/Zend/Mail');
+		$response = array();
+		$response['mail'] = new Zend_Mail(APP_CHARSET);
+	
+		if (MAIL_SEND_METHOD == "SMTP") {
+			Loader::library('3rdparty/Zend/Mail/Transport/Smtp');
+			$username = Config::get('MAIL_SEND_METHOD_SMTP_USERNAME');
+			$password = Config::get('MAIL_SEND_METHOD_SMTP_PASSWORD');
+			$port = Config::get('MAIL_SEND_METHOD_SMTP_PORT');
+			$encr = Config::get('MAIL_SEND_METHOD_SMTP_ENCRYPTION');
+			if ($username != '') {
+				$config = array('auth' => 'login', 'username' => $username, 'password' => $password);
+				if ($port != '') {
+					$config['port'] = $port;
+				}
+				if ($encr != '') {
+					$config['ssl'] = $encr;
+				}
+				$transport = new Zend_Mail_Transport_Smtp(Config::get('MAIL_SEND_METHOD_SMTP_SERVER'), $config);					
+			} else {
+				$transport = new Zend_Mail_Transport_Smtp(Config::get('MAIL_SEND_METHOD_SMTP_SERVER'));					
+			}
+			
+			$response['transport']=$transport;
+		}	
+		
+		return $response;		
+	}
+	
 	/** 
 	 * Adds a parameter to a mail template
 	 * @param string $key
@@ -96,7 +126,7 @@ class MailHelper {
 				$str .= $v[0];
 			}
 			if (($i + 1) < count($arr)) {
-				$str .= ',';
+				$str .= ', ';
 			}
 		}
 		return $str;
@@ -119,7 +149,14 @@ class MailHelper {
 	 * @return void
 	 */
 	public function to($email, $name = null) {
-		$this->to[] = array($email, $name);
+		if (strpos($email, ',') > 0) {
+			$email = explode(',', $email);
+			foreach($email as $em) {
+				$this->to[] = array($em, $name);
+			}
+		} else {
+			$this->to[] = array($email, $name);	
+		}
 	}
 		
 	/** 
@@ -130,8 +167,11 @@ class MailHelper {
 		$fromStr = $this->generateEmailStrings($_from);
 		$toStr = $this->generateEmailStrings($this->to);
 		if (ENABLE_EMAILS) {
-			Loader::library('3rdparty/Zend/Mail');
-			$mail = new Zend_Mail(APP_CHARSET);
+			
+			$zendMailData = self::getMailerObject();
+			$mail=$zendMailData['mail'];
+			$transport=(isset($zendMailData['transport']))?$zendMailData['transport']:NULL;
+			
 			if (is_array($this->from)) {
 				if ($this->from[0] != '') {
 					$from = $this->from;
@@ -140,22 +180,7 @@ class MailHelper {
 			if (!isset($from)) {
 				$from = array('concrete5-noreply@' . str_replace(array('http://www.', 'https://www.', 'http://', 'https://'), '', BASE_URL), '');
 			}
-
-			if (MAIL_SEND_METHOD == "SMTP") {
-				Loader::library('3rdparty/Zend/Mail/Transport/Smtp');
-				$username = Config::get('MAIL_SEND_METHOD_SMTP_USERNAME');
-				$password = Config::get('MAIL_SEND_METHOD_SMTP_PASSWORD');
-				$port = Config::get('MAIL_SEND_METHOD_SMTP_PORT');
-				if ($username != '') {
-					$config = array('auth' => 'login', 'username' => $username, 'password' => $password);
-					if ($port != '') {
-						$config['port'] = $port;
-					}
-					$transport = new Zend_Mail_Transport_Smtp(Config::get('MAIL_SEND_METHOD_SMTP_SERVER'), $config);					
-				} else {
-					$transport = new Zend_Mail_Transport_Smtp(Config::get('MAIL_SEND_METHOD_SMTP_SERVER'));					
-				}
-			}
+			
 			$mail->setFrom($from[0], $from[1]);
 			$mail->setSubject($this->subject);
 			foreach($this->to as $to) {
@@ -163,12 +188,9 @@ class MailHelper {
 			}
 			$mail->setBodyText($this->body);
 			try {
-				if (MAIL_SEND_METHOD == "SMTP") {
-					$mail->send($transport);
-				} else {
-					$mail->send();
-				}
-			} catch(Zend_Mail_Transport_Exception $e) {
+				$mail->send($transport);
+					
+			} catch(Exception $e) {
 				$l = new Log(LOG_TYPE_EXCEPTIONS, true, true);
 				$l->write(t('Mail Exception Occurred. Unable to send mail: ') . $e->getMessage());
 				$l->write($e->getTraceAsString());
@@ -180,7 +202,6 @@ class MailHelper {
 					$l->write(t('Body') . ': ' . $this->body);
 				}				
 				$l->close();
-				throw new Exception($e->getMessage());
 			}
 		}
 		

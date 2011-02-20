@@ -63,7 +63,7 @@
 			<td class="ccm-user-list-cb" style="vertical-align: middle !important"><input type="checkbox" value="<?php echo $ui->getUserID()?>" user-email="<?php echo $ui->getUserEmail()?>" user-name="<?php echo $ui->getUserName()?>" /></td>
 			<td><a href="<?php echo $action?>"><?php echo $txt->highlightSearch($ui->getUserName(), $keywords)?></a></td>
 			<td><a href="mailto:<?php echo $ui->getUserEmail()?>"><?php echo $txt->highlightSearch($ui->getUserEmail(), $keywords)?></a></td>
-			<td><?php echo date(t('M d, Y g:ia'), strtotime($ui->getUserDateAdded('user')))?></td>
+			<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_USERS, strtotime($ui->getUserDateAdded('user')))?></td>
 			<td><?php echo $ui->getNumLogins()?></td>
 			<?php  
 			$slist = UserAttributeKey::getColumnHeaderList();

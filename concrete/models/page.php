@@ -13,7 +13,11 @@ class Page extends Collection {
 
 	public static function getByPath($path, $version = 'RECENT') {
 		$db = Loader::db();
-		$cID = $db->GetOne("select cID from PagePaths where cPath = ?", array($path));
+		$cID = Cache::get('page_id_from_path', $path);
+		if ($cID == false) {
+			$cID = $db->GetOne("select cID from PagePaths where cPath = ?", array($path));
+			Cache::set("page_id_from_path", $path, $cID);
+		}
 		return Page::getByID($cID, $version);
 	}
 	
@@ -149,20 +153,39 @@ $ppWhere = '';
 	 * key and the block IDs being 1-n values inside it
 	 */
 	public function processArrangement($areas) {
+
 		// this function is called via ajax, so it's a bit wonky, but the format is generally
 		// a{areaID} = array(b1, b2, b3) (where b1, etc... are blocks with ids appended.)
 		$db = Loader::db();
+		
+		$db->Execute('delete from CollectionVersionBlockStyles where cID = ? and cvID = ?', array($this->getCollectionID(), $this->getVersionID()));
+		
 		foreach($areas as $arID => $blocks) {
 			if (intval($arID) > 0) {
 				// this is a serialized area;
 				$arHandle = $db->getOne("select arHandle from Areas where arID = ?", array($arID));
 				$startDO = 0;
 				
-				foreach($blocks as $bID) {
+				foreach($blocks as $bIdentifier) {
+
+					$bID = 0;
+					$csrID = 0;
+					
+					$bd2 = explode('-', $bIdentifier);
+					$bID = $bd2[0];
+					$csrID = $bd2[1];
+
 					if (intval($bID) > 0) {
 						$v = array($startDO, $arHandle, $bID, $this->getCollectionID(), $this->getVersionID());
 						try {
-							$db->query("update CollectionVersionBlocks set cbDisplayOrder = ?, arHandle = ? where bID = ? and cID = ? and cvID = ?", $v);
+							$db->query("update CollectionVersionBlocks set cbDisplayOrder = ?, arHandle = ? where bID = ? and cID = ? and (cvID = ? or cbIncludeAll = 1)", $v);
+							if ($csrID > 0) {
+								$db->query("insert into CollectionVersionBlockStyles (csrID, arHandle, bID, cID, cvID) values (?, ?, ?, ?, ?)", array(
+									$csrID, $arHandle, $bID, $this->getCollectionID(), $this->getVersionID()
+								));
+							}
+							// update the style for any of these blocks
+							
 						} catch(Exception $e) {}
 						
 						$startDO++;
@@ -285,8 +308,8 @@ $ppWhere = '';
 			$q = "delete from PagePermissions where cID = '{$this->cID}' and gID = " . GUEST_GROUP_ID;
 			$r = $db->query($q);
 			if ($permissions != '') {
-				$v = array($this->cID, GUEST_GROUP_ID, $permissions);
-				$q = "insert into PagePermissions (cID, gID, cgPermissions) values (?, ?, ?)";
+				$v = array($this->cID, GUEST_GROUP_ID, $permissions, $px->guests['cgStartDate'], $px->guests['cgEndDate']);
+				$q = "insert into PagePermissions (cID, gID, cgPermissions, cgStartDate, cgEndDate) values (?, ?, ?, ?, ?)";
 				$db->query($q, $v);
 			}
 			
@@ -296,8 +319,8 @@ $ppWhere = '';
 			$q = "delete from PagePermissions where cID = '{$this->cID}' and gID = " . REGISTERED_GROUP_ID;
 			$r = $db->query($q);
 			if ($permissions != '') {
-				$v = array($this->cID, REGISTERED_GROUP_ID, $permissions);
-				$q = "insert into PagePermissions (cID, gID, cgPermissions) values (?, ?, ?)";
+				$v = array($this->cID, REGISTERED_GROUP_ID, $permissions, $px->registered['cgStartDate'], $px->registered['cgEndDate']);
+				$q = "insert into PagePermissions (cID, gID, cgPermissions, cgStartDate, cgEndDate) values (?, ?, ?, ?, ?)";
 				$db->query($q, $v);
 			}
 		}
@@ -306,8 +329,8 @@ $ppWhere = '';
 			$q = "delete from PagePermissions where cID = '{$this->cID}' and gID = " . ADMIN_GROUP_ID;
 			$r = $db->query($q);
 			if ($permissions != '') {
-				$v = array($this->cID, ADMIN_GROUP_ID, $permissions);
-				$q = "insert into PagePermissions (cID, gID, cgPermissions) values (?, ?, ?)";
+				$v = array($this->cID, ADMIN_GROUP_ID, $permissions, $px->administrators['cgStartDate'], $px->administrators['cgEndDate']);
+				$q = "insert into PagePermissions (cID, gID, cgPermissions, cgStartDate, cgEndDate) values (?, ?, ?, ?, ?)";
 				$db->query($q, $v);
 			}
 		}		
@@ -323,8 +346,8 @@ $ppWhere = '';
 				$q = "delete from PagePermissions where cID = '{$this->cID}' and gID = " . $gID;
 				$r = $db->query($q);
 				if ($permissions != '') {
-					$v = array($this->cID, $gID, $permissions);
-					$q = "insert into PagePermissions (cID, gID, cgPermissions) values (?, ?, ?)";
+					$v = array($this->cID, $gID, $permissions, $g['cgStartDate'], $g['cgEndDate']);
+					$q = "insert into PagePermissions (cID, gID, cgPermissions, cgStartDate, cgEndDate) values (?, ?, ?, ?, ?)";
 					$db->query($q, $v);
 				}
 			
@@ -343,13 +366,15 @@ $ppWhere = '';
 				$q = "delete from PagePermissions where cID = '{$this->cID}' and uID = " . $uID;
 				$r = $db->query($q);
 				if ($permissions != '') {
-					$v = array($this->cID, $uID, $permissions);
-					$q = "insert into PagePermissions (cID, uID, cgPermissions) values (?, ?, ?)";
+					$v = array($this->cID, $uID, $permissions, $_u['cgStartDate'], $_u['cgEndDate']);
+					$q = "insert into PagePermissions (cID, uID, cgPermissions, cgStartDate, cgEndDate) values (?, ?, ?, ?, ?)";
 					$db->query($q, $v);
 				}
 			
 			}
 		}
+		
+		$this->refreshCache();
 	}
 
 	function addCollectionAlias($c) {
@@ -391,11 +416,9 @@ $ppWhere = '';
 		PageStatistics::incrementParents($newCID);
 
 		
-		if ($cPath) {
-			$q2 = "insert into PagePaths (cID, cPath) values (?, ?)";
-			$v2 = array($newCID, $cPath . '/' . $handle);
-			$db->query($q2, $v2);
-		}
+		$q2 = "insert into PagePaths (cID, cPath) values (?, ?)";
+		$v2 = array($newCID, $cPath . '/' . $handle);
+		$db->query($q2, $v2);
 		
 		$c->refreshCache();
 
@@ -626,12 +649,15 @@ $ppWhere = '';
 	 * @param string $type (system || user)
 	 * @return string date formated like: 2009-01-01 00:00:00 
 	*/
-	function getCollectionDatePublic($type='system') {
+	function getCollectionDatePublic($dateFormat = null, $type='system') {
+		if(!$dateFormat) {
+			$dateFormat = 'Y-m-d H:i:s';
+		}
 		if(ENABLE_USER_TIMEZONES && $type == 'user') {
 			$dh = Loader::helper('date');
-			return $dh->getLocalDateTime($this->vObj->cvDatePublic);
+			return $dh->getLocalDateTime($this->vObj->cvDatePublic, $dateFormat);
 		} else {
-			return $this->vObj->cvDatePublic;
+			return date($dateFormat, strtotime($this->vObj->cvDatePublic));
 		}
 	}
 
@@ -641,6 +667,17 @@ $ppWhere = '';
 
 	function getCollectionParentID() {
 		return $this->cParentID;
+	}
+	
+	function getCollectionParentIDFromChildID($cID) {
+		$cParentID = Cache::get('parent_id', $cID);
+		if ($cParentID == false) {
+			$db = Loader::db();
+			$q = "select cParentID from Pages where cID = '$cID'";
+			$cParentID = $db->GetOne($q);
+			Cache::set('parent_id', $cID, $cParentID);
+		}
+		return $cParentID;
 	}
 	
 	//returns an array of this cParentID and aliased parentIDs
@@ -833,6 +870,9 @@ $ppWhere = '';
 		$uID = $this->getCollectionUserID();
 		$pkgID = $this->getPackageID();
 		$cFilename = $this->getCollectionFilename();
+		
+		$rescanTemplatePermissions = false;
+		
 		if (isset($data['cName'])) {
 			$cName = $data['cName'];
 		}
@@ -849,6 +889,7 @@ $ppWhere = '';
 			$ctID = $data['ctID'];
 			// we grab the package that this ct belongs to
 			$pkgID = $db->GetOne("select pkgID from PageTypes where ctID = ?", array($data['ctID']));
+			$rescanTemplatePermissions = true;
 		}
 
 		$txt = Loader::helper('text');
@@ -885,7 +926,16 @@ $ppWhere = '';
 
 		$db->query("update Pages set uID = ?, ctID = ?, pkgID = ?, cFilename = ? where cID = ?", array($uID, $ctID, $pkgID, $cFilename, $this->cID));
 
+		if ($rescanTemplatePermissions) {
+			if ($this->cInheritPermissionsFrom == 'TEMPLATE') {
+				// we make sure to update the cInheritPermissionsFromCID value
+				$ct = CollectionType::getByID($ctID);
+				$masterC = $ct->getMasterTemplate();
+				$db->Execute('update Pages set cInheritPermissionsFromCID = ? where cID = ?', array($masterC->getCollectionID(), $this->getCollectioniD()));
+			}
+		}
 		// run any internal event we have for page update
+		$this->reindex();
 		$ret = Events::fire('on_page_update', $this);
 	}
 	
@@ -1021,7 +1071,10 @@ $ppWhere = '';
 			// want any orphaned groups
 			$this->clearGroups();
 		}
-		$v = array($args['cOverrideTemplatePermissions'], $this->cID);
+
+		$cOverrideTemplatePermissions = ($args['cOverrideTemplatePermissions'] == 1) ? 1 : 0;
+
+		$v = array($cOverrideTemplatePermissions, $this->cID);
 		$q = "update Pages set cOverrideTemplatePermissions = ? where cID = ?";
 		$db->query($q, $v);
 		parent::refreshCache();
@@ -1148,6 +1201,23 @@ $ppWhere = '';
 		$cDate = $dh->getSystemDateTime();
 		
 		$cobj = parent::getByID($this->cID);
+		// create new name
+		
+		$newCollectionName = $this->getCollectionName();
+		$index = 1;
+		$nameCount = 1;
+		
+		while ($nameCount > 0) {
+			// if we have a node at the new level with the same name, we keep incrementing til we don't
+			$nameCount = $db->GetOne('select count(Pages.cID) from CollectionVersions inner join Pages on (CollectionVersions.cID = Pages.cID and CollectionVersions.cvIsApproved = 1) where Pages.cParentID = ? and CollectionVersions.cvName = ?',
+				array($cParentID, $newCollectionName)
+			);
+			if ($nameCount > 0) {
+				$index++;
+				$newCollectionName = $this->getCollectionName() . ' ' . $index;
+			}
+		}
+		
 		$newC = $cobj->duplicate();
 		$newCID = $newC->getCollectionID();
 		
@@ -1200,6 +1270,11 @@ $ppWhere = '';
 			// rescan the collection path
 			$nc->refreshCache();
 			$nc2 = Page::getByID($newCID);
+			if ($index > 1) {
+				$args['cName'] = $newCollectionName;
+				$args['cHandle'] = $nc2->getCollectionHandle() . '-' . $index;
+			}
+			$nc2->update($args);
 			
 			// arguments for event
 			// 1. new page
@@ -1286,17 +1361,17 @@ $ppWhere = '';
 			$cID = $this->getCollectionID();
 			$dh = Loader::helper('date');
 			$dateTime = $dh->getSystemDateTime();
-			$targetCID = (is_object($targetC)) ? $targetC->getCollectionID() : "";
+			$targetCID = (is_object($targetC)) ? $targetC->getCollectionID() : 0;
 			
 			$this->cPendingAction = $action;
 			$this->cPendingActionUID = $uID;
 			$this->cPendingActionDateTime = $dateTime;
 			$this->cPendingActionTargetCID = $targetCID;
 			
-			$q = "update Pages set cPendingAction = '{$action}', cPendingActionUID = {$uID},  cPendingActionDatetime = '{$dateTime}', cPendingActionTargetCID = '{$targetCID}' where cID = {$cID}";
-			$r = $db->query($q);
+			$v = array($action, $uID, $dateTime, $targetCID, $cID);
+			$q = "update Pages set cPendingAction = ?, cPendingActionUID = ?,  cPendingActionDatetime = ?, cPendingActionTargetCID = ? where cID = ?";
+			$r = $db->query($q, $v);
 			parent::refreshCache();
-
 		}
 	}
 	
@@ -1359,7 +1434,8 @@ $ppWhere = '';
 
 			// Now we perform the collection path function on the current cID
 			$np = $this->rescanCollectionPathIndividual($this->cID, $cPath);
-
+			$this->cPath = $np;
+			
 			// Now we start with the recursive collection path scanning, armed with our prefix (from the level above what we're scanning)
 			if ($np) {
 				$this->rescanCollectionPathChildren($this->cID, $np);
@@ -1427,6 +1503,20 @@ $ppWhere = '';
 		}
 		$r->free();
 	}
+	
+	public function setPageIndexScore($score) {
+		$this->cIndexScore = $score;
+	}
+	
+	public function getPageIndexScore() {
+		return round($this->cIndexScore, 2);
+	}
+
+	public function getPageIndexContent() {
+		$db = Loader::db();
+		return $db->GetOne('select content from PageSearchIndex where cID = ?', array($this->cID));
+	}
+
 
 	function rescanCollectionPathChildren($cID, $cPath) {
 		$db = Loader::db();

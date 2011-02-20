@@ -45,6 +45,9 @@ foreach($files as $f) {
 		$fcnt++;
 	}
 }
+
+$searchInstance = $_REQUEST['searchInstance'];
+
 ?>
 
 <h1><?php echo t('Delete Files')?></h1>
@@ -55,9 +58,9 @@ foreach($files as $f) {
 
 	<?php echo t('Are you sure you want to delete the following files?')?><br/><br/>
 
-	<form id="ccm-delete-files-form" method="post" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/delete">
+	<form id="ccm-<?php echo $searchInstance?>-delete-form" method="post" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/delete">
 	<?php echo $form->hidden('task', 'delete_files')?>
-	<table id="ccm-file-list" border="0" cellspacing="0" cellpadding="0">
+	<table border="0" cellspacing="0" cellpadding="0" width="100%" class="ccm-results-list">
 	
 	<?php  foreach($files as $f) { 
 		$fp = new Permissions($f);
@@ -67,12 +70,16 @@ foreach($files as $f) {
 			
 			<?php echo $form->hidden('fID[]', $f->getFileID())?>		
 			
-			<tr class="" style="font-weight: bold">
-				<td><div class="ccm-file-list-thumbnail"><div class="ccm-file-list-thumbnail-image" fID="<?php echo $f->getFileID()?>"><?php echo $fv->getThumbnail(1)?></div></div></td>
-	
+			<tr>
+				<td>
+				<div class="ccm-file-list-thumbnail">
+					<div class="ccm-file-list-thumbnail-image" fID="<?php echo $f->getFileID()?>"><table border="0" cellspacing="0" cellpadding="0" height="70" width="100%"><tr><td align="center" fID="<?php echo $f->getFileID()?>" style="padding: 0px"><?php echo $fv->getThumbnail(1)?></td></tr></table></div>
+				</div>
+				</td>
+		
 				<td><?php echo $fv->getType()?></td>
 				<td class="ccm-file-list-filename"><?php echo wordwrap($fv->getTitle(), 25, "\n", true)?></td>
-				<td><?php echo date('M d, Y g:ia', strtotime($f->getDateAdded()))?></td>
+				<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_FILES, strtotime($f->getDateAdded()))?></td>
 				<td><?php echo $fv->getSize()?></td>
 				<td><?php echo $fv->getAuthorName()?></td>
 			</tr>
@@ -85,7 +92,7 @@ foreach($files as $f) {
 	</form>
 	<br/>
 	<?php  $ih = Loader::helper('concrete/interface')?>
-	<?php echo $ih->button_js(t('Delete'), 'ccm_alDeleteFiles()')?>
+	<?php echo $ih->button_js(t('Delete'), 'ccm_alDeleteFiles(\'' . $searchInstance . '\')')?>
 	<?php echo $ih->button_js(t('Cancel'), 'jQuery.fn.dialog.closeTop()', 'left')?>	
 		
 		

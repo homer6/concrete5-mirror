@@ -1,6 +1,15 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
 <?php echo t('Title')?><br />
 <input type="text" name="title" value="<?php echo $title?>" /><br /><br />
+<?php 
+if (!$dateFormat) {
+	$dateFormat = t('M jS, Y');
+}
+?>
+<?php echo t('Date Format')?><br/>
+<input type="text" name="dateFormat" value="<?php echo $dateFormat?>" />
+<div class="ccm-note">(<?php echo t('Enter a <a href="%s" target="_blank">PHP date string</a> here.', 'http://www.php.net/date')?>)</div>
+<br/>
 
 <?php echo t('Comments Require Moderator Approval?')?><br/>
 <input type="radio" name="requireApproval" value="1" <?php echo ($requireApproval?"checked=\"checked\"":"") ?> /> <?php echo t('Yes')?><br />

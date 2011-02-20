@@ -1,8 +1,14 @@
 <?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
-define('DISPATCHER_FILENAME', 'index.php');
+if (!defined('DISPATCHER_FILENAME')) {
+	define('DISPATCHER_FILENAME', 'index.php');
+}
 if (!defined('C5_ENVIRONMENT_ONLY')) {
 	define('C5_ENVIRONMENT_ONLY', false);
+}
+
+if (!defined('ENABLE_CMS_FOR_DIRECTORY')) {
+	define('ENABLE_CMS_FOR_DIRECTORY', true);
 }
 
 # These items should be set by site.php in config/ but if they're not that means we're installing and we need something there
@@ -42,6 +48,12 @@ if (!defined('ENABLE_EMAILS')) {
 	define('ENABLE_EMAILS', true);
 }
 
+if (!defined("ENABLE_AREA_LAYOUTS")) {
+	define('ENABLE_AREA_LAYOUTS', true);
+}
+if (!defined("ENABLE_CUSTOM_DESIGN")) {
+	define('ENABLE_CUSTOM_DESIGN', true);
+}
 if (!defined('ENABLE_DEFINABLE_USER_ATTRIBUTES')) {
 	define('ENABLE_DEFINABLE_USER_ATTRIBUTES', true);
 }
@@ -99,28 +111,10 @@ if (!defined("LANGUAGE")) {
 
 define("LANGUAGE_DOMAIN_CORE", "messages");
 
-if (!defined('CACHE_LIBRARY')) {
-	define('CACHE_LIBRARY', 'default');
-}
-
-# Debug Menu - Determines whether a "Submit Feedback/Bug/Question" is active */
-# Currently Concrete5 does not include this capability but it will likely come back.
-define('MENU_FEEDBACK_DISPLAY', 1);
-define('MENU_FEEDBACK_URL', 'http://www.concretecms.com/tools/process_feedback.php');
-if (!defined("MENU_HELP_URL")) {
-	define('MENU_HELP_URL', 'http://www.concrete5.org/help/');
-}
-
 # Path to the core files shared between all concrete 5 installations
-define('DIR_BASE_CORE', dirname(__FILE__) . '/..');
-
-# Path to the base directory of THIS install
-if (!defined('DIR_BASE')) {
-	define('DIR_BASE', dirname($_SERVER['SCRIPT_FILENAME']));
+if (!defined('DIR_BASE_CORE')) {
+	define('DIR_BASE_CORE', dirname(__FILE__) . '/..');
 }
-
-# The core concrete directory. Either one per install or one per server
-define('DIRNAME_APP', 'concrete');
 
 # if "concrete/" does NOT exist in DIR_BASE then we set multi_site to on
 if (!is_dir(DIR_BASE . '/' . DIRNAME_APP)) {
@@ -154,12 +148,15 @@ define('DIR_FILES_TOOLS', DIR_BASE . '/tools'); // front-end
 define('DIR_FILES_TOOLS_REQUIRED', DIR_BASE_CORE . '/tools'); // global
 
 # Packages 
-define('DIR_PACKAGES', DIR_BASE . '/packages');
+if (!defined('DIR_PACKAGES')) {
+	define('DIR_PACKAGES', DIR_BASE . '/packages');
+}
 define('DIR_PACKAGES_CORE', DIR_BASE_CORE . '/packages');
 define('DIRNAME_PACKAGE_CORE', 'core');
 define('DIR_PACKAGE_CORE', DIR_BASE_CORE . '/packages/' . DIRNAME_PACKAGE_CORE);
 
 define('DIRNAME_BLOCKS', 'blocks');
+define('DIRNAME_BACKUPS', 'backups');
 define('DIRNAME_PAGES', 'single_pages');
 define('DIRNAME_PACKAGES', 'packages');
 define('DIRNAME_MODELS', 'models');
@@ -199,16 +196,28 @@ define('FILENAME_BLOCK_DB', 'db.xml');
 # Hosted assets are assets shared amongst all Concrete5 installations on a single machine.
 if (defined('MULTI_SITE') && MULTI_SITE == 1) {
 	define('ASSETS_URL_WEB', BASE_URL);
+	define('ASSETS_URL_WEB_FULL', BASE_URL);
+	@include(DIRNAME_UPDATES . '/index.php');
+	if (isset($DIR_APP_UPDATES)) {
+		define('DIR_APP_UPDATES', $DIR_APP_UPDATES);
+	}
 } else {
+	define('DIR_APP_UPDATES', DIR_BASE . '/' . DIRNAME_UPDATES);
+	define('ASSETS_URL_WEB_FULL', BASE_URL . DIR_REL);
 	define('ASSETS_URL_WEB', DIR_REL);
 	define('MULTI_SITE', 0);
 }
+if (defined('DIRNAME_APP_UPDATED')) {
+ 	$ap = ASSETS_URL_WEB . '/' . DIRNAME_UPDATES . '/' . DIRNAME_APP_UPDATED . '/' . DIRNAME_APP;
+} else {
+	$ap = ASSETS_URL_WEB . '/' . DIRNAME_APP;
+}
 
-define('ASSETS_URL', ASSETS_URL_WEB . '/concrete');
-define('ASSETS_URL_CSS', ASSETS_URL_WEB . '/concrete/css');
-define('ASSETS_URL_JAVASCRIPT', ASSETS_URL_WEB . '/concrete/js');
-define('ASSETS_URL_IMAGES', ASSETS_URL_WEB . '/concrete/images');
-define('ASSETS_URL_FLASH', ASSETS_URL_WEB . '/concrete/flash');
+define('ASSETS_URL', $ap);
+define('ASSETS_URL_CSS', $ap . '/css');
+define('ASSETS_URL_JAVASCRIPT', $ap . '/js');
+define('ASSETS_URL_IMAGES', $ap . '/images');
+define('ASSETS_URL_FLASH', $ap . '/flash');
 
 # Pages/Collections
 define('FILENAME_COLLECTION_VIEW', 'view.php');
@@ -244,7 +253,9 @@ define('DIR_FILES_ELEMENTS', DIR_BASE . '/elements');
 define('DIR_FILES_ELEMENTS_CORE', DIR_BASE_CORE . '/elements');
 
 # Jobs
-define('DIR_FILES_JOBS', DIR_BASE . '/jobs');
+if (!defined('DIR_FILES_JOBS')) {
+	define('DIR_FILES_JOBS', DIR_BASE . '/jobs');
+}
 define('DIR_FILES_JOBS_CORE', DIR_BASE_CORE . '/jobs');
 
 # Themes
@@ -275,16 +286,19 @@ define('DIR_FILES_UPLOADED_STANDARD', DIR_BASE . '/files');
 define('DIR_FILES_TRASH_STANDARD', DIR_BASE . '/files/trash');
 define('REL_DIR_FILES_UPLOADED', DIR_REL . '/files');
 
-define('DIR_FILES_UPLOADED_THUMBNAILS', DIR_BASE . '/files/thumbnails');
+if (!defined('DIR_FILES_BACKUPS')) {
+	define('DIR_FILES_BACKUPS', DIR_BASE . '/files/backups');
+}
 define('REL_DIR_FILES_UPLOADED_THUMBNAILS', DIR_REL . '/files/thumbnails');
-define('DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2', DIR_BASE . '/files/thumbnails/level2');
 define('REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2', DIR_REL . '/files/thumbnails/level2');
-define('DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3', DIR_BASE . '/files/thumbnails/level3');
 define('REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3', DIR_REL . '/files/thumbnails/level3');
 define('REL_DIR_FILES_CACHE', REL_DIR_FILES_UPLOADED . '/cache');
 
 #Cache
-define('DIR_FILES_CACHE', DIR_BASE . '/files/cache');
+if (!defined('DIR_FILES_CACHE')) {
+	define('DIR_FILES_CACHE', DIR_BASE . '/files/cache');
+}
+
 if (!is_dir(DIR_FILES_CACHE)) {
 	@mkdir(DIR_FILES_CACHE);
 	@chmod(DIR_FILES_CACHE, 0777);
@@ -298,7 +312,6 @@ define('DISPATCHER_FILENAME_CORE', 'dispatcher.php');
 
 
 define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
-define('DIR_FILES_CACHE_CORE', DIR_BASE . '/files/cache_objects');
 define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
 define('ON_WINDOWS', intval(substr(PHP_OS,0,3)=='WIN') );
 
@@ -368,7 +381,6 @@ if (!defined('AVATAR_WIDTH') && !defined('AVATAR_HEIGHT')) {
 	define('AVATAR_HEIGHT', 80);
 }
 
-define('DIR_FILES_AVATARS', DIR_BASE . '/files/avatars');
 define('REL_DIR_FILES_AVATARS', REL_DIR_FILES_UPLOADED . '/avatars');
 if (!defined('AVATAR_NONE')) {
 	define('AVATAR_NONE', ASSETS_URL_IMAGES . '/spacer.gif');
@@ -403,7 +415,8 @@ if (!defined('SESSION')) {
 # Variables/constants necessary for ADODB
 define('DB_TYPE', 'mysql');
 if (!defined('DB_USE_CACHE')) {
-	define('DB_USE_CACHE', true);
+	// caching now handled by our app, no longer by adodb
+	define('DB_USE_CACHE', false);
 }
 
 if (!defined("API_KEY_PICNIK")) {
@@ -413,7 +426,8 @@ if (!defined("API_KEY_PICNIK")) {
 $ADODB_ASSOC_CASE =  2;
 $ADODB_ACTIVE_CACHESECS = 300;
 $ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
-define('APP_VERSION', '5.3.3.1');
+require(dirname(__FILE__) . '/version.php');
+define('APP_VERSION', $APP_VERSION);
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)
 define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number');
 define('APP_VERSION_LATEST_DOWNLOAD', 'http://www.concrete5.org/download/');
@@ -423,41 +437,26 @@ if (!defined('CONCRETE5_ORG_URL')) {
 	define('CONCRETE5_ORG_URL', 'http://www.concrete5.org');
 }
 
-# Marketplace Vars
-if (!defined("MARKETPLACE_URL_LANDING")) {
-	define('MARKETPLACE_URL_LANDING', CONCRETE5_ORG_URL.'/marketplace/');
+define('MARKETPLACE_BASE_URL_SITE_PAGE', CONCRETE5_ORG_URL.'/private/sites');
+
+define('MARKETPLACE_URL_CONNECT', CONCRETE5_ORG_URL.'/marketplace/connect');
+define('MARKETPLACE_URL_CONNECT_VALIDATE', CONCRETE5_ORG_URL.'/marketplace/connect/-/validate');
+define('MARKETPLACE_PURCHASES_LIST_WS', CONCRETE5_ORG_URL . '/marketplace/connect/-/get_available_licenses');
+define('MARKETPLACE_ITEM_INFORMATION_WS', CONCRETE5_ORG_URL . '/marketplace/connect/-/get_item_information');
+define('MARKETPLACE_ITEM_FREE_LICENSE_WS', CONCRETE5_ORG_URL . '/marketplace/connect/-/enable_free_license');
+define('MARKETPLACE_URL_CONNECT_TOKEN_NEW', CONCRETE5_ORG_URL.'/marketplace/connect/-/generate_token');
+define('MARKETPLACE_REMOTE_ITEM_LIST_WS', CONCRETE5_ORG_URL.'/marketplace/');
+
+if (!defined("MENU_HELP_URL")) {
+	define('MENU_HELP_URL', CONCRETE5_ORG_URL . '/tools/help_overlay/');
 }
-if (!defined('MARKETPLACE_BLOCK_LIST_WS')) {
-	define('MARKETPLACE_BLOCK_LIST_WS', CONCRETE5_ORG_URL.'/marketplace/addons/-/get_remote_list');
-}
-if (!defined('MARKETPLACE_THEME_LIST_WS')) {
-	define('MARKETPLACE_THEME_LIST_WS', CONCRETE5_ORG_URL.'/marketplace/themes/-/get_remote_list/');
-}
+
 if (!defined('MARKETPLACE_THEME_PREVIEW_URL')) {
 	define('MARKETPLACE_THEME_PREVIEW_URL', CONCRETE5_ORG_URL.'/tools/preview_theme/');
 }
-if (!defined('MARKETPLACE_PURCHASES_LIST_WS')) {
-	define('MARKETPLACE_PURCHASES_LIST_WS', CONCRETE5_ORG_URL.'/tools/get_purchased_block_list/');
-}
+
 define('MARKETPLACE_CONTENT_LATEST_THRESHOLD', 10800); // every three hours
 define('MARKETPLACE_DIRNAME_THEME_PREVIEW', 'previewable_themes');
 define('MARKETPLACE_THEME_PREVIEW_ASSETS_URL', CONCRETE5_ORG_URL ."/". MARKETPLACE_DIRNAME_THEME_PREVIEW);
-
-# Knowledge Base Vars
-if (!defined('KNOWLEDGE_BASE_URL')){
-	define('KNOWLEDGE_BASE_URL', CONCRETE5_ORG_URL.'/help/kb/');
-}
-if (!defined('KNOWLEDGE_BASE_POST_URL')) {
-	define('KNOWLEDGE_BASE_POST_URL', CONCRETE5_ORG_URL.'/tools/open_support_ticket/');
-}
-if (!defined('KNOWLEDGE_BASE_TICKET_LIST_URL')) {
-	define('KNOWLEDGE_BASE_TICKET_LIST_URL', CONCRETE5_ORG_URL.'/tools/get_support_ticket_list/');
-}
-if (!defined('KNOWLEDGE_BASE_AUTH_URL')) {
-	define('KNOWLEDGE_BASE_AUTH_URL', CONCRETE5_ORG_URL.'/tools/authenticate_user/');
-}
-if (!defined('KNOWLEDGE_BASE_SUPPORT_LEARN_MORE_URL')) {
-	define('KNOWLEDGE_BASE_SUPPORT_LEARN_MORE_URL', CONCRETE5_ORG_URL.'/support/owner_support/');
-}
 
 require_once(DIR_LIBRARIES_CORE . '/loader.php');

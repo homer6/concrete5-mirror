@@ -54,22 +54,24 @@ $generated = SinglePage::getList();
 		<td class="subheader"><div style="width: 90px"></div></td>
 	</tr>
 	<?php  if (count($generated) == 0) { ?>
-		<td colspan="4"><?php echo t('No pages found.')?></td>
+		<tr><td colspan="4"><?php echo t('No pages found.')?></td></tr>
 	<?php  } else { ?>
 	
 	<?php  foreach ($generated as $p) { ?>
 	<?php 
 		if ($p->getPackageID() > 0) {
 			$package = Package::getByID($p->getPackageID());
-			$packageHandle = $package->getPackageHandle();
-			$packageName = $package->getPackageName();
+			if(is_object($package)) {
+				$packageHandle = $package->getPackageHandle();
+				$packageName = $package->getPackageName();
+			}
 		} else {
 			$packageName = t('None');
 		}
 		
 	?>
 	<tr <?php  if ($packageHandle == DIRNAME_PACKAGE_CORE) { ?> class="ccm-core-package-row" <?php  } ?>>
-		<td><a href="<?php echo DIR_REL?>/index.php?cID=<?php echo $p->getCollectionID()?>"><?php echo $p->getCollectionName()?></a></td>
+		<td><a href="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?cID=<?php echo $p->getCollectionID()?>"><?php echo $p->getCollectionName()?></a></td>
 		<td><?php echo $p->getCollectionPath()?></td>
 		<td><?php  print $packageName; ?></td>
 		<td>
@@ -90,7 +92,7 @@ $generated = SinglePage::getList();
 		<table border="0" cellspacing="0" cellpadding="0">
 		<tr>
 		<td>
-		<?php echo BASE_URL?>/<input type="text" name="pageURL" value="<?php echo $_POST['pageURL']?>" style="width: 200px" /></td>
+		<?php echo BASE_URL . DIR_REL?>/<input type="text" name="pageURL" value="<?php echo $_POST['pageURL']?>" style="width: 200px" /></td>
 		<td>
 		<?php  print $ih->submit(t('Add'), 'add_static_page_form', 'left');?></td>
 		</tr>

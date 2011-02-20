@@ -21,6 +21,8 @@ if (isset($_POST['fID'])) {
 	$fr = false;
 }
 
+$searchInstance = $_POST['searchInstance'];
+
 if ($valt->validate('upload')) {
 	if (isset($_FILES['Filedata']) && (is_uploaded_file($_FILES['Filedata']['tmp_name']))) {
 		if (!$fp->canAddFileType($cf->getExtension($_FILES['Filedata']['name']))) {
@@ -57,14 +59,14 @@ if ($errorCode > -1 && $error == '') {
 	<?php  } else { ?>
 		highlight = new Array();
 		highlight.push(<?php echo $resp->getFileID()?>);
-		window.parent.ccm_alRefresh(highlight);
+		window.parent.ccm_alRefresh(highlight, '<?php echo $searchInstance?>');
 		
 		<?php  if (is_object($fr)) { ?>
 			window.parent.jQuery.fn.dialog.closeTop();
 		<?php  } ?>
 		
 		window.parent.ccm_uploadedFiles.push(<?php echo intval($resp->getFileID())?>);
-		window.parent.ccm_filesUploadedDialog();
+		window.parent.ccm_filesUploadedDialog('<?php echo $searchInstance?>');
 	<?php  } ?>
 </script>
 </head>

@@ -73,8 +73,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		private function getThemeFromPath($path) {
 			// there's probably a more efficient way to do this
 			$theme = false;
+			$txt = Loader::helper('text');
 			foreach($this->themePaths as $lp => $layout) {
-				if (preg_match('/^\\' . $lp . '(.*)/', $path)) {
+				if ($txt->fnmatch($lp, $path)) {
 					$theme = $layout;
 					break;
 				}
@@ -104,18 +105,28 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$this->headerItems[$namespace][] = $item;
 		}
 		
+		public function getHeaderItems() {
+			$a1 = (is_array($this->headerItems['CORE'])) ? $this->headerItems['CORE'] : array();
+			$a2 = (is_array($this->headerItems['VIEW'])) ? $this->headerItems['VIEW'] : array();
+			$a3 = (is_array($this->headerItems['CONTROLLER'])) ? $this->headerItems['CONTROLLER'] : array();
+			
+			$items = array_merge($a1, $a2, $a3);
+			if (version_compare(PHP_VERSION, '5.2.9', '<')) {
+				$items = array_unique($items);
+			} else {
+				// stupid PHP
+				$items = array_unique($items, SORT_STRING);
+			}
+			return $items;
+		}
+		
 		/** 
 		 * Function responsible for outputting header items
 		 * @access private
 		 */
 		public function outputHeaderItems() {
 			
-			$a1 = (is_array($this->headerItems['CORE'])) ? $this->headerItems['CORE'] : array();
-			$a2 = (is_array($this->headerItems['VIEW'])) ? $this->headerItems['VIEW'] : array();
-			$a3 = (is_array($this->headerItems['CONTROLLER'])) ? $this->headerItems['CONTROLLER'] : array();
-			
-			$items = array_merge($a1, $a2, $a3);
-			$items = array_unique($items);
+			$items = $this->getHeaderItems();
 			
 			// Loop through all items
 			// If it is a header output object, place each item in a separate array for its container directory
@@ -391,7 +402,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function url($action, $task = null) {
 			$dispatcher = '';
 			if ((!URL_REWRITING_ALL) || !defined('URL_REWRITING_ALL')) {
-				$dispatcher = '/index.php';
+				$dispatcher = '/' . DISPATCHER_FILENAME;
 			}
 			
 			$action = trim($action, '/');
@@ -407,7 +418,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 			
 			if ($task != null) {
-				$_action .= '-/' . $task;
+				if (ENABLE_LEGACY_CONTROLLER_URLS) {
+					$_action .= '-/' . $task;
+				} else {
+					$_action .= $task;			
+				}
 				$args = func_get_args();
 				if (count($args) > 2) {
 					for ($i = 2; $i < count($args); $i++){
@@ -447,7 +462,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function renderError($title, $error, $errorObj = null) {
 			$innerContent = $error;
 			$titleContent = $title; 
-			if (!isset($this->theme) || (!$this->theme)) {
+			if (!isset($this->theme) || (!$this->theme) || (!file_exists($this->theme))) {
 				$this->setThemeForView(DIRNAME_THEMES_CORE, FILENAME_THEMES_ERROR . '.php', true);
 				include($this->theme);	
 			} else {
@@ -561,7 +576,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @param array $args
 		 * @return void
 		*/	
-		public function render($view, $args = null) {
+		public function render($view, $args = null) { 
 			
 			try {			
 				if (is_array($args)) {
@@ -576,15 +591,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 				
 				$wrapTemplateInTheme = false;
+
+				Events::fire('on_start', $this);
 				
 				// Extract controller information from the view, and put it in the current context
 				if (!isset($this->controller)) {
 					$this->controller = Loader::controller($view);
 					$this->controller->setupAndRun();
 				}
-				
-				extract($this->controller->getSets());
-				extract($this->controller->getHelperObjects());
 				
 				// Determine which inner item to load, load it, and stick it in $innerContent
 				$content = false;
@@ -703,7 +717,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				// Now, if we're on an actual page, we retrieve all the blocks on the page
 				// and store their view states in the local cache (for the page). That way
 				// we can add header items and have them show up in the header BEFORE
-				// the block itself is actually loaded
+				// the block itself is actually loaded 			
+				
 				if ($view instanceof Page) {
 					$blocks = $view->getBlocks();
 					foreach($blocks as $b1) {
@@ -714,10 +729,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						}
 						$btc->runTask('on_page_view', array($view));
 					}
+					
+					// now, we output all the custom style records for the design tab in blocks/areas on the page
+					$c = $this->getCollectionObject();
+					$view->outputCustomStyleHeaderItems(); 				
 				}
 	
 				// finally, we include the theme (which was set by setTheme and will automatically include innerContent)
 				// disconnect from our db and exit
+
+				$this->controller->on_before_render();
+				extract($this->controller->getSets());
+				extract($this->controller->getHelperObjects());
+
 				if ($content != false) {
 					include($content);
 				}
@@ -734,8 +758,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					header("Content-Type: text/html; charset=" . APP_CHARSET);
 				}
 				
-				
-				include($this->theme);
+				if (file_exists($this->theme)) {
+					include($this->theme);
+				} else {
+					throw new Exception(t('File %s not found. All themes need default.php and view.php files in them. Consult concrete5 documentation on how to create these files.', $this->theme));
+				}
 				
 				Events::fire('on_render_complete', $this);
 				

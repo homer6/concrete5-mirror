@@ -28,6 +28,11 @@ if (is_array($headerItems[$identifier])) {
 	}
 }
 ?>
+$(function() {
+	$('#ccm-block-form').each(function() {
+		ccm_setupBlockForm($(this), '<?php echo $b->getBlockID()?>', 'edit');
+	});
+});
 </script>
 
 <form method="post" id="ccm-block-form" class="validate" action="<?php echo $b->getBlockEditAction()?>&rcID=<?php echo intval($rcID)?>" enctype="multipart/form-data">

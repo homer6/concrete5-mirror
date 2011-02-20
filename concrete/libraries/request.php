@@ -45,6 +45,9 @@ class Request {
 		}
 		$path = str_replace($replace, '', $path);
 		$path = trim($path, '/');
+		if (defined('ENABLE_CMS_FOR_PATH') && ENABLE_CMS_FOR_PATH != '') {
+			$path = ENABLE_CMS_FOR_PATH . '/' . $path;
+		}
 		return $path;
 	}
 	
@@ -78,6 +81,31 @@ class Request {
 		return $req;
 	}
 	
+	/** 
+	 * our new MVC way of doing things. Parses the collection path using like to find
+	 * where the path stops and the parameters start. Enables us to use urls without a
+	 * task/param separator in them
+	 */
+	public function getRequestedPage() {
+		$db = Loader::db();
+		$path = $this->getRequestCollectionPath();
+		// Get the longest path (viz most specific match) that is contained
+		// within the request path
+		$cID = $db->Execute("select cID,cPath from PagePaths where ? LIKE CONCAT(replace(cPath, '_','\_'),'%') ORDER BY LENGTH(cPath) DESC LIMIT 0,1", array($this->getRequestCollectionPath()));
+		$cID = $cID->FetchRow();
+		if ($cID) {
+			$req = Request::get();
+			$cPath = $cID['cPath'];
+			$cID = $cID['cID'];
+			$req->setCollectionPath($cPath);			
+			$c = Page::getByID($cID);
+		} else {
+			$c = new Page();
+			$c->loadError(COLLECTION_NOT_FOUND);
+		}
+		return $c;
+	}
+	
 	private function parse() {
 		
 		$path = $this->requestPath;
@@ -88,34 +116,35 @@ class Request {
 			$this->cID = HOME_CID;
 		}
 		// home page w/param and task
+		if (ENABLE_LEGACY_CONTROLLER_URLS == true) {
+			if (preg_match("/^\-\/(.[^\/]*)\/(.*)/i", $path, $matches)) {
+				$this->task = $matches[1];
+				$this->params = $matches[2];
+				return;
+			}
+	
+			// home page w/just task
+			if (preg_match("/^\-\/(.[^\/]*)/i", $path, $matches)) {
+				$this->task = $matches[1];
+				return;
+			}
+	
+			// path + task + params
+			if (preg_match("/^(.[^\.]*)\/\-\/(.[^\/]*)\/(.*)/i", $path, $matches)) {
+				$this->cPath = $matches[1];
+				$this->task = $matches[2];
+				$this->params = $matches[3];
+				return;
+			}
+			
+			// path + task
+			if (preg_match("/^(.[^\.]*)\/\-\/(.[^\/]*)/i", $path, $matches)) {
+				$this->cPath = $matches[1];
+				$this->task = $matches[2];
+				return;
+			}
+		}
 		
-		if (preg_match("/^\-\/(.[^\/]*)\/(.*)/i", $path, $matches)) {
-			$this->task = $matches[1];
-			$this->params = $matches[2];
-			return;
-		}
-
-		// home page w/just task
-		if (preg_match("/^\-\/(.[^\/]*)/i", $path, $matches)) {
-			$this->task = $matches[1];
-			return;
-		}
-
-		// path + task + params
-		if (preg_match("/^(.[^\.]*)\/\-\/(.[^\/]*)\/(.*)/i", $path, $matches)) {
-			$this->cPath = $matches[1];
-			$this->task = $matches[2];
-			$this->params = $matches[3];
-			return;
-		}
-		
-		// path + task
-		if (preg_match("/^(.[^\.]*)\/\-\/(.[^\/]*)/i", $path, $matches)) {
-			$this->cPath = $matches[1];
-			$this->task = $matches[2];
-			return;
-		}
-
 		// tools
 
 		if (preg_match("/^tools\/blocks\/(.[^\/]*)\/(.[^\.]*).php|^tools\/blocks\/(.[^\/]*)\/(.[^\.]*)/i", $path, $matches)) {
@@ -175,8 +204,8 @@ class Request {
 
 		
 		// just path
-		if (preg_match("/^(.[^\.]*)/i", $path, $matches)) {
-			$this->cPath = $matches[1];
+		if ($path != '') {
+			$this->cPath = $path;
 			return;
 		}		
 	}
@@ -265,4 +294,32 @@ class Request {
 	public function getPackageHandle() {
 		return $this->pkgHandle;
 	}
+
+	/**
+	 * Sets the controller task, used when the Page object identifies
+	 * the actual path.
+	 * @param string $task the name of the task function
+	 */
+	public function setRequestTask($task) {
+		$this->task = $task;
+	}
+	
+	/**
+	 * Sets the controller params, used when the Page object identifies
+	 * the actual path.
+	 * @param string $params List of params, separated by "/"
+	 */
+	public function setRequestTaskParameters($params) {
+		$this->params = $params;
+	}
+	
+	/**
+	 * Sets the request path, used when the Page object identifies
+	 * the actual path.
+	 * @param string $path The path
+	 */
+	public function setCollectionPath($path) {
+		$this->cPath = $path;
+	}
+
 }

@@ -2,7 +2,7 @@
 $h = Loader::helper('concrete/interface');
 ?>
 
-<style>
+<style type="text/css">
 .ccm-module form{ width:auto; height:auto; padding:0px; padding-bottom:10px; display:block; }
 .ccm-module form div.ccm-dashboard-inner{ margin-bottom:0px !important; }
 </style>
@@ -111,7 +111,7 @@ $h = Loader::helper('concrete/interface');
 			
 			<div class="ccm-dashboard-checkbox"><input type="checkbox" name="enable_openID" value="1" style="vertical-align: middle" <?php  if ($enable_openID) { ?> checked <?php  } ?> /> <?php echo t('Enable OpenID')?></div>
 			<br />
-			<div class="ccm-dashboard-checkbox"><input type="checkbox" name="email_as_username" value="1" style="vertical-align: middle" <?php  if ($email_as_username) { ?> checked <?php  } ?> /> <?php echo t('Use email address as username')?></div>
+			<div class="ccm-dashboard-checkbox"><input type="checkbox" name="email_as_username" value="1" style="vertical-align: middle" <?php  if ($email_as_username) { ?> checked <?php  } ?> /> <?php echo t('Login using email address.')?></div>
 			
 			<?php 
 			$b1 = $h->submit(t('Save'), 'registration-type-form');

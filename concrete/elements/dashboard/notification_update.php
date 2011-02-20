@@ -1,7 +1,7 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
 <?php  if (version_compare($latest_version, APP_VERSION, '>')) { ?>
 <div id="ccm-dashboard-notification">
-<?php echo t('The latest version of Concrete5 is <strong>%s</strong>. You are running %s. <a href="%s">Update Now</a>!', $latest_version, APP_VERSION, APP_VERSION_LATEST_DOWNLOAD)?>
+<?php echo t('The latest version of Concrete5 is <strong>%s</strong>. You are running %s. <a href="%s">Update Now</a>!', $latest_version, APP_VERSION, $this->url('/dashboard/system/update'))?>
 </div>
 <?php  } else if (version_compare(APP_VERSION, Config::get('SITE_APP_VERSION'), '>')) { ?>
 <div id="ccm-dashboard-notification">

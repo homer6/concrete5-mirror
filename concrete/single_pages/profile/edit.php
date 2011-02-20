@@ -17,7 +17,7 @@
         
         <h1><?php echo t('Edit Profile')?></h1>
         <div class="ccm-form">
-            <form method="post" action="<?php echo $this->action('save')?>" id="profile-edit-form">
+            <form method="post" action="<?php echo $this->action('save')?>" id="profile-edit-form" enctype="multipart/form-data">
             <?php  $attribs = UserAttributeKey::getEditableInProfileList(); 
             if(is_array($attribs) && count($attribs)) { 
             ?>

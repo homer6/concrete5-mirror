@@ -3,6 +3,11 @@
 <?php echo t('Title')?><br />
 <input type="text" name="title" value="<?php echo t('Comments')?>:" /><br /><br />
 
+<?php echo t('Date Format')?><br/>
+<input type="text" name="dateFormat" value="<?php echo t('M jS, Y')?>" />
+<div class="ccm-note">(<?php echo t('Enter a <a href="%s" target="_blank">PHP date string</a> here.', 'http://www.php.net/date')?>)</div>
+<br/>
+
 <?php echo t('Comments Require Moderator Approval?')?><br/>
 <input type="radio" name="requireApproval" value="1" /> <?php echo t('Yes')?><br />
 <input type="radio" name="requireApproval" value="0" checked="checked" /> <?php echo t('No')?><br /><br />

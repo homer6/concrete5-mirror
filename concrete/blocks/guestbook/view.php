@@ -1,5 +1,6 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-<?php  $c = Page::getCurrentPage(); ?><style>
+<?php  $c = Page::getCurrentPage(); ?>
+<style type="text/css">
 
 h4.guestBook-title {
 	border-bottom:1px solid #666666;
@@ -52,6 +53,9 @@ div.guestBook-entry {
 <?php  } ?>
 <?php 
 $u = new User();
+if (!$dateFormat) {
+	$dateFormat = t('M jS, Y');
+}
 $posts = $controller->getEntries();
 $bp = $controller->getPermissionsObject(); 
 foreach($posts as $p) { ?>
@@ -82,7 +86,7 @@ foreach($posts as $p) { ?>
 				</span> 
 				<?php echo t('on')?>
 				<span class="contentDate">
-					<?php echo date("M jS, Y",strtotime($p['entryDate']));?>
+					<?php echo date($dateFormat,strtotime($p['entryDate']));?>
 				</span>
 			</div>
 			<?php echo nl2br($p['commentText'])?>

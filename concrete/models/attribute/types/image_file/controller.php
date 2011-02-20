@@ -13,6 +13,11 @@ class ImageFileAttributeTypeController extends AttributeTypeController  {
 			return $f;
 		}
 	}
+	
+	public function getDisplayValue() {
+		$f = $this->getValue();
+		return '<a href="' . $f->getDownloadURL() . '">' . $f->getTitle() . '</a>';
+	}
 
 	public function searchForm($list) {
 		$fileID = $this->request('value');
@@ -20,9 +25,16 @@ class ImageFileAttributeTypeController extends AttributeTypeController  {
 		return $list;
 	}
 	
+	public function getSearchIndexValue() {
+		$db = Loader::db();
+		$value = $db->GetOne("select fID from atFile where avID = ?", array($this->getAttributeValueID()));
+		return $value;	
+	}
+	
 	public function search() {
-		$al = Loader::helper('concrete/asset_library');
-		print $al->file('ccm-file-akID-' . $this->attributeKey->getAttributeKeyID(), $this->field('value'), t('Choose File'), $bf);
+		// search by file causes too many problems
+		//$al = Loader::helper('concrete/asset_library');
+		//print $al->file('ccm-file-akID-' . $this->attributeKey->getAttributeKeyID(), $this->field('value'), t('Choose File'), $bf);
 	}
 	
 	public function form() {

@@ -12,7 +12,7 @@ if ($cp->canAdminPage()) {
 ?>
 <div class="ccm-pane-controls">
 <form method="post" name="permissionForm" id="ccmMetadataForm" action="<?php echo $c->getCollectionAction()?>">
-			<input type="hidden" name="rel" value="<?php echo $_REQUEST['rel']?>" />
+<input type="hidden" name="rel" value="<?php echo $_REQUEST['rel']?>" />
 
 	<script type="text/javascript"> 
 		
@@ -31,9 +31,37 @@ if ($cp->canAdminPage()) {
 			$(this).parent().addClass("ccm-nav-active");
 			$("#" + ccm_activePropertiesTab + "-tab").show();
 		});
+		
+		$(function() {
+			$("#ccmMetadataForm").ajaxForm({
+				type: 'POST',
+				iframe: true,
+				beforeSubmit: function() {
+					jQuery.fn.dialog.showLoader();
+				},
+				success: function(r) {
+					try {
+						var r = eval('(' + r + ')');
+						if (r != null && r.rel == 'SITEMAP') {
+							jQuery.fn.dialog.hideLoader();
+							jQuery.fn.dialog.closeTop();
+							ccmSitemapHighlightPageLabel(r.cID, r.name);
+						} else {
+							ccm_mainNavDisableDirectExit();
+							ccm_hidePane(function() {
+								jQuery.fn.dialog.hideLoader();						
+							});
+						}
+						ccmAlert.hud(ccmi18n.savePropertiesMsg, 2000, 'success', ccmi18n.properties);
+					} catch(e) {
+						alert(r);
+					}
+				}
+			});
+		});
 	</script>
 	
-	<style>
+	<style type="text/css">
 	.ccm-field-meta #newAttrValueRows{ margin-top:4px; }
 	.ccm-field-meta .newAttrValueRow{margin-top:4px}	
 	.ccm-field-meta input.faint{ color:#999 }
@@ -52,7 +80,7 @@ if ($cp->canAdminPage()) {
 	<ul class="ccm-dialog-tabs" id="ccm-properties-tabs">
 		<li class="ccm-nav-active"><a href="javascript:void(0)" id="ccm-properties-standard"><?php echo t('Standard Properties')?></a></li>
 		<li><a href="javascript:void(0)" id="ccm-page-paths"><?php echo t('Page Paths and Location')?></a></li>
-		<li><a href="javascript:void(0)" id="ccm-properties-custom"><?php echo t('Custom Fields')?></a></li>
+		<li><a href="javascript:void(0)" id="ccm-properties-custom"><?php echo t('Custom Attributes')?></a></li>
 	</ul>
 
 	<div id="ccm-properties-standard-tab">
@@ -65,7 +93,7 @@ if ($cp->canAdminPage()) {
 	
 	<label><?php echo t('Public Date/Time')?></label> 
 	<?php  
-	print $dt->datetime('cDatePublic', $c->getCollectionDatePublic('user')); ?>
+	print $dt->datetime('cDatePublic', $c->getCollectionDatePublic(null, 'user')); ?>
 	</div>
 	
 	<div class="ccm-field-two">
@@ -89,7 +117,8 @@ if ($cp->canAdminPage()) {
 		<div class="ccm-field">
 		<label><?php echo  t('Canonical URL')?></label>
 		<?php  if (!$c->isGeneratedCollection()) { ?>
-			<?php echo BASE_URL . DIR_REL . substr($c->getCollectionPath(), 0, -1 * strlen($c->getCollectionHandle()))?><input s type="text" name="cHandle" class="ccm-input-text" value="<?php  echo $c->getCollectionHandle()?>" id="cHandle"><input type="hidden" name="oldCHandle" value="<?php  echo $c->getCollectionHandle()?>"><br /><br />
+			<?php echo BASE_URL . DIR_REL . DISPATCHER_FILENAME .
+			substr($c->getCollectionPath(), 0, -1 * strlen($c->getCollectionHandle()))?><input type="text" name="cHandle" class="ccm-input-text" value="<?php  echo $c->getCollectionHandle()?>" id="cHandle"><input type="hidden" name="oldCHandle" value="<?php  echo $c->getCollectionHandle()?>"><br /><br />
 		<?php   } else { ?>
 			<?php  echo $c->getCollectionHandle()?><br /><br />
 		<?php   } ?>
@@ -133,5 +162,5 @@ if ($cp->canAdminPage()) {
 </div>
 	<div class="ccm-buttons">
 <!--	<a href="javascript:void(0)" onclick="ccm_hidePane()" class="ccm-button-left cancel"><span><em class="ccm-button-close">Cancel</em></span></a>//-->
-	<a href="javascript:void(0)" onclick="$('#ccmMetadataForm').get(0).submit()" class="ccm-button-right accept"><span><?php echo t('Save')?></span></a>
+	<a href="javascript:void(0)" onclick="$('#ccmMetadataForm').submit()" class="ccm-button-right accept"><span><?php echo t('Save')?></span></a>
 	</div>

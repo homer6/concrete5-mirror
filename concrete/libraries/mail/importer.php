@@ -69,6 +69,22 @@ class MailImporter extends Object {
 		return MailImporter::getByID($miID);
 	}
 	
+	public function delete() {
+		$db = Loader::db();
+		$db->Execute('delete from MailImporters where miID = ?', array($this->miID));
+	}
+	
+	public static function getListByPackage($pkg) {
+		$db = Loader::db();
+		$list = array();
+		$r = $db->Execute('select miID from MailImporters where pkgID = ? order by miID asc', array($pkg->getPackageID()));
+		while ($row = $r->FetchRow()) {
+			$list[] = self::getByID($row['miID']);
+		}
+		$r->Close();
+		return $list;
+	}	
+	
 	public function getMailImporterID() {return $this->miID;}
 	public function getMailImporterName() {
 		$txt = Loader::helper('text');
@@ -271,10 +287,9 @@ class MailImportedMessage {
 		$r = preg_split(MailImporter::getMessageBodyHashRegularExpression(), $this->body, $matches);		
 		$message = $r[0];
 		$r = preg_replace(array(
-			'/On (.*) at (.*) wrote:/i'
+			'/On (.*) at (.*) wrote:/i',
+			'/[\n\r\s\>]*\Z/i'
 		), '', $message);
-		
-		$r = trim($r, "> \n\t");
 		return $r;
 	}
 	

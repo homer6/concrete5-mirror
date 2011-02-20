@@ -1,10 +1,9 @@
 <?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
-$ch = Page::getByPath("/dashboard/sitemap");
-$chp = new Permissions($ch);
-if (!$chp->canRead()) {
-	die(_("Access Denied."));
+$sh = Loader::helper('concrete/dashboard/sitemap');
+if (!$sh->canRead()) {
+	die(t('Access Denied'));
 }
 
 Loader::model('collection_types');
@@ -83,11 +82,11 @@ if (!$error) {
 	}
 }
 
-
 if ($successMessage) {
 	$json['error'] = false;
 	$json['message'] = $successMessage;
 	$json['cID'] = $newCID;
+	$json['instance_id'] = $_REQUEST['instance_id'];
 	$js = Loader::helper('json');
 	print $js->encode($json);
 	exit;
@@ -114,6 +113,9 @@ if ($successMessage) {
 		<input type="hidden" name="origCID" id="origCID" value="<?php echo $_REQUEST['origCID']?>" />
 		<input type="hidden" name="destParentID" id="destParentID" value="<?php echo $dc->getCollectionParentID()?>" />
 		<input type="hidden" name="destCID" id="destCID" value="<?php echo $_REQUEST['destCID']?>" />
+		<input type="hidden" name="instance_id" id="instance_id" value="<?php echo $_REQUEST['instance_id']?>" />
+		<input type="hidden" name="select_mode" id="select_mode" value="<?php echo $_REQUEST['select_mode']?>" />
+		<input type="hidden" name="display_mode" id="display_mode" value="<?php echo $_REQUEST['display_mode']?>" />
 
 		<input type="radio" checked style="vertical-align: middle" id="ctaskMove" name="ctask" value="MOVE" onclick="toggleMove()" />
 		<strong><?php echo t('Move')?></strong> "<?php echo $oc->getCollectionName()?>" <?php echo t('beneath')?> "<?php echo $dc->getCollectionName()?>"
@@ -141,8 +143,6 @@ if ($successMessage) {
 	<div class="ccm-buttons">
 	<?php  if ($_REQUEST['sitemap_mode'] == 'move_copy_delete') { ?>
 		<a href="javascript:void(0)" onclick="$.fn.dialog.closeTop()" id="ccm-exit-drag-request" title="<?php echo t('Choose Page')?>" class="ccm-button-left cancel"><span><em class="ccm-button-close"><?php echo t('Cancel')?></em></span></a>
-
-
 	<?php  } else { ?>
 		<a href="javascript:void(0)" onclick="showBranch(<?php echo $oc->getCollectionID()?>);$.fn.dialog.closeTop()" class="ccm-button-left cancel"><span><em class="ccm-button-close"><?php echo t('Cancel')?></em></span></a>
 	<?php  } ?>

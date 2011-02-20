@@ -14,11 +14,15 @@ class RegisterController extends Controller {
 		$u = new User();
 		$this->set('u', $u);
 		
+		/*
 		if (USER_REGISTRATION_WITH_EMAIL_ADDRESS) {
 			$this->set('displayUserName', false);
 		} else {
 			$this->set('displayUserName', true);
-		}
+		}*/
+		
+		$this->set('displayUserName', true);
+		
 	}
 	
 	public function forward($cID) {
@@ -36,10 +40,6 @@ class RegisterController extends Controller {
 		$vals = Loader::helper('validation/strings');
 		$valc = Loader::helper('concrete/validation');
 
-		if (USER_REGISTRATION_WITH_EMAIL_ADDRESS == true) {
-			$_POST['uName'] = $_POST['uEmail'];
-		}
-		
 		$username = $_POST['uName'];
 		$password = $_POST['uPassword'];
 		$passwordConfirm = $_POST['uPasswordConfirm'];
@@ -66,7 +66,7 @@ class RegisterController extends Controller {
 			$e->add(t("The email address %s is already in use. Please choose another.", $_POST['uEmail']));
 		}
 		
-		if (USER_REGISTRATION_WITH_EMAIL_ADDRESS == false) {
+		//if (USER_REGISTRATION_WITH_EMAIL_ADDRESS == false) {
 			
 			if (strlen($username) < USER_USERNAME_MINIMUM) {
 				$e->add(t('A username must be between at least %s characters long.', USER_USERNAME_MINIMUM));
@@ -88,7 +88,7 @@ class RegisterController extends Controller {
 			if (!$valc->isUniqueUsername($username)) {
 				$e->add(t("The username %s already exists. Please choose another", $username));
 			}		
-		}
+		//}
 		
 		if ($username == USER_SUPER) {
 			$e->add(t('Invalid Username'));
@@ -141,8 +141,11 @@ class RegisterController extends Controller {
 				}
 				
 				// now we log the user in
-
-				$u = new User($_POST['uName'], $_POST['uPassword']);
+				if (USER_REGISTRATION_WITH_EMAIL_ADDRESS) {
+					$u = new User($_POST['uEmail'], $_POST['uPassword']);
+				} else {
+					$u = new User($_POST['uName'], $_POST['uPassword']);
+				}
 				// if this is successful, uID is loaded into session for this user
 				
 				$rcID = $this->post('rcID');
@@ -157,6 +160,9 @@ class RegisterController extends Controller {
 						$uHash = $process->setupValidation();
 						
 						$mh = Loader::helper('mail');
+						if (defined('EMAIL_ADDRESS_VALIDATE')) {
+							$mh->from(EMAIL_ADDRESS_VALIDATE,  t('Validate Email Address'));
+						}
 						$mh->addParameter('uEmail', $_POST['uEmail']);
 						$mh->addParameter('uHash', $uHash);
 						$mh->to($_POST['uEmail']);
@@ -186,18 +192,6 @@ class RegisterController extends Controller {
 						$registerData['msg']=$this->getRegisterSuccessMsg();
 					}
 					$registerData['uID']=intval($u->uID);		
-					
-					if($_REQUEST['remote'] && intval($_REQUEST['timestamp'])){ 
-						$registerData['auth_token'] = 	UserInfo::generateAuthToken( $u->getUserName(), intval($_REQUEST['timestamp']) );
-						//is this user in a support group? 
-						foreach( RemoteMarketplaceHelper::getSupportGroups() as $group){
-							if($u->inGroup($group)){
-								$inValidSupportGroup=1;
-								break;
-							}
-						}
-						$registerData['in_support_group'] = intval($inValidSupportGroup);						
-					}
 				}
 				
 				$registerData['success']=1;

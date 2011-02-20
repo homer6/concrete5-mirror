@@ -35,7 +35,7 @@ $cList = $ct->getPages();
 		foreach($cList as $p) { ?>
 			<tr class="active">
 			<td><?php echo $p->getCollectionID()?></td>
-			<td><a href="<?php echo DIR_REL?>/index.php?cID=<?php echo $p->getCollectionID()?>" target="_blank"><?php echo $p->getCollectionName()?></a></td>
+			<td><a href="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?cID=<?php echo $p->getCollectionID()?>" target="_blank"><?php echo $p->getCollectionName()?></a></td>
 			<td style="text-align: center"><?php echo $p->getCollectionDateAdded('m/d/Y','user')?></td>
 			<td style="text-align: center"><?php  if ($b->isAlias($p)) { ?> <input type="hidden" name="checkedCIDs[]" value="<?php echo $p->getCollectionID()?>" /><?php  } ?><?php echo $p->getCollectionDateLastModified('m/d/Y','user')?></td>
 			<td style="text-align: center"><input class="mc-cb" type="checkbox" name="cIDs[]" value="<?php echo $p->getCollectionID()?>" <?php  if ($b->isAlias($p)) { ?> checked <?php  } ?> /></td>
@@ -49,7 +49,7 @@ $cList = $ct->getPages();
 	
 	<div class="ccm-buttons">
 	<a href="#" class="ccm-dialog-close ccm-button-left cancel"><span><em class="ccm-button-close"><?php echo t('Cancel')?></em></span></a>
-	<a href="javascript:$('#ccmBlockMasterCollectionForm').get(0).submit()" class="ccm-button-right accept"><span><?php echo t('Update')?></span></a>
+	<a href="javascript:void(0)" onclick="$('#ccmBlockMasterCollectionForm').submit()" class="ccm-button-right accept"><span><?php echo t('Update')?></span></a>
 	</div>
 
 <script type="text/javascript">
@@ -65,6 +65,10 @@ $(function() {
 			});
 		}
 	});
+	$('#ccmBlockMasterCollectionForm').each(function() {
+		ccm_setupBlockForm($(this), '<?php echo $b->getBlockID()?>', 'edit');
+	});
+
 });
 
 </script>

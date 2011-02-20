@@ -54,6 +54,7 @@ class Block extends Object {
 			$cID = 0;
 			$arHandle = "";
 			$cvID = 0;
+			$b = Cache::get('block', $bID);
 		} else {
 			if (is_object($a)) {
 				$arHandle = $a->getAreaHandle();
@@ -63,14 +64,16 @@ class Block extends Object {
 			}
 			$cID = $c->getCollectionID();
 			$cvID = $c->getVersionID();
+			$b = Cache::get('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle);
+			if ($b instanceof Block) {
+				return $b;
+			}
 		}
 
-		$ca = new Cache(); 
-		
-		$b = $ca->get('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle);
 		if ($b instanceof Block) {
 			return $b;
 		}
+
 		$db = Loader::db();
 
 		$b = new Block;
@@ -101,6 +104,12 @@ class Block extends Object {
 		
 		if (is_array($row)) {
 			$b->setPropertiesFromArray($row);
+			$b->csrID = $db->GetOne('select csrID from CollectionVersionBlockStyles where cID = ? and cvID = ? and arHandle = ? and bID = ?', array(
+				$cID, 
+				$cvID,
+				$b->arHandle,
+				$bID
+			));
 			$r->free();
 			
 			$bt = BlockType::getByID($b->getBlockTypeID());
@@ -116,6 +125,9 @@ class Block extends Object {
 			if ($c != null || $a != null) {
 				$ca = new Cache();
 				$ca->set('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle, $b);
+			} else {
+				$ca = new Cache();
+				$ca->set('block', $bID, $b);
 			}
 			return $b;				
 
@@ -157,7 +169,9 @@ class Block extends Object {
 		if ($c) {
 			$db = Loader::db();
 			$cID = $c->getCollectionID();
-			$q = "select bID from CollectionVersionBlocks where bID = '{$this->bID}' and cID='{$cID}' and isOriginal = 0";
+			$vo = $c->getVersionObject();
+			$cvID = $vo->getVersionID();
+			$q = "select bID from CollectionVersionBlocks where bID = '{$this->bID}' and cID='{$cID}' and isOriginal = 0 and cvID = $cvID";
 			$r = $db->query($q);
 			if ($r) {
 				return ($r->numRows() > 0);
@@ -368,7 +382,15 @@ class Block extends Object {
 			$q = "insert into CollectionVersionBlocks (cID, cvID, bID, arHandle, cbDisplayOrder, isOriginal, cbOverrideAreaPermissions) values (?, ?, ?, ?, ?, ?, ?)";
 			$r = $db->prepare($q);
 			$res = $db->execute($r, $v);
-
+			
+			// styles
+			$db->Execute('insert into CollectionVersionBlockStyles (cID, cvID, bID, arHandle, csrID) values (?, ?, ?, ?, ?)', array(
+				$cID, 
+				$cvID,
+				$this->bID,
+				$this->getAreaHandle(),
+				$this->csrID
+			));
 			if ($res) {
 				// now we grab the permissions from the block we're aliasing from
 				$oc = $this->getBlockCollectionObject();
@@ -380,8 +402,9 @@ class Block extends Object {
 
 				if ($ra) {
 					while ($row_a = $ra->fetchRow()) {
-						$qa2 = "insert into CollectionVersionBlockPermissions (cID, cvID, bID, gID, uID, cbgPermissions) values ('{$cID}', '{$cvID}', '{$this->bID}', '{$row_a['gID']}', '{$row_a['uID']}', '{$row_a['cbgPermissions']}')";
-						$ra2 = $db->query($qa2);
+						$db->Replace('CollectionVersionBlockPermissions', 
+							array('cID' => $cID, 'cvID' => $cvID, 'bID' => $this->bID, 'gID' => $row_a['gID'], 'uID' => $row_a['uID'], 'cbgPermissions' => $row_a['cbgPermissions']),
+							array('cID', 'cvID', 'bID', 'gID', 'uID'), true);
 					}
 					$ra->free();
 				}
@@ -433,8 +456,10 @@ class Block extends Object {
 		$r = $db->query($q);
 		if ($r) {
 			while ($row = $r->fetchRow()) {
-				$q = "insert into CollectionVersionBlockPermissions (cID, cvID, bID, gID, uID, cbgPermissions) values ('$ncID', '$nvID', '{$newBID}', '{$row['gID']}', '{$row['uID']}', '{$row['cbgPermissions']}')";
-				$r2 = $db->query($q);
+				$db->Replace('CollectionVersionBlockPermissions', 
+					array('cID' => $ncID, 'cvID' => $nvID, 'bID' => $newBID, 'gID' => $row['gID'], 'uID' => $row['uID'], 'cbgPermissions' => $row['cbgPermissions']),
+					array('cID', 'cvID', 'bID', 'gID', 'uID'), true);
+
 			}
 			$r->free();
 		}
@@ -461,15 +486,50 @@ class Block extends Object {
 		$res2 = $db->execute($r2, $v2);
 		$nb = Block::getByID($newBID, $nc, $this->arHandle);
 		
-		//now we need to duplicate the associated CollectionVersionBlockStyles
-		$blockStyles = BlockStyles::retrieve( $this->bID , $oc );
-		if($blockStyles){
-			$blockStyles->setBID( $newBID ); 
-			$blockStyles->setCID( $ncID ); 
-			$blockStyles->save( $nc );
-		}
-
+		$v = array($ncID, $nvID, $newBID, $this->arHandle, $this->csrID);
+		$db->Execute('insert into CollectionVersionBlockStyles (cID, cvID, bID, arHandle, csrID) values (?, ?, ?, ?, ?)', $v);
+		
 		return $nb;
+	}
+	
+	public function getBlockCustomStyleRule() {
+		$db = Loader::db();
+		$csrID = $this->csrID;
+		if ($csrID > 0) {
+			Loader::model('custom_style');
+			$csr = CustomStyleRule::getByID($csrID);
+			if (is_object($csr)) {
+				$csr->setCustomStyleNameSpace('blockStyle');
+				return $csr;
+			}
+		}
+	}
+	
+	public function getBlockCustomStyleRuleID() {return $this->csrID;}
+	
+	
+	public function resetBlockCustomStyle() {
+		$db = Loader::db();
+		$c = $this->getBlockCollectionObject();
+		$cvID = $c->getVersionID();
+		$db->Execute('delete from CollectionVersionBlockStyles where cID = ? and cvID = ? and arHandle = ? and bID = ?', array(
+			$this->getBlockCollectionID(),
+			$cvID,
+			$this->getAreaHandle(),
+			$this->bID
+		));
+		$this->refreshCache();
+	}
+	
+	public function setBlockCustomStyle($csr) {
+		$db = Loader::db();
+		$c = $this->getBlockCollectionObject();
+		$cvID = $c->getVersionID();
+		$db->Replace('CollectionVersionBlockStyles', 
+			array('cID' => $this->getBlockCollectionID(), 'cvID' => $cvID, 'arHandle' => $this->getAreaHandle(), 'bID' => $this->bID, 'csrID' => $csr->getCustomStyleRuleID()),
+			array('cID', 'cvID', 'bID', 'arHandle'), true
+		);
+		$this->refreshCache();
 	}
 
 	function getBlockCollectionObject() {
@@ -629,7 +689,7 @@ class Block extends Object {
 			$q = "delete from CollectionVersionBlockPermissions where bID = '$bID' and cvID = '$cvID' and cID = '$cID'";
 			$r = $db->query($q);
 			
-			$q = "delete from CollectionVersionBlockStyles where bID = ".intval($bID)." AND cID = ".intval($cID);
+			$q = "delete from CollectionVersionBlockStyles where cID = '$cID' and cvID = '$cvID' and bID = '$bID' and arHandle = '$arHandle'";
 			//$r = $db->query($q);				
 		}
 
@@ -817,18 +877,19 @@ class Block extends Object {
 									foreach ($gIDArray as $gID => $perms) {
 										// we have to trim the trailing colon, if there is one
 										$permissions = (strrpos($perms, ':') == (strlen($perms) - 1)) ? substr($perms, 0, strlen($perms) - 1) : $perms;
-										$v = array($cvRow['cID'], $cvRow['cvID'], $this->bID, $gID, $permissions);
-										$q = "insert into CollectionVersionBlockPermissions (cID, cvID, bID, gID, cbgPermissions) values (?, ?, ?, ?, ?)";
-										$r = $db->prepare($q);
-										$res = $db->execute($r, $v);
+										// we call a replace here because there is a concrete5 bug which could lead to us inserting multiple rows.
+										// we SHOULDN'T be but that's because we're not tracking arHandle in this table at all. That is a problem. This is a 
+										// quick fix to work around it but that needs to be addressed.
+										$db->Replace('CollectionVersionBlockPermissions', 
+											array('cID' => $cvRow['cID'], 'cvID' => $cvRow['cvID'], 'bID' => $this->bID, 'gID' => $gID, 'cbgPermissions' => $permissions),
+											array('cID', 'cvID', 'bID', 'gID'), true);
 									}
 									foreach ($uIDArray as $uID => $perms) {
 										// we have to trim the trailing colon, if there is one
 										$permissions = (strrpos($perms, ':') == (strlen($perms) - 1)) ? substr($perms, 0, strlen($perms) - 1) : $perms;
-										$v = array($cvRow['cID'], $cvRow['cvID'], $this->bID, $uID, $permissions);
-										$q = "insert into CollectionVersionBlockPermissions (cID, cvID, bID, uID, cbgPermissions) values (?, ?, ?, ?, ?)";
-										$r = $db->prepare($q);
-										$res = $db->execute($r, $v);
+										$db->Replace('CollectionVersionBlockPermissions', 
+											array('cID' => $cvRow['cID'], 'cvID' => $cvRow['cvID'], 'bID' => $this->bID, 'uID' => $uID, 'cbgPermissions' => $permissions),
+											array('cID', 'cvID', 'bID', 'uID'), true);
 									}
 								}
 							}
@@ -905,6 +966,7 @@ class Block extends Object {
 		if (is_object($c) && is_object($a)) {
 			Cache::delete('block', $this->getBlockID() . ':' . $c->getCollectionID() . ':' . $c->getVersionID() . ':' . $a->getAreaHandle());
 		}
+		Cache::delete('block', $this->getBlockID());		
 	}
 	
 	public function refreshCacheAll(){

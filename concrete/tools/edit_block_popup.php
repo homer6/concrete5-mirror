@@ -20,10 +20,13 @@ if($_REQUEST['isGlobal'] && ($_REQUEST['btask']=='edit' || $_REQUEST['btask']=='
 $bp = new Permissions($b);
 if (!$bp->canWrite()) {
 	die(_("Access Denied."));
+} 
+
+if ($_REQUEST['btask'] != 'view' && $_REQUEST['btask'] != 'view_edit_mode') { 
+	include(DIR_FILES_ELEMENTS_CORE . '/dialog_header.php');
 }
 
-include(DIR_FILES_ELEMENTS_CORE . '/dialog_header.php');
-$bv = new BlockView();
+$bv = new BlockView(); 
 			
 if($isGlobal){
 	echo '<div class="ccm-notification">';
@@ -37,12 +40,69 @@ if (is_object($b)) {
 	switch($_REQUEST['btask']) {
 		case 'block_css': 		
 			if ($bp->canWrite()) {
-				$bv->renderElement('block_custom_css', array('b' => $b, 'rcID'=>$rcID, 'c' => $c, 'a' => $a) );
+				$style = $b->getBlockCustomStyleRule();
+				$action = $b->getBlockUpdateCssAction();
+				if ($_REQUEST['subtask'] == 'delete_custom_style_preset') {
+					$styleToDelete = CustomStylePreset::getByID($_REQUEST['deleteCspID']);
+					$styleToDelete->delete();
+				}
+				$refreshAction = REL_DIR_FILES_TOOLS_REQUIRED . '/edit_block_popup?btask=block_css&cID=' . $c->getCollectionID() . '&arHandle=' . $a->getAreaHandle() . '&bID=' . $b->getBlockID() . '&isGlobal=' . $_REQUEST['isGlobal'] . '&refresh=1';
+				$bv->renderElement('custom_style', array('b' => $b, 'rcID'=>$rcID, 'c' => $c, 'a' => $a, 'style' => $style, 'action' => $action, 'refreshAction' => $refreshAction) );
 			}
 			break;	 
 		case 'template': 		
 			if ($bp->canWrite()) {
 				$bv->renderElement('block_custom_template', array('b' => $b, 'rcID'=>$rcID));
+			}
+			break;
+		case 'view':
+			if ($bp->canRead()) {
+				$bv->render($b, 'view', array(
+					'c' => $c,
+					'a' => $a
+				));
+			}
+			break;
+		case 'view_edit_mode':
+			if ($bp->canWrite()) {
+
+				$btc = Loader::controller($b);
+				// now we inject any custom template CSS and JavaScript into the header
+				if('Controller' != get_class($btc)){
+					$btc->outputAutoHeaderItems();
+				}
+				$btc->runTask('on_page_view', array($bv));
+				
+				$v = View::getInstance();
+				
+				$items = $v->getHeaderItems();
+				if (count($items) > 0) { ?>
+				<script type="text/javascript">				
+				<?php 
+				foreach($items as $item) { 
+					if ($item instanceof CSSOutputObject) { ?>
+						// we only support CSS here
+						ccm_addHeaderItem("<?php echo $item->href?>", 'CSS');
+					<?php  } else if ($item instanceof JavaScriptOutputObject) { ?>
+						ccm_addHeaderItem("<?php echo $item->href?>", 'JAVASCRIPT');
+					<?php  }
+				
+				} ?>
+				</script>
+				<?php  }
+				
+				$bv->renderElement('block_controls', array(
+					'a' => $a,
+					'b' => $b,
+					'p' => $bp
+				));
+				$bv->renderElement('block_header', array(
+					'a' => $a,
+					'b' => $b,
+					'p' => $bp
+				));
+				$bv->render($b);
+				$bv->renderElement('block_footer');
 			}
 			break;
 		case 'groups':
@@ -67,4 +127,6 @@ if (is_object($b)) {
 	}
 }
 
-include(DIR_FILES_ELEMENTS_CORE . '/dialog_footer.php');
+if ($_REQUEST['btask'] != 'view' && $_REQUEST['btask'] != 'view_edit_mode') { 
+	include(DIR_FILES_ELEMENTS_CORE . '/dialog_footer.php');
+}

@@ -16,6 +16,7 @@ if (isset($_REQUEST['fID'])) {
 	$fr = false;
 }
 
+$searchInstance = $_POST['searchInstance'];
 
 $valt = Loader::helper('validation/token');
 Loader::library("file/importer");
@@ -81,7 +82,7 @@ if (count($errors) < 1) {
 					// make sure we're coming up with a unique filename 
 					do {
 						// make up a filename based on the current date/time, a random int, and the extension from the mime-type
-						$fname = date('d-m-Y_H:i_') . mt_rand(100, 999) . '.' . $fextension;
+						$fname = date(DATE_APP_FILENAME) . mt_rand(100, 999) . '.' . $fextension;
 					} while (file_exists($fpath.'/'.$fname));
 				}
 			} //else {
@@ -135,8 +136,8 @@ if(count($errors)) {
 			highlight.push(<?php echo $r->getFileID()?>);
 			window.parent.ccm_uploadedFiles.push(<?php echo intval($r->getFileID())?>);
 	<?php 	} ?>		
-		window.parent.ccm_filesUploadedDialog();	
-		window.parent.ccm_alRefresh(highlight);
+		window.parent.ccm_filesUploadedDialog('<?php echo $searchInstance?>');	
+		window.parent.ccm_alRefresh(highlight, '<?php echo $searchInstance?>');
 <?php  } ?>
 		</script>
 	</head>

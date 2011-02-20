@@ -11,6 +11,7 @@ Loader::model('file_set');
 $s1 = FileSet::getMySets();
 
 $files = array();
+$searchInstance = $_REQUEST['searchInstance'];
 $extensions = array();
 
 if (is_array($_REQUEST['fID'])) {
@@ -123,11 +124,11 @@ function checkbox($field, $value, $state, $miscFields = array()) {
 
 <script type="text/javascript">
 $(function() {
-	ccm_alSetupSetsForm();
+	ccm_alSetupSetsForm('<?php echo $searchInstance?>');
 });
 </script>
 
-<form method="post" id="ccm-file-add-to-set-form" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/add_to/">
+<form method="post" id="ccm-<?php echo $searchInstance?>-add-to-set-form" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/add_to/">
 <?php echo $form->hidden('task', 'add_to_sets')?>
 <?php  foreach($files as $f) { ?>
 	<input type="hidden" name="fID[]" value="<?php echo $f->getFileID();?>" />
@@ -175,7 +176,7 @@ $(function() {
 <br/><br/>
 <?php 
 $h = Loader::helper('concrete/interface');
-$b1 = $h->button_js(t('Update'), 'ccm_alSubmitSetsForm()', 'left');
+$b1 = $h->button_js(t('Update'), 'ccm_alSubmitSetsForm(\'' . $searchInstance . '\')', 'left');
 print $b1;
 ?>
 </form>

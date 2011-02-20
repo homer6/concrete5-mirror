@@ -12,7 +12,9 @@ if (!$fp->canWrite()) {
 	die(t('Access Denied.'));
 }
 
-Loader::element('files/upload_single', array('mode' => 'replace', 'fID' => $f->getFileID())); 
+$searchInstance = $_REQUEST['searchInstance'];
+
+Loader::element('files/upload_single', array('searchInstance' => $searchInstance, 'mode' => 'replace', 'fID' => $f->getFileID())); 
 
 ?>
 
@@ -28,6 +30,7 @@ foreach($con1 as $con) {
 }
 if (count($contents) > 0) { ?>
 <form method="post" id="ccm-file-manager-replace-incoming" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/incoming">
+    <input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
 	<?php echo  $form->select('send_file', $contents, array('style' => 'width:200px'));?>
 	&nbsp;&nbsp;
 	<?php echo  $form->submit('submit', t('Add File')); ?>
@@ -45,6 +48,7 @@ if (count($contents) > 0) { ?>
 
 <form method="post" id="ccm-file-manager-replace-remote" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/remote">
 <?php echo $valt->output('import_remote');?>
+    <input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
 <?php echo  $form->hidden('fID', $f->getFileID()); ?>
 
 <?php echo $form->text('url_upload_1', array('style' => 'width:195px'))?>

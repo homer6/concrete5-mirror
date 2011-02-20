@@ -56,6 +56,12 @@ class HtmlHelper {
 				$css->file = ASSETS_URL_CSS . '/' . $file;
 			}
 		}
+		
+		// for the javascript addHeaderItem we need to have a full href available
+		$css->href = $css->file;
+		if (substr($css->file, 0, 4) != 'http') {
+			$css->href = ASSETS_URL_WEB_FULL . $css->file;
+		}
 		return $css;
 	}
 	
@@ -91,6 +97,16 @@ class HtmlHelper {
 				$js->file = ASSETS_URL_JAVASCRIPT . '/' . $file;
 			}
 		}
+
+		// for the javascript addHeaderItem we need to have a full href available
+		$js->href = $js->file;
+		/*
+		 // this currently messes up the check on whether a given item is already loaded
+		 
+		if (substr($js->file, 0, 4) != 'http') {
+			$js->href = ASSETS_URL_WEB_FULL . $js->file;
+		}
+		*/
 		return $js;
 	}
 	
@@ -157,6 +173,7 @@ class HtmlHelper {
 class HeaderOutputObject {
 
 	public $file = '';
+	public $href = '';
 	public $compress = true;
 
 }

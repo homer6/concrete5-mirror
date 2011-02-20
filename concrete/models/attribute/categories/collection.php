@@ -46,12 +46,16 @@ class CollectionAttributeKey extends AttributeKey {
 		}
 		return $avl;
 	}
-	
+
 	public static function getColumnHeaderList() {
-		return self::getList('collection', array('akIsColumnHeader' => 1));	
+		return parent::getList('collection', array('akIsColumnHeader' => 1));	
 	}
 	public static function getSearchableIndexedList() {
 		return parent::getList('collection', array('akIsSearchableIndexed' => 1));	
+	}
+
+	public static function getSearchableList() {
+		return parent::getList('collection', array('akIsSearchable' => 1));	
 	}
 
 	public function getAttributeValue($avID, $method = 'getValue') {
@@ -63,22 +67,24 @@ class CollectionAttributeKey extends AttributeKey {
 	}
 	
 	public static function getByID($akID) {
+		$cak = Cache::get('attribute_key', $akID);
+		if (is_object($cak)) {
+			return $cak;
+		}
+
 		$ak = new CollectionAttributeKey();
 		$ak->load($akID);
 		if ($ak->getAttributeKeyID() > 0) {
+			Cache::set('attribute_key', $akID, $ak);
 			return $ak;	
 		}
-		return $ak;
 	}
 
 	public static function getByHandle($akHandle) {
 		$db = Loader::db();
 		$akID = $db->GetOne('select akID from AttributeKeys where akHandle = ?', array($akHandle));
-		$ak = new CollectionAttributeKey();
-		$ak->load($akID);
-		if ($ak->getAttributeKeyID() > 0) {
-			return $ak;	
-		}
+		$ak = CollectionAttributeKey::getByID($akID);
+		return $ak;	
 	}
 	
 	public static function getList() {

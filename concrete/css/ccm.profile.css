@@ -1,6 +1,6 @@
 div.ccm-profile-attribute {padding-bottom: 8px}
 div#ccm-profile-body div.message { border: 1px solid #ccc; padding: 8px}
-img.u-avatar {border: 2px solid #ccc; margin-bottom: 8px}
+img.u-avatar {margin-bottom: 8px}
 div.ccm-profile-member {margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #ccc}
 div.ccm-profile-member-avatar {width: 100px; float: left}
 
@@ -35,3 +35,5 @@ td.ccm-profile-message-from {text-align: center; padding-right: 10px}
 td.ccm-profile-message-from img {display: block; margin: 0px auto 10px auto}
 
 #ccm-profile-sidebar ul.nav { list-style:none; margin:0px; padding:0px; margin-top:16px;}
+
+div.ccm-profile-body-item {margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dedede}

@@ -1,4 +1,10 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  
+Loader::block('autonav');
+$nh = Loader::helper('navigation');
+$dashboard = Page::getByPath("/dashboard");
+$nav = AutonavBlockController::getChildPages($dashboard);
+?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
         "http://www.w3.org/TR/2000/REC-xhtml1-20000126/DTD/xhtml1-transitional.dtd">
 <html>
@@ -24,7 +30,6 @@ $v->addHeaderItem($html->javascript('ccm.filemanager.js'));
 $v->addHeaderItem($html->javascript('ccm.themes.js'));
 $v->addHeaderItem($html->javascript('jquery.ui.js'));
 $v->addHeaderItem($html->javascript('jquery.colorpicker.js'));
-$v->addHeaderItem($html->javascript('ccm.popup_login.js'));
 
 if (LANGUAGE != 'en') {
 	$v->addHeaderItem($html->javascript('i18n/ui.datepicker-'.LANGUAGE.'.js'));
@@ -41,7 +46,6 @@ $v->addHeaderItem($html->css('ccm.calendar.css'));
 $v->addHeaderItem($html->css('ccm.dialog.css'));
 $v->addHeaderItem($html->css('jquery.rating.css'));
 $v->addHeaderItem($html->css('jquery.ui.css'));
-$v->addHeaderItem($html->css('ccm.popup_login.css'));
 
 require(DIR_FILES_ELEMENTS_CORE . '/header_required.php'); 
 
@@ -57,11 +61,16 @@ print "var CCM_SECURITY_TOKEN = '" . $valt->generate() . "';";
 
 <script type="text/javascript">
 $(function() {
-	$("div.message").show('highlight', {
-		color: '#ffffff'
-	});
+	$("div.message").animate({
+		backgroundColor: 'white'
+	}, 'fast').animate({
+		backgroundColor: '#eeeeee'
+	}, 'fast');
 	
 	ccm_setupDashboardHeaderMenu();
+	<?php  if ($dashboard->getCollectionID() == $c->getCollectionID()) { ?>
+		ccm_dashboardRequestRemoteInformation();
+	<?php  } ?>
 });
 </script>
 </head>
@@ -73,19 +82,11 @@ $(function() {
 <a href="<?php echo $this->url('/dashboard/')?>"><img src="<?php echo ASSETS_URL_IMAGES?>/logo_menu.png" height="49" width="49" alt="Concrete5" /></a>
 </div>
 
-<?php  
-Loader::block('autonav');
-$supportHelper=Loader::helper('concrete/support'); 
-$nh = Loader::helper('navigation');
-$dashboard = Page::getByPath("/dashboard");
-$nav = AutonavBlockController::getChildPages($dashboard);
-?>
-
 <div id="ccm-system-nav-wrapper1">
 <div id="ccm-system-nav-wrapper2">
 <ul id="ccm-system-nav">
 <li><a id="ccm-nav-return" href="<?php echo $this->url('/')?>"><?php echo t('Return to Website')?></a></li>
-<li><a id="ccm-nav-dashboard-help" href="<?php echo MENU_HELP_URL?>"  helpwaiting="<?php echo (ConcreteSupportHelper::hasNewHelpResponse())?1:0 ?>"><?php echo t('Help')?></a></li>
+<li><a id="ccm-nav-dashboard-help" dialog-title="<?php echo t('Help')?>" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/help/" dialog-width="500" dialog-height="350" dialog-modal="false"><?php echo t('Help')?></a></li>
 <li class="ccm-last"><a id="ccm-nav-logout" href="<?php echo $this->url('/login/', 'logout')?>"><?php echo t('Sign Out')?></a></li>
 </ul>
 </div>

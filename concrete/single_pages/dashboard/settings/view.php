@@ -3,12 +3,62 @@
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $h = Loader::helper('concrete/interface'); ?>
 
-<style>
+<style type="text/css">
 .ccm-module form{ width:auto; height:auto; padding:0px; padding-bottom:10px; display:block; }
 .ccm-module form div.ccm-dashboard-inner{ margin-bottom:0px !important; }
 </style>
 
-<?php  if ($this->controller->getTask() == 'manage_attribute_types') { 
+<?php  if ($this->controller->getTask() == 'access_task_permissions' || $this->controller->getTask() == 'save_task_permissions') { ?>
+
+<div style="width: 760px">
+
+<?php 
+$tp1 = TaskPermission::getByHandle('access_task_permissions');
+if ($tp1->can()) { 
+	$ih = Loader::helper('concrete/interface');
+	$tps = array(
+		TaskPermission::getByHandle('access_task_permissions'),
+		TaskPermission::getByHandle('access_user_search'),
+		TaskPermission::getByHandle('access_group_search'),
+		TaskPermission::getByHandle('access_page_defaults'),
+		TaskPermission::getByHandle('uninstall_packages'),
+		TaskPermission::getByHandle('backup'),
+		TaskPermission::getByHandle('sudo')		
+	);
+	$tpl = new TaskPermissionList();
+	foreach($tps as $tp) {
+		$tpl->add($tp);
+	}
+	?>
+	
+	<h1><span><?php echo t('Task Permissions')?></span></h1>
+	<div class="ccm-dashboard-inner">
+		<form method="post" id="ccm-task-permissions" action="<?php echo $this->url('/dashboard/settings', 'save_task_permissions')?>">
+			<?php echo $this->controller->token->output('update_permissions');?>
+	
+			<?php  print Loader::helper('concrete/dashboard/task_permissions')->getForm($tpl, t('Set permissions for common concrete5 tasks.')); ?>
+			
+			<div class="ccm-spacer">&nbsp;</div>
+			
+			
+			<?php  print $ih->submit(t('Save'), 'ccm-task-permissions'); ?>
+	
+			<div class="ccm-spacer">&nbsp;</div>
+		</form>
+	</div>
+<?php  } else { ?>
+	<h1><span><?php echo t('Task Permissions')?></span></h1>
+	<div class="ccm-dashboard-inner">
+	<?php echo t('You are not allowed to change these permissions.')?>
+	</div>
+<?php  } ?>
+
+	</div>
+
+
+
+
+<?php  } else if ($this->controller->getTask() == 'manage_attribute_types') { 
 
 $types = AttributeType::getList();
 $categories = AttributeKeyCategory::getList();
@@ -182,6 +232,10 @@ foreach($types as $at) { ?>
 	</div>
 </form>
 
+<h1><span><?php echo t('Environment')?></span></h1>
+<div class="ccm-dashboard-inner">
+<textarea style="width: 97%; height: 140px;" onclick="this.select()"><?php echo $environmentMessage?></textarea>
+</div>
 
 <?php  if (ENABLE_DEVELOPER_OPTIONS) { ?>
 	
@@ -233,7 +287,7 @@ foreach($types as $at) { ?>
 
 <?php  } else if ($this->controller->getTask() == 'set_permissions') { ?>
 
-<h1><span><?php echo t('Site Permissions')?></span></h1>
+<h1><span><?php echo t('Site Content Permissions')?></span></h1>
 <div class="ccm-dashboard-inner">
 
 
@@ -290,6 +344,27 @@ foreach($types as $at) { ?>
 </div>
 
 
+
+<?php 
+$tp = new TaskPermission();
+if ($tp->canAccessTaskPermissions()) { ?>
+
+<h1><span><?php echo t('Other Permissions')?></span></h1>
+<div class="ccm-dashboard-inner">
+	
+<a href="<?php echo $this->url('/dashboard/settings/', 'access_task_permissions')?>"><?php echo t('Click here to modify other permissions.')?></a>
+
+</div>
+
+<?php  } else { ?>
+
+<h1><span><?php echo t('Other Permissions')?></span></h1>
+<div class="ccm-dashboard-inner">
+	
+<?php echo t('These permissions include specifying who may login as other users, search users, access page defaults, and more. You do not have access to see or change these permissions.')?>
+</div>
+
+<?php  } ?>
 
 
 
@@ -505,25 +580,22 @@ $(document).ready(function(){
 <form method="post" id="marketplace-support-form" action="<?php echo $this->url('/dashboard/settings', 'update_marketplace_support')?>" enctype="multipart/form-data" >
 	<?php echo $this->controller->token->output('update_marketplace_support')?>
 
-	<h1><span><?php echo t('Marketplace Integration')?> </span></h1>
+	<h1><span><?php echo t('Connect to Community')?> </span></h1>
 	
 	<div class="ccm-dashboard-inner">	
-		 
-		<?php  if( MARKETPLACE_CONFIG_OVERRIDE ){ ?>
-		
-			<div class="ccm-dashboard-description"><?php echo t("The marketplace has been manually set in the site's configuration files.")?></div>
-		
-		<?php  }else{ ?>
-				
-			<div class="ccm-dashboard-radio"><?php echo $form->checkbox('MARKETPLACE_ENABLED', 1, $marketplace_enabled_in_config)?> <?php echo t('Marketplace Enabled')?></div>
-			<div class="ccm-dashboard-description"><?php echo  t("Show me themes and add-ons available for Concrete5.") ?></div>
+		<?php  
+		Loader::library('marketplace');
+		$mi = Marketplace::getInstance();
+		if ($mi->isConnected()) { ?>
 			
-			<?php 
-			$b1 = $h->submit( t('Save'), 'marketplace-support-form');
-			print $h->buttons($b1);
-			?> 
+			<?php echo t('Your site is currently connected to the concrete5 community. <a href="%s">Visit project page</a>.', $marketplacePageURL)?>
 		
-		<?php  } ?>
+		<?php 
+		
+		} else { 
+			Loader::element('dashboard/marketplace_connect_failed');
+		}
+		?>
 		<br class="clear" />
 	</div>
 </form>
@@ -607,23 +679,13 @@ $(document).ready(function(){
 	<div class="ccm-dashboard-inner">
 	
 	<div class="ccm-dashboard-radio"><?php echo $form->checkbox('URL_REWRITING', 1, $url_rewriting)?> <?php echo t('Enable Pretty URLs')?></div>
-	<div class="ccm-dashboard-description"><?php echo t("Automatically translates your path-based Concrete5 URLs so that they don't include 'index.php'.")?></div>
+	<div class="ccm-dashboard-description"><?php echo t("Automatically translates your path-based Concrete5 URLs so that they don't include %s.", DISPATCHER_FILENAME)?></div>
 	
 	<?php  if (URL_REWRITING) { ?>
 	<h2><?php echo t('Required Code')?></h2>
 	<p><?php echo t("You must copy the lines of code below and place them in your server's configuration file or .htaccess file.")?></p>
 	
-	<textarea style="width: 97%; height: 140px;" onclick="this.select()">
-	<IfModule mod_rewrite.c>
-	RewriteEngine On
-	RewriteBase <?php echo DIR_REL?>/
-	
-	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteCond %{REQUEST_FILENAME} !-d
-	
-	RewriteRule ^(.*)$ index.php/$1 [L]
-	</IfModule>
-	</textarea>
+	<textarea style="width: 97%; height: 140px;" onclick="this.select()"><?php echo $rewriteRules?></textarea>
 	<br/>
 	<br/>
 	<?php  } ?>
@@ -668,7 +730,7 @@ $(document).ready(function(){
 		
 		<table border="0" cellspacing="0" cellpadding="0">
 		<tr>
-		<td valign="top">
+		<td valign="top" width="50%">
 
 		<h2>Toolbar Set</h2>
 		
@@ -680,14 +742,9 @@ $(document).ready(function(){
 		
 		<div class="ccm-dashboard-radio"><input type="radio" name="CONTENTS_TXT_EDITOR_MODE" value="CUSTOM" style="vertical-align: middle" <?php echo ($txtEditorMode=='CUSTOM')?'checked':'' ?> /> <?php echo t('Custom')?></div>
 		
-		<div id="cstmEditorTxtAreaWrap" style=" display:<?php echo ($txtEditorMode=='CUSTOM')?'block':'none' ?>" >
-			<textarea wrap="off" name="CONTENTS_TXT_EDITOR_CUSTOM_CODE" cols="25" rows="20" style="width: 97%; height: 250px;"><?php echo $txtEditorCstmCode?></textarea>
-			<div class="ccm-note"><a target="_blank" href="http://tinymce.moxiecode.com/"><?php echo t('TinyMCE Reference')?></a></div>
-		</div>
-
 		</td>
 		<td><div style="width: 50px">&nbsp;</div></td>
-		<td valign="top">
+		<td valign="top" width="50%">
 		
 		<h2>Editor Dimensions</h2>
 		
@@ -704,6 +761,16 @@ $(document).ready(function(){
 		
 		</td>
 		</tr>
+		<tr>
+			<td colspan="3">
+			
+			<div id="cstmEditorTxtAreaWrap" style=" display:<?php echo ($txtEditorMode=='CUSTOM')?'block':'none' ?>" >
+				<textarea wrap="off" name="CONTENTS_TXT_EDITOR_CUSTOM_CODE" cols="25" rows="20" style="width: 97%; height: 250px;"><?php echo $txtEditorCstmCode?></textarea>
+				<div class="ccm-note"><a target="_blank" href="http://tinymce.moxiecode.com/"><?php echo t('TinyMCE Reference')?></a></div>
+			</div>
+			</td>
+		</tr>
+		
 		</table>
 		
 		<?php 

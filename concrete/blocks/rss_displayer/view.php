@@ -1,11 +1,4 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-<style>
-.rssSummaryList .rssItem{ margin-bottom:16px }
-.rssSummaryList .rssItem .rssItemTitle{ font-weight:bold }
-.rssSummaryList .rssItem .rssItemDate{ color:#999999 }
-.rssSummaryList .rssItem .rssItemSummary{}
-.rssSummaryList .rssSummaryListTitle{font-weight:bold}
-</style>
 
 <div id="rssSummaryList<?php echo intval($bID)?>" class="rssSummaryList">
 
@@ -16,6 +9,10 @@
 <?php  
 $rssObj=$controller;
 $textHelper = Loader::helper("text"); 
+
+if (!$dateFormat) {
+	$dateFormat = t('F jS');
+}
 
 if( strlen($errorMsg)>0 ){
 	echo $errorMsg;
@@ -32,7 +29,7 @@ if( strlen($errorMsg)>0 ){
 					<?php echo  $item->get_title(); ?>
 				</a>
 			</div>
-			<div class="rssItemDate"><?php echo  $item->get_date('F jS'); ?></div>
+			<div class="rssItemDate"><?php echo  $item->get_date($dateFormat); ?></div>
 			<div class="rssItemSummary">
 				<?php 
 				if( $rssObj->showSummary ){

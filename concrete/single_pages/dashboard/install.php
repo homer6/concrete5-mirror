@@ -3,10 +3,149 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 $valt = Loader::helper('validation/token');
 $ci = Loader::helper('concrete/urls');
 $ch = Loader::helper('concrete/interface');
-
+$mi = Marketplace::getInstance();
 $pkgArray = Package::getInstalledList();
 
-if ($this->controller->getTask() == 'update') { 
+$tp = new TaskPermission();
+
+if ($this->controller->getTask() == 'browse') { ?>
+
+<h1><span><?php echo t("Browse the Marketplace")?></span></h1>
+<div class="ccm-dashboard-inner">
+<?php  
+	if (!$mi->isConnected()) { ?>
+		<?php  Loader::element('dashboard/marketplace_connect_failed')?>
+	<?php  } else { ?>
+		
+		<form method="get">
+			
+			<div style="border-bottom: 1px dotted #dedede; padding-bottom: 0px; margin-bottom: 8px"><h3><?php echo t('Search')?>
+				<?php echo $form->text('marketplaceRemoteItemKeywords', array('style' => 'width: 100px'))?>
+				<?php echo t('in')?>
+				<?php echo $form->select('marketplaceRemoteItemSetID', $sets, $selectedSet)?>
+				<?php echo $form->submit('submit', t('Search'))?>
+				</h3>
+			</div>
+			
+			<?php  if ($list->getTotal() > 0) { ?>
+				<?php echo $list->displaySummary()?>
+					
+				<table border="0" cellspacing="0" cellpadding="0" width="100%">
+					<tr>
+					<?php  
+					$numCols=3;
+					$colCount=0;
+					foreach($items as $item){ 
+						if($colCount==$numCols){
+							echo '</tr><tr>';
+							$colCount=0;
+						}
+						if ($item->purchaseRequired()) {
+							$buttonText = t('Purchase');
+							$buttonAction = 'javascript:window.open(\'' . $item->getRemoteURL() . '\')';
+						} else {
+							$buttonText = t('Install');
+							if ($type == 'themes') {
+								$buttonAction = 'javascript:ccm_getMarketplaceItem({mpID: \'' . $item->getMarketplaceItemID() . '\', onComplete: function() {window.location.href=\'' . $this->url('/dashboard/pages/themes') . '\'}})';
+							} else {
+								$buttonAction = 'javascript:ccm_getMarketplaceItem({mpID: \'' . $item->getMarketplaceItemID() . '\', onComplete: function() {window.location.href=\'' . $this->url('/dashboard/install') . '\'}})';					
+							}
+						}
+						?>
+						<td valign="top" width="<?php  echo round(100/$numCols)?>%" style="padding-bottom: 20px"> 
+							<div><?php  if ($type == 'themes') { ?><a title="<?php  echo t('Preview')?>" onclick="ccm_previewMarketplaceTheme(1, <?php  echo intval($item->getRemoteCollectionID())?>,'<?php  echo addslashes($item->getName()) ?>','<?php  echo addslashes($item->getHandle()) ?>')" 
+								href="javascript:void(0)" class="preview"><?php  } ?><img style="margin-bottom: 8px" src="<?php  echo $item->getRemoteIconURL() ?>" /><?php  if ($type == 'themes') { ?></a><?php  } ?></div>
+							<h2><?php  echo $item->getName() ?>
+							<?php  if ($type == 'themes') { ?>
+							<a title="<?php  echo t('Preview')?>" onclick="ccm_previewMarketplaceTheme(1, <?php  echo intval($item->getRemoteCollectionID())?>,'<?php  echo addslashes($item->getName()) ?>','<?php  echo addslashes($item->getHandle()) ?>')" 
+								href="javascript:void(0)" class="preview"><img src="<?php  echo ASSETS_URL_IMAGES?>/icons/magnifying.png" alt="<?php  echo t('Preview')?>" /></a>
+							<?php  } ?>
+							</h2>						
+							<div><?php  echo $item->getDescription() ?></div>
+							<div style="margin-top: 8px"><strong><?php echo t('Price')?></strong> <?php echo ((float) $item->getPrice() == 0) ? t('Free!') : $item->getPrice()?></div>
+							<div style="margin-top: 8px">
+							<?php echo $ch->button_js(t('More Information'), 'window.open(\'' . $item->getRemoteURL() . '\')', 'left');?>
+							<?php echo $ch->button_js($buttonText, $buttonAction, 'left')?>
+							</div>
+						</td>
+					<?php    $colCount++;
+					}
+					for($i=$colCount;$i<$numCols;$i++){
+						echo '<td>&nbsp;</td>'; 
+					} 
+					?>
+					</tr>
+				</table>
+			
+				<?php  $list->displayPaging()?>
+			<?php  } else { ?>
+				<p><?php echo t('No results found.')?></p>
+			<?php  } ?>
+		
+		</form>
+
+	<?php  } ?>
+
+	<div class="ccm-spacer">&nbsp;</div>
+
+</div>
+
+<?php  } else if ($this->controller->getTask() == 'uninstall' && $tp->canUninstallPackages()) { ?>
+
+<div style="width: 760px">
+<h1><span><?php echo t("Uninstall Package")?></span></h1>
+<div class="ccm-dashboard-inner">
+	
+	<?php 
+		$removeBTConfirm = t('This will remove all elements associated with the %s package. This cannot be undone. Are you sure?', $pkg->getPackageHandle());
+	?>
+	
+	<form method="post" id="ccm-uninstall-form" action="<?php echo $this->action('do_uninstall_package')?>" onsubmit="return confirm('<?php echo $removeBTConfirm?>')">
+	<?php echo $valt->output('uninstall')?>
+	<input type="hidden" name="pkgID" value="<?php echo $pkg->getPackageID()?>" />
+	
+	<h2><?php echo t('Items To Uninstall')?></h2>
+	
+	<p><?php echo t('Uninstalling %s will remove the following data from your system.', $pkg->getPackageName())?></p>
+		
+		<?php  foreach($items as $k => $itemArray) { 
+			if (count($itemArray) == 0) {
+				continue;
+			}
+			?>
+			<h3><?php echo $text->unhandle($k)?></h3>
+			
+			<?php  foreach($itemArray as $item) { ?>
+				<?php echo Package::getItemName($item)?><br/>			
+			<?php  } ?>
+			
+			<br/>
+			
+		<?php  } ?>
+
+
+		<h2><?php echo t('Move package to trash directory on server?')?></h2>
+		<p><?php echo Loader::helper('form')->checkbox('pkgMoveToTrash', 1)?> <?php echo Loader::helper('form')->label('pkgMoveToTrash', t('Yes, remove the package\'s directory from of the installation directory.'))?></p>
+		
+		
+		<?php  Loader::packageElement('dashboard/uninstall', $pkg->getPackageHandle()); ?>
+		
+		
+<?php 
+		$u = new User();
+		$buttons[] = $ch->button(t('Cancel'), $this->url('/dashboard/install', 'inspect_package', $pkg->getPackageID()), 'left');
+		$buttons[] = $ch->submit(t('Uninstall Package'), 'ccm-uninstall-form', 'right');
+		
+		print $ch->buttons($buttons);
+		?>
+		
+		<div class="ccm-spacer">&nbsp;</div>
+		</form>
+		
+</div>
+</div>
+
+<?php  } else if ($this->controller->getTask() == 'update') { 
 
 	$pkgAvailableArray = Package::getLocalUpgradeablePackages();
 	$thisURL = $this->url('/dashboard/install', 'update');
@@ -44,50 +183,40 @@ if ($this->controller->getTask() == 'update') {
 
 
 <div class="ccm-dashboard-inner">
-	<?php  if (!UserInfo::isRemotelyLoggedIn()) { ?> 
+	<?php  if (!$mi->isConnected()) { ?>
 	<div class="ccm-addon-marketplace-account">
-	
-		<?php echo t('You must sign in to the concrete5.org marketplace to check for updates to your add-ons.')?><br/><br/>
-		<a href="#" onclick="ccmPopupLogin.show('', loginSuccess, '', 1)">Sign in or create an account.</a>
-		
+		<?php  Loader::element('dashboard/marketplace_connect_failed'); ?>	
 	</div>
 	
-	<?php  } else { ?> 
-	<div class="ccm-addon-marketplace-account">
-		<?php echo t('You have connected this website to the concrete5 marketplace as  ');?>
-		  <a href="<?php echo CONCRETE5_ORG_URL ?>/profile/-/<?php echo UserInfo::getRemoteAuthUserId() ?>/" target="_blank" ><?php echo UserInfo::getRemoteAuthUserName() ?></a>
-		  <?php echo t('(Not your account? <a href="#" onclick="ccm_support.signOut(logoutSuccess)">Sign Out</a>)')?>
-	</div>
-
+	<?php  } ?>
 	
 
 	<h2><?php echo t('The Following Updates are Available')?></h2>
 	
 	<?php 
-	$mh = Loader::helper('concrete/marketplace/blocks');
-	$purchased = $mh->getPurchasesList(false);
 	$i = 0;
-	
+	Loader::model('marketplace_remote_item');
 	foreach ($pkgArray as $pkg) { 
-		$rpkg = $purchased[$pkg->getPackageHandle()];
-		if (!is_object($rpkg)) {
+		if (!is_object($pkg)) {
 			continue;
 		}
-		if (version_compare($rpkg->getVersion(), $pkg->getPackageVersion(), '>')) { 
+		if ($pkg->isPackageInstalled() && version_compare($pkg->getPackageVersion(), $pkg->getPackageVersionUpdateAvailable(), '<')) { 
 			$i++;
+			
+			$rpkg = MarketplaceRemoteItem::getByHandle($pkg->getPackageHandle());
 			
 			?>
 			<div class="ccm-addon-list">
 			<table cellspacing="0" cellpadding="0" border="0" style="width: auto !important">		
 			<tr>
 				<td valign="top" class="ccm-installed-items-icon"><img src="<?php echo $ci->getPackageIconURL($pkg)?>" /></td>
-				<td valign="top" class="ccm-addon-list-description" style="width: 400px"><h3><?php echo $pkg->getPackageName()?></a></h3><?php echo $pkg->getPackageDescription()?>
+				<td valign="top" class="ccm-addon-list-description" style="width: 100%"><h3><?php echo $pkg->getPackageName()?></a></h3><?php echo $pkg->getPackageDescription()?>
 				<br/><br/>
 				<strong><?php echo t('Current Version: %s', $pkg->getPackageVersion())?></strong><br/>
-				<strong><?php echo t('New Version: %s', $rpkg->getVersion())?></strong><br/>
+				<strong><?php echo t('New Version: %s', $pkg->getPackageVersionUpdateAvailable())?></strong><br/>
 				<a target="_blank" href="<?php echo $rpkg->getRemoteURL()?>"><?php echo t('More Information')?></a>
 				</td>
-				<td valign="top"><?php echo $ch->button(t("Download and Install"), View::url('/dashboard/install', 'remote_upgrade', $rpkg->getRemoteCollectionID(), $pkg->getPackageHandle()), "right")?></td>					
+				<td valign="top"><?php echo $ch->button(t("Download and Install"), View::url('/dashboard/install', 'prepare_remote_upgrade', $rpkg->getMarketplaceItemID()), "right")?></td>					
 			</tr>
 			</table>
 			</div>
@@ -101,7 +230,8 @@ if ($this->controller->getTask() == 'update') {
 			
 		<?php  } ?>
 	
-	<?php  } ?>
+
+
 </div>
 
 <?php  } ?>
@@ -109,6 +239,32 @@ if ($this->controller->getTask() == 'update') {
 <?php  
 } else { 
 
+	function sortAvailableArray($obj1, $obj2) {
+		$name1 = ($obj1 instanceof Package) ? $obj1->getPackageName() : $obj1->getBlockTypeName();
+		$name2 = ($obj2 instanceof Package) ? $obj2->getPackageName() : $obj2->getBlockTypeName();
+		return strcasecmp($name1, $name2);
+	}
+	
+	// grab the total numbers of updates.
+	// this consists of 
+	// 1. All packages that have greater pkgAvailableVersions than pkgVersion
+	// 2. All packages that have greater pkgVersion than getPackageCurrentlyInstalledVersion
+	$local = Package::getLocalUpgradeablePackages();
+	$remote = Package::getRemotelyUpgradeablePackages();
+	
+	// now we strip out any dupes for the total
+	$updates = 0;
+	$localHandles = array();
+	foreach($local as $_pkg) {
+		$updates++;
+		$localHandles[] = $_pkg->getPackageHandle();
+	}
+	foreach($remote as $_pkg) {
+		if (!in_array($_pkg->getPackageHandle(), $localHandles)) {
+			$updates++;
+		}
+	}
+	
 	$pkgAvailableArray = Package::getAvailablePackages();
 
 
@@ -130,7 +286,7 @@ if ($this->controller->getTask() == 'update') {
 		}
 	}
 	$availableArray = array_merge($btAvailableArray, $pkgAvailableArray);
-	ksort($availableArray);
+	usort($availableArray, 'sortAvailableArray');
 	
 	/* Load featured add-ons from the marketplace.
 	 */
@@ -138,12 +294,7 @@ if ($this->controller->getTask() == 'update') {
 	$db = Loader::db();
 	
 	if(ENABLE_MARKETPLACE_SUPPORT){
-		$blocksHelper = Loader::helper('concrete/marketplace/blocks');
-		if ($_REQUEST['reloadCache']) {
-			$blocksHelper->reloadCache = true;
-		} 
-		$purchasedBlocksSource = $blocksHelper->getPurchasesList();
-		
+		$purchasedBlocksSource = Marketplace::getAvailableMarketplaceItems();		
 	}else{
 		$purchasedBlocksSource = array();
 	}
@@ -154,7 +305,7 @@ if ($this->controller->getTask() == 'update') {
 	$skipHandles = array();
 	foreach($availableArray as $ava) {
 		foreach($purchasedBlocksSource as $pi) {
-			if ($pi->getBlockTypeHandle() == $ava->getPackageHandle()) {
+			if ($pi->getHandle() == $ava->getPackageHandle()) {
 				$skipHandles[] = $ava->getPackageHandle();
 			}
 		}
@@ -162,7 +313,7 @@ if ($this->controller->getTask() == 'update') {
 	
 	$purchasedBlocks = array();
 	foreach($purchasedBlocksSource as $pb) {
-		if (!in_array($pb->getBlockTypeHandle(), $skipHandles)) {
+		if (!in_array($pb->getHandle(), $skipHandles)) {
 			$purchasedBlocks[] = $pb;
 		}
 	}
@@ -182,10 +333,8 @@ if ($this->controller->getTask() == 'update') {
 			
 			$items = $pkg->getPackageItems();
 			$blocks = array();
-			foreach($items as $_b) {
-				if ($_b instanceof BlockType) {
-					$blocks[] = $_b;
-				}
+			if (isset($items['block_types']) && is_array($items['block_types'])) {
+				$blocks = $items['block_types'];
 			}
 			
 			if (count($blocks) > 0) { ?>
@@ -204,28 +353,19 @@ if ($this->controller->getTask() == 'update') {
 				
 				<?php  } ?>		
 				<br/><br/>
-			<?php  }
+			<?php  } ?>
 			
-			$u = new User();
-			if ($u->isSuperUser()) {
+			<div class="ccm-spacer">&nbsp;</div>
 			
-				$removeBTConfirm = t('This will remove all elements associated with the %s package. This cannot be undone. Are you sure?', $pkg->getPackageHandle());
-				
-				$buttons[] = $ch->button_js(t('Uninstall Package'), 'removePackage()', 'left');?>
-	
-				<script type="text/javascript">
-				removePackage = function() {
-					if (confirm('<?php echo $removeBTConfirm?>')) { 
-						location.href = "<?php echo $this->url('/dashboard/install', 'uninstall_package', $pkg->getPackageID(), $valt->generate('uninstall'))?>";				
-					}
-				}
-				</script>
-	
-			<?php  } else { ?>
-				<?php  $buttons[] = $ch->button_js(t('Remove'), 'alert(\'' . t('Only the super user may remove packages.') . '\')', 'left', 'ccm-button-inactive');?>
-			<?php  }
-	
-			print $ch->buttons($buttons); ?>
+			<?php  
+			
+			$tp = new TaskPermission();
+			if ($tp->canUninstallPackages()) { 
+			
+				$buttons[] = $ch->button(t('Uninstall Package'), $this->url('/dashboard/install', 'uninstall', $pkg->getPackageID()), 'left');
+				print $ch->buttons($buttons); 
+
+			} ?>
 			
 		</div>
 		
@@ -284,7 +424,7 @@ if ($this->controller->getTask() == 'update') {
 		<![endif]-->
 		<div style="width: 720px">
 		<div class="ccm-module" style="width: 350px; margin-bottom: 20px">
-	
+			
 			<h1><span><?php echo t('Currently Installed')?></span></h1>
 			<div class="ccm-dashboard-inner">
 			<?php  if (count($pkgArray) > 0) { ?>
@@ -348,34 +488,58 @@ if ($this->controller->getTask() == 'update') {
 		</div>
 	
 		<div class="ccm-module" style="width: 350px; margin-bottom: 20px">
-	
+				<?php  if ($updates > 0) { ?>
+				<h1><span><?php echo t('Updates')?></span></h1>
+				<div class="ccm-dashboard-inner">
+					<?php  if ($updates == 1) { ?>
+						<?php echo t('There is currently <strong>1</strong> update available.')?>
+					<?php  } else { ?>
+						<?php echo t('There are currently <strong>%s</strong> updates available.', $updates)?>
+					<?php  } ?>
+					<?php  print $ch->button(t('Update Addons'), $this->url('/dashboard/install/update'))?>
+					
+					<div class="ccm-spacer">&nbsp;</div>
+				
+				</div>
+				
+			
+			<br/>
+			<?php  } ?>
+			
+
 			<h1><span><?php echo t('New')?></span></h1>
 			<div class="ccm-dashboard-inner">
 			 
 			<?php  if (ENABLE_MARKETPLACE_SUPPORT) { ?>
-			<p>		
-			<?php echo t('You can safely and easily extend your website without touching a line of code. Connect to the <a href="%s" target="_blank">concrete5.org marketplace</a>, and you can automatically install your themes and add-ons right here!', MARKETPLACE_URL_LANDING)?>
-			</p>
 					
 			<div class="ccm-addon-marketplace-account">
-	
-			<?php  if (!UserInfo::isRemotelyLoggedIn()) { ?> 
-				<a href="#" onclick="ccmPopupLogin.show('', loginSuccess, '', 1)">Sign in or create an account.</a>
-			<?php  } else { ?> 
-				<?php echo t('You have connected this website to the concrete5 marketplace as  ');?>
-				  <a href="<?php echo CONCRETE5_ORG_URL ?>/profile/-/<?php echo UserInfo::getRemoteAuthUserId() ?>/" target="_blank" ><?php echo UserInfo::getRemoteAuthUserName() ?></a>
-				  <?php echo t('(Not your account? <a href="#" onclick="ccm_support.signOut(logoutSuccess)">Sign Out</a>)')?>
-                  <div style="padding-top:4px;"><?php echo t('Something Missing?')?> <a href="<?php echo $this->url('/dashboard/install')?>?reloadCache=1"><?php echo t('Refresh this list')?></a></div>
-			<?php  } ?>
-				<div style="clear:both"></div>
+			<?php  
+			Loader::library('marketplace');
+			if ($mi->isConnected()) { ?>				
+				<?php echo t('Your site is currently connected to the concrete5 community.')?><br/><br/>
+				<?php  if (count($purchasedBlocks) == 0) { ?>
+					<?php echo t('There appears to be nothing currently available to install from your <a href="%s" target="_blank">project page</a>.', $mi->getSitePageURL())?><br/><br/>
+				<?php  } ?>
+				<?php echo t('Browse more <a href="%s">add-ons</a> and <a href="%s">themes</a>, and check on your <a href="%s" target="_blank">project page</a>.', $this->url('/dashboard/install/', 'browse', 'addons'), $this->url('/dashboard/install', 'browse', 'themes'), $mi->getSitePageURL())?>
+				<br/><br/>
+				<a href="<?php echo $this->url('/dashboard/install', 'update')?>"><?php echo t("Check for updates &gt;")?></a>
+			<?php 
+			
+			} else {
+				Loader::element('dashboard/marketplace_connect_failed');
+			}
+			?>
+				<div class="ccm-spacer">&nbsp;</div>
 			</div>
 			
 			<?php  } ?>
 			
 		<?php  if (count($availableArray) == 0 && count($purchasedBlocks) == 0) { ?>
-	
-			<?php echo t('Nothing currently available to install.')?>
-		
+			
+			<?php  if (!$mi->isConnected()) { ?>
+				<?php echo t('Nothing currently available to install.')?>
+			<?php  } ?>
+			
 		<?php  } else { ?>
 	
 			<div class="ccm-addon-list-wrapper">
@@ -415,10 +579,10 @@ if ($this->controller->getTask() == 'update') {
 				<table cellspacing="0" cellpadding="0">
 				<tr>
 					<td><img src="<?php echo $pb->getRemoteIconURL()?>" /></td>
-					<td class="ccm-addon-list-description"><h3><?php echo $pb->btName?></h3>
-					<?php echo $pb->btDescription?>
+					<td class="ccm-addon-list-description"><h3><?php echo $pb->getName()?></h3>
+					<?php echo $pb->getDescription()?>
 					</td>
-					<td width="120"><?php echo $ch->button(t("Download"), View::url('/dashboard/install', 'remote_purchase', $pb->getRemoteCollectionID()), "right")?></td>
+					<td width="120"><?php echo $ch->button(t("Download"), View::url('/dashboard/install', 'download', $pb->getMarketplaceItemID()), "right")?></td>
 				</tr>
 				</table>
 				</div>
@@ -438,28 +602,4 @@ if ($this->controller->getTask() == 'update') {
 		</div>
 	
 	<?php  } ?>
-<?php  }
-
-
-$mtitle = t('Marketplace Login');
-$mlogouttitle = t('Marketplace Logout');
-$mmsg = t("You've successfully connected this website to your concrete5 Marketplace account. Featured items will be visible to you while using this site. You can browse the complete marketplace at <a href='%s' target='_blank'>concrete5.org/marketplace</a>", 'http://www.concrete5.org/marketplace/');
-$mlogoutmsg = t("You have disconnected this site from the marketplace.");
-
-?>
-
-<script type="text/javascript">
-function loginSuccess() {
-	jQuery.fn.dialog.closeTop();
-	ccmAlert.notice("<?php echo $mtitle?>", "<?php echo $mmsg?>", 
-		function() {
-			location.href = '<?php echo $this->url($thisURL)?>?ts=<?php echo time()?>';		
-		});
-}
-function logoutSuccess() {
-	ccmAlert.notice("<?php echo $mlogouttitle?>", "<?php echo $mlogoutmsg?>", 
-		function() {
-			location.href = '<?php echo $this->url($thisURL)?>?ts=<?php echo time()?>';		
-		});
-}
-</script>
+<?php  } ?>

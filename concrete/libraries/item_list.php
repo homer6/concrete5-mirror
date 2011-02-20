@@ -12,20 +12,20 @@ class DatabaseItemList extends ItemList {
 	private $debug = false;
 	private $filters = array();
 	protected $sortByString = '';
+	protected $groupByString = '';  
 	protected $autoSortColumns = array();
 	protected $userPostQuery = '';
 	
 	public function getTotal() {
 		if ($this->total == -1) {
 			$db = Loader::db();
-			$arr = $this->executeBase(); // returns an associated array of query/placeholder values
-			$r = $db->Execute($arr[0], $arr[1]);
+			$arr = $this->executeBase(); // returns an associated array of query/placeholder values				
+			$r = $db->Execute($arr);
 			$this->total = $r->NumRows();
 		}		
 		return $this->total;
 	}
-
-
+	
 	public function debug($dbg = true) {
 		$this->debug = $dbg;
 	}
@@ -44,14 +44,15 @@ class DatabaseItemList extends ItemList {
 
 	private function setupAutoSort() {
 		if (count($this->autoSortColumns) > 0) {
-			if (in_array($_REQUEST[$this->queryStringSortVariable], $this->autoSortColumns)) {
-				$this->sortBy($_REQUEST[$this->queryStringSortVariable], $_REQUEST[$this->queryStringSortDirectionVariable]);
+			$req = $this->getSearchRequest();
+			if (in_array($req[$this->queryStringSortVariable], $this->autoSortColumns)) {
+				$this->sortBy($req[$this->queryStringSortVariable], $req[$this->queryStringSortDirectionVariable]);
 			}
 		}
 	}
 	
 	private function executeBase() {
-		$v = array();		
+		$db = Loader::db();
 		$q = $this->query . $this->userQuery . ' where 1=1 ';
 		foreach($this->filters as $f) {
 			$column = $f[0];
@@ -75,13 +76,11 @@ class DatabaseItemList extends ItemList {
 						if ($i > 0) {
 							$q .= ',';
 						}
-						$q .= '?';
-						$v[] = $value[$i];
+						$q .= $db->quote($value[$i]);
 					}
 					$q .= ') ';			
 				} else { 
-					$q .= 'and ' . $column . ' ' . $comp . ' ? ';
-					$v[] = $value;
+					$q .= 'and ' . $column . ' ' . $comp . ' ' . $db->quote($value) . ' ';
 				}
 			}
 		}
@@ -90,7 +89,11 @@ class DatabaseItemList extends ItemList {
 			$q .= ' ' . $this->userPostQuery . ' ';
 		}
 		
-		return array($q, $v);
+		if ($this->groupByString != '') {
+			$q .= 'group by ' . $this->groupByString . ' ';
+		}		
+		
+		return $q;
 	}
 	
 	protected function setupSortByString() {
@@ -116,17 +119,16 @@ class DatabaseItemList extends ItemList {
 	 * Returns an array of whatever objects extends this class (e.g. PageList returns a list of pages).
 	 */
 	public function get($itemsToGet = 0, $offset = 0) {
-		$arr = $this->executeBase(); // returns an associated array of query/placeholder values
-		$q = $arr[0];
-		$v = $arr[1];
+		$q = $this->executeBase();
 		// handle order by
 		$this->setupAttributeSort();
 		$this->setupAutoSort();
 		$this->setupSortByString();
+		
 		if ($this->sortByString != '') {
 			$q .= 'order by ' . $this->sortByString . ' ';
-		}
-		if ($this->itemsPerPage > 0) {
+		}	
+		if ($this->itemsPerPage > 0 && (intval($itemsToGet) || intval($offset)) ) {
 			$q .= 'limit ' . $offset . ',' . $itemsToGet . ' ';
 		}
 		
@@ -135,7 +137,7 @@ class DatabaseItemList extends ItemList {
 			$db->setDebug(true);
 		}
 		//echo $q.'<br>'; 
-		$resp = $db->GetAll($q, $v);
+		$resp = $db->GetAll($q);
 		if ($this->debug) { 
 			$db->setDebug(false);
 		}
@@ -165,11 +167,18 @@ class DatabaseItemList extends ItemList {
 		parent::sortBy($key, $dir);
 	}
 	
-	public function getSortByURL($column, $dir = 'asc', $baseURL = false) {
+	public function groupBy($key) {
+		if ($key instanceof AttributeKey) {
+			$key = 'ak_' . $key->getAttributeKeyHandle();
+		}
+		$this->groupByString = $key;
+	}	
+	
+	public function getSortByURL($column, $dir = 'asc', $baseURL = false, $additionalVars = array()) {
 		if ($column instanceof AttributeKey) {
 			$column = 'ak_' . $column->getAttributeKeyHandle();
 		}
-		return parent::getSortByURL($column, $dir, $baseURL);
+		return parent::getSortByURL($column, $dir, $baseURL, $additionalVars);
 	}
 	
 	protected function setupAttributeFilters($join) {
@@ -207,8 +216,36 @@ class ItemList {
 	protected $queryStringPagingVariable = 'ccm_paging_p';
 	protected $queryStringSortVariable = 'ccm_order_by';
 	protected $queryStringSortDirectionVariable = 'ccm_order_dir';
+	protected $enableStickySearchRequest = false;
+	protected $items = array();
 	
-	private $items = array();
+	public function enableStickySearchRequest() {
+		$this->enableStickySearchRequest = true;
+	}
+	
+	public function resetSearchRequest() {
+		if ($this->enableStickySearchRequest) {
+			$_SESSION[get_class($this) . 'SearchFields'] = array();
+		}
+	}
+
+	public function getSearchRequest() {
+		if ($this->enableStickySearchRequest) {
+			if (!is_array($_SESSION[get_class($this) . 'SearchFields'])) {
+				$_SESSION[get_class($this) . 'SearchFields'] = array();
+			}
+			
+			// i don't believe we need this approach particularly, and it's a pain in the ass
+			//$validSearchKeys = array('fKeywords', 'numResults', 'fsIDNone', 'fsID', 'ccm_order_dir', 'ccm_order_by', 'size_from', 'size_to', 'type', 'extension', 'date_from', 'date_to', 'searchField', 'selectedSearchField', 'akID');
+			
+			foreach($_REQUEST as $key => $value) {
+				$_SESSION[get_class($this) . 'SearchFields'][$key] = $value;
+			}		
+			return $_SESSION[get_class($this) . 'SearchFields'];
+		} else {
+			return $_REQUEST;
+		}
+	}
 	
 	public function setItemsPerPage($num) {
 		$this->itemsPerPage = $num;
@@ -285,17 +322,22 @@ class ItemList {
 		return $class;
 	}	
 
-	public function getSortByURL($column, $dir = 'asc', $baseURL = false) {
+	public function getSortByURL($column, $dir = 'asc', $baseURL = false, $additionalVars = array()) {
 		$uh = Loader::helper('url');
 		
 		// we switch it up if this column is the currently active column and the direction is currently the case
 		if ($_REQUEST[$this->queryStringSortVariable] == $column && $_REQUEST[$this->queryStringSortDirectionVariable] == $dir) {
 			$dir = ($dir == 'asc') ? 'desc' : 'asc';
 		}
-		$url = $uh->setVariable(array(
+		$args = array(
 			$this->queryStringSortVariable => $column,
 			$this->queryStringSortDirectionVariable => $dir
-		), false, $baseURL);
+		);
+
+		foreach($additionalVars as $k => $v) {
+			$args[$k] = $v;
+		}
+		$url = $uh->setVariable($args, false, $baseURL);
 		print $url;
 	}
 	
@@ -311,10 +353,18 @@ class ItemList {
 		return $this->sortByDirection;
 	}
 	
-	public function getPagination($url = false) {
+	public function requiresPaging() {
+		$summary = $this->getSummary();
+		return $summary->pages > 1;
+	}
+	
+	public function getPagination($url = false, $additionalVars = array()) {
 		$pagination = Loader::helper('pagination');
 		if ($this->currentPage == false) {
 			$this->setCurrentPage();
+		}
+		if (count($additionalVars) > 0) {
+			$pagination->setAdditionalQueryStringVariables($additionalVars);
 		}
 		$pagination->queryStringPagingVariable = $this->queryStringPagingVariable;
 		$pagination->init($this->currentPage, $this->getTotal(), $url, $this->itemsPerPage);
@@ -323,16 +373,23 @@ class ItemList {
 	
 	/** 
 	 * Gets standard HTML to display paging */
-	public function displayPaging($script = false) {
+	public function displayPaging($script = false, $return = false, $additionalVars = array()) {
 		$summary = $this->getSummary();
-		$paginator = $this->getPagination($script);
+		$paginator = $this->getPagination($script, $additionalVars);
 		if ($summary->pages > 1) {
-			print '<div class="ccm-spacer"></div>';
-			print '<div class="ccm-pagination">';
-			print '<span class="ccm-page-left">' . $paginator->getPrevious() . '</span>';
-			print '<span class="ccm-page-right">' . $paginator->getNext() . '</span>';
-			print $paginator->getPages();
-			print '</div>';	
+			$html = '<div class="ccm-spacer"></div>';
+			$html .= '<div class="ccm-pagination">';
+			$html .= '<span class="ccm-page-left">' . $paginator->getPrevious() . '</span>';
+			$html .= '<span class="ccm-page-right">' . $paginator->getNext() . '</span>';
+			$html .= $paginator->getPages();
+			$html .= '</div>';
+		}
+		if (isset($html)) {
+			if ($return) {
+				return $html;
+			} else {
+				print $html;
+			}
 		}
 	}
 	/** 
@@ -371,7 +428,7 @@ class ItemList {
 	public function sortBy($column, $direction = 'asc') {
 		$this->sortBy = $column;
 		$this->sortByDirection = $direction;
-	}
+	} 
 
 	/** 
 	 * Sets up a column to sort by

@@ -11,20 +11,79 @@ class DashboardInstallController extends Controller {
 		$addFuncSelected = true;
 		$updateSelected = false;
 		
-		if ($this->getTask() == 'update') {
-			$updateSelected = true;
-			$addFuncSelected = false;
-		}
-		
 		$subnav = array(
-			array(View::url('/dashboard/install'), t('Installed and Available'), $addFuncSelected),
-			array(View::url('/dashboard/install', 'update'), t('Update Add-Ons'), $updateSelected)
+			array(View::url('/dashboard/install'), t('Installed and Available'), true),
+			array(View::url('/dashboard/install', 'browse', 'themes'), t('More Themes'), false),
+			array(View::url('/dashboard/install', 'browse', 'addons'), t('More Add-Ons'), false)
 		);
 		$this->set('subnav', $subnav);
+		Loader::library('marketplace');
+
 	}
+	
+	public function browse($what = 'themes') {
+		
+		$subnav = array(
+			array(View::url('/dashboard/install'), t('Installed and Available'), false),
+			array(View::url('/dashboard/install', 'browse', 'themes'), t('More Themes'), $what == 'themes'),
+			array(View::url('/dashboard/install', 'browse', 'addons'), t('More Add-Ons'), $what == 'addons')
+		);
+		
+		Loader::model('marketplace_remote_item');
+		
+		$mri = new MarketplaceRemoteItemList();
+		$mri->setItemsPerPage(9);
+		if ($what == 'addons') {
+			$sets = MarketplaceRemoteItemList::getItemSets('addons');
+		} else { 
+			// themes
+			$sets = MarketplaceRemoteItemList::getItemSets('themes');
+		}
+		
+		$setsel = array('' => t('All Items'), 'FEATURED' => t('Featured Items'));
+		if (is_array($sets)) {
+			foreach($sets as $s) {
+				$setsel[$s->getMarketplaceRemoteSetID()] = $s->getMarketplaceRemoteSetName();
+			}
+		}
+		
+		$mri->setIncludeInstalledItems(false);
+		if (isset($_REQUEST['marketplaceRemoteItemSetID'])) {
+			$set = $_REQUEST['marketplaceRemoteItemSetID'];
+		}
 
-	public function view() {
+		if (isset($_REQUEST['marketplaceRemoteItemKeywords'])) {
+			$keywords = $_REQUEST['marketplaceRemoteItemKeywords'];
+		}
+		
+		if ($keywords != '') {
+			$mri->filterByKeywords($keywords);
+		}
+		
+		if ($set == 'FEATURED') {
+			$mri->filterByIsFeaturedRemotely(1);
+		} else if ($set > 0) {
+			$mri->filterBySet($set);
+		}
+		
+		$mri->setType($what);
+		$mri->execute();
+		
+		$items = $mri->getPage();
 
+		$this->set('selectedSet', $set);
+		$this->set('list', $mri);
+		$this->set('items', $items);
+		$this->set('form', Loader::helper('form'));
+		$this->set('sets', $setsel);
+		$this->set('subnav', $subnav);
+		$this->set('type', $what);
+	}
+	
+	public function view($status = false) {
+		if ($status == 'community_connect_success') {
+			$this->set('message', t('Your site is now connected to the concrete5 community.'));
+		}
 	}
 	
 	public function update($pkgHandle = false) {
@@ -42,6 +101,11 @@ class DashboardInstallController extends Controller {
 				} catch(Exception $e) {
 					$this->set('error', $e);
 				}
+			}
+		} else {
+			$mi = Marketplace::getInstance();
+			if ($mi->isConnected()) {
+				Marketplace::checkPackageUpdates();
 			}
 		}
 	}
@@ -107,26 +171,58 @@ class DashboardInstallController extends Controller {
 		$this->inspect_block_type($btID);
 
 	}
+	
+	public function uninstall($pkgID) {
+		$tp = new TaskPermission();
+		if (!$tp->canUninstallPackages()) {
+			return false;
+		}
+		
+		$pkg = Package::getByID($pkgID);
+		if (!is_object($pkg)) {
+			$this->redirect("/dashboard/install");
+		}
+		$this->set('text', Loader::helper('text'));
+		$this->set('pkg', $pkg);
+		$this->set('items', $pkg->getPackageItems());
+	}
 
-	public function uninstall_package($pkgID = 0, $token = '') {
+	public function do_uninstall_package() {
+		$pkgID = $this->post('pkgID');
+
 		$valt = Loader::helper('validation/token');
 
 		if ($pkgID > 0) {
 			$pkg = Package::getByID($pkgID);
 		}
 		
-		$u = new User();
-		if (!$u->isSuperUser()) {
-			$this->error->add(t('Only the super user may remove packages.'));
-		} else if (isset($pkg) && ($pkg instanceof Package)) {
-			if (!$valt->validate('uninstall', $token)) {
-				$this->error->add($valt->getErrorMessage());
-			} else {
-				$pkg->uninstall();
+		if (!$valt->validate('uninstall')) {
+			$this->error->add($valt->getErrorMessage());
+		}
+		
+		$tp = new TaskPermission();
+		if (!$tp->canUninstallPackages()) {
+			$this->error->add(t('You do not have permission to uninstall packages.'));
+		}
+		
+		if (!is_object($pkg)) {
+			$this->error->add(t('Invalid package.'));
+		}
+		
+		if (!$this->error->has()) {
+			$pkg->uninstall();
+			if ($this->post('pkgMoveToTrash')) {
+				$r = $pkg->backup();
+				if (is_array($r)) {
+					$pe = Package::mapError($r);
+					foreach($pe as $ei) {
+						$this->error->add($ei);
+					}
+				}
+			}
+			if (!$this->error->has()) { 
 				$this->redirect('/dashboard/install', 'package_uninstalled');
 			}
-		} else {
-			$this->error->add('Invalid package.');
 		}
 		
 		if ($this->error->has()) {
@@ -185,24 +281,56 @@ class DashboardInstallController extends Controller {
 			}
 		}
 	}
+	
 
-    public function remote_purchase($remoteCID=null){
-    	$ph = Loader::helper('package');
-    	$errors = $ph->install_remote('purchase', $remoteCID, false);
-		if (is_array($errors)) {
-			$errors = Package::mapError($errors);
-			$this->set('error', $errors);
+    public function download($remoteMPID=null) {
+    	Loader::model('marketplace_remote_item');
+		$mri = MarketplaceRemoteItem::getByID($remoteMPID);
+		
+		if (!is_object($mri)) {
+			$this->set('error', array(t('Invalid marketplace item ID.')));
+			return;
+		}
+		
+		$r = $mri->download();
+		if ($r != false) {
+			if (!is_array($r)) {
+				$this->set('error', array($r));
+			} else {
+				$errors = Package::mapError($r);
+				$this->set('error', $errors);
+			}
+		} else {
+			$this->set('message', t('Marketplace item %s downloaded successfully.', $mri->getName()));
 		}
     }
 
-    public function remote_upgrade($remoteCID, $pkgHandle){
-    	$ph = Loader::helper('package');
-    	$errors = $ph->prepare_remote_upgrade('purchase', $remoteCID, $pkgHandle);
-		if (is_array($errors)) {
-			$errors = Package::mapError($errors);
-			$this->set('error', $errors);
+    public function prepare_remote_upgrade($remoteMPID){
+    	Loader::model('marketplace_remote_item');
+		$mri = MarketplaceRemoteItem::getByID($remoteMPID);
+
+		if (!is_object($mri)) {
+			$this->set('error', array(t('Invalid marketplace item ID.')));
+			return;
+		}
+		
+		$local = Package::getbyHandle($mri->getHandle());
+		if (!is_object($local) || $local->isPackageInstalled() == false) {
+			$this->set('error', array(Package::E_PACKAGE_NOT_FOUND));
+			return;
+		}		
+		
+    	$r = $mri->downloadUpdate();
+
+		if ($r != false) {
+			if (!is_array($r)) {
+				$this->set('error', array($r));
+			} else {
+				$errors = Package::mapError($r);
+				$this->set('error', $errors);
+			}
 		} else {
-			$this->redirect('/dashboard/install', 'update', $pkgHandle);
+			$this->redirect('/dashboard/install', 'update', $mri->getHandle());
 		}
     }
 

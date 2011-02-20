@@ -15,8 +15,16 @@ date_default_timezone_set(@date_default_timezone_get());
 
 define('ENABLE_CACHE', false);
 define('UPLOAD_FILE_EXTENSIONS_ALLOWED', '*.jpg;');
-define('DIR_FILES_UPLOADED', DIR_FILES_UPLOADED_STANDARD);
-define('DIR_FILES_TRASH', DIR_FILES_TRASH_STANDARD);
+if (!defined('DIR_FILES_UPLOADED')) {
+	define('DIR_FILES_UPLOADED', DIR_FILES_UPLOADED_STANDARD);
+}
+if (!defined('DIR_FILES_TRASH')) {
+	define('DIR_FILES_TRASH', DIR_FILES_TRASH_STANDARD);
+}
+define('DIR_FILES_UPLOADED_THUMBNAILS', DIR_FILES_UPLOADED . '/thumbnails');
+define('DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2', DIR_FILES_UPLOADED . '/thumbnails/level2');
+define('DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3', DIR_FILES_UPLOADED . '/thumbnails/level3');
+define('DIR_FILES_AVATARS', DIR_FILES_UPLOADED . '/avatars');
 
 class InstallController extends Controller {
 
@@ -30,12 +38,12 @@ class InstallController extends Controller {
 			"DIR_BASE"=>DIR_BASE,
 			"DIR_REL"=>DIR_REL,
 			"BASE_URL"=>BASE_URL,
-			"DIR_FILES_UPLOADED"=>DIR_FILES_UPLOADED_STANDARD,
+			"DIR_CONFIG_SITE" => DIR_CONFIG_SITE,
+			"DIR_FILES_UPLOADED"=>DIR_FILES_UPLOADED,
 			"DIR_FILES_UPLOADED_THUMBNAILS"=>DIR_FILES_UPLOADED_THUMBNAILS,
 			"DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2" => DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2,
-			"DIR_FILES_TRASH"=>DIR_FILES_TRASH_STANDARD,
+			"DIR_FILES_TRASH"=>DIR_FILES_TRASH,
 			"DIR_FILES_CACHE"=>DIR_FILES_CACHE,
-			"DIR_FILES_CACHE_CORE"=>DIR_FILES_CACHE_CORE,
 			"DIR_FILES_CACHE_DB"=>DIR_FILES_CACHE_DB,
 			"DIR_FILES_AVATARS"=>DIR_FILES_AVATARS,
 			"DIR_PACKAGES"=>DIR_PACKAGES,
@@ -70,6 +78,13 @@ class InstallController extends Controller {
 
 	}
 	
+	protected function installDBPost() {
+		// we can't seem to add this in db.xml *sigh*
+		$db = Loader::db();
+		$db->Execute('alter table PagePaths add index cPath (cPath(128))');
+		$db->Execute('alter table CollectionVersions add index cvName (cvName(128))');
+	}
+	
 	public function test_url($num1, $num2) {
 		$js = Loader::helper('json');
 		$num = $num1 + $num2;
@@ -92,7 +107,8 @@ class InstallController extends Controller {
 	private function setOptionalItems() {
 		// no longer need lucene
 		//$this->set('searchTest', function_exists('iconv') && function_exists('mb_strtolower') && (@preg_match('/\pL/u', 'a') == 1));
-		$this->set('langTest', Localization::isAvailable() && (!ini_get('safe_mode')));
+		// no longer need built-in gettext
+		//$this->set('langTest', Localization::isAvailable() && (!ini_get('safe_mode')));
 		$diffExecTest = is_executable($this->installData['DIR_FILES_BIN_HTMLDIFF']);
 		$diffSystem = (!ini_get('safe_mode'));
 		if ($diffExecTest && $diffSystem) {
@@ -119,7 +135,7 @@ class InstallController extends Controller {
 	private function testFileWritePermissions() {
 		$e = Loader::helper('validation/error');
 
-		if (!is_writable($this->installData['DIR_BASE'] . '/config')) {
+		if (!is_writable($this->installData['DIR_CONFIG_SITE'])) {
 			$e->add(t('Your configuration directory config/ does not appear to be writable by the web server.'));
 		}
 
@@ -190,9 +206,6 @@ class InstallController extends Controller {
 				if (!is_dir($this->installData['DIR_FILES_CACHE'])) {
 					mkdir($this->installData['DIR_FILES_CACHE']);
 				}
-				if (!is_dir($this->installData['DIR_FILES_CACHE_CORE'])) {
-					mkdir($this->installData['DIR_FILES_CACHE_CORE']);
-				}
 				if (!is_dir($this->installData['DIR_FILES_CACHE_DB'])) {
 					mkdir($this->installData['DIR_FILES_CACHE_DB']);
 				}
@@ -200,7 +213,16 @@ class InstallController extends Controller {
 					mkdir($this->installData['DIR_FILES_AVATARS']);
 				}
 				
+				if (isset($_POST['uPasswordForce'])) {
+					$this->installData['uPassword'] = $_POST['uPasswordForce'];
+				}
+
+				if (isset($_POST['packages'])) {
+					$this->installData['packages'] = $_POST['packages'];
+				}
+				
 				$this->installDB();
+				$this->installDBPost();
 
 				$vh = Loader::helper('validation/identifier');
 				
@@ -218,10 +240,12 @@ class InstallController extends Controller {
 					$setPermissionsModel = PERMISSIONS_MODEL;
 				}
 				
-				if (file_exists($this->installData['DIR_BASE'] . '/config')) {
+				if (file_exists($this->installData['DIR_CONFIG_SITE'])) {
 	
-					$this->fp = @fopen($this->installData['DIR_BASE'] . '/config/site.php', 'w+');
+					$this->fp = @fopen($this->installData['DIR_CONFIG_SITE'] . '/site.php', 'w+');
 					if ($this->fp) {
+					
+						Cache::flush();
 						
 						Loader::model('single_page');
 						Loader::model('dashboard/homepage');
@@ -244,6 +268,10 @@ class InstallController extends Controller {
 						$g1 = Group::add(t("Guest"), t("The guest group represents unregistered visitors to your site."));
 						$g2 = Group::add(t("Registered Users"), t("The registered users group represents all user accounts."));
 						$g3 = Group::add(t("Administrators"), "");
+						
+						$cakc = AttributeKeyCategory::add('collection');
+						$uakc = AttributeKeyCategory::add('user');
+						$fakc = AttributeKeyCategory::add('file');
 						
 						// Now the default site!
 						// Add our right nav page type
@@ -274,10 +302,6 @@ class InstallController extends Controller {
 						$data = array();
 						$data['ctID'] = $rst->getCollectionTypeID();
 						$home->update($data);
-						
-						$cakc = AttributeKeyCategory::add('collection');
-						$uakc = AttributeKeyCategory::add('user');
-						$fakc = AttributeKeyCategory::add('file');
 						
 						$tt = AttributeType::add('text', t('Text'));
 						$textareat = AttributeType::add('textarea', t('Text Area'));
@@ -392,10 +416,17 @@ class InstallController extends Controller {
 						// add the greensalad theme 						
 						$salad = PageTheme::add('greensalad');
 						
+						// add the dark chocolate theme 						
+						$chocolate = PageTheme::add('dark_chocolate');
+						
 						// Add our dashboard items and their navs
 						$d0 = SinglePage::add('/dashboard');
 				
 						$d1 = SinglePage::add('/dashboard/sitemap');
+						$d1a = SinglePage::add('/dashboard/sitemap/full');
+						$d1b = SinglePage::add('/dashboard/sitemap/explore');
+						$d1c = SinglePage::add('/dashboard/sitemap/search');
+						$d1d = SinglePage::add('/dashboard/sitemap/access');
 						$d2 = SinglePage::add('/dashboard/files');
 						$d2a = SinglePage::add('/dashboard/files/search');
 						$d2b = SinglePage::add('/dashboard/files/attributes');
@@ -420,13 +451,18 @@ class InstallController extends Controller {
 						$d7c = SinglePage::add('/dashboard/pages/themes/customize');
 						$d7d = SinglePage::add('/dashboard/pages/themes/marketplace');
 						$d7e = SinglePage::add('/dashboard/pages/types');
-						$d7f = SinglePage::add('/dashboard/pages/types/attributes');
+						$d7f = SinglePage::add('/dashboard/pages/attributes');
 						$d7g = SinglePage::add('/dashboard/pages/single');
 
 						$d8 = SinglePage::add('/dashboard/install');
-						$d9 = SinglePage::add('/dashboard/jobs');
+						$d9 = SinglePage::add('/dashboard/system');
+						$d9a = SinglePage::add('/dashboard/system/jobs');
+						$d9b = SinglePage::add('/dashboard/system/backup');
+						$d9c = SinglePage::add('/dashboard/system/update');
+						$d9d = SinglePage::add('/dashboard/system/notifications');
 						$d10 = SinglePage::add('/dashboard/settings');
 						$d11 = SinglePage::add('/dashboard/settings/mail');
+						$d12 = SinglePage::add('/dashboard/settings/marketplace');
 						
 						
 						// add home page
@@ -434,6 +470,10 @@ class InstallController extends Controller {
 						$dl1->update(array('cName' => t('Download File')));
 						
 						$d1->update(array('cName'=>t('Sitemap'), 'cDescription'=>t('Whole world at a glance.')));
+						$d1a->update(array('cName'=>t('Full Sitemap')));
+						$d1b->update(array('cName'=>t('Folder View')));
+						$d1c->update(array('cName'=>t('Page Search')));
+
 						$d2->update(array('cName'=>t('File Manager'), 'cDescription'=>t('All documents and images.')));
 						$d2a->update(array('cName'=>t('Search')));
 						$d2b->update(array('cName'=>t('Attributes')));
@@ -455,8 +495,9 @@ class InstallController extends Controller {
 						$d7e->update(array('cName'=>t('Page Types'), 'cDescription'=>t('What goes in your site.')));	
 						$d7g->update(array('cName'=>t('Single Pages')));	
 
-						$d8->update(array('cName'=>t('Add Functionality'), 'cDescription'=>t('Install functionality to extend your site.')));
-						$d9->update(array('cName'=>t('Maintenance'), 'cDescription'=>t('Run common cleanup tasks.')));
+						$d8->update(array('cName'=>t('Add Functionality'), 'cDescription'=>t('Install addons & themes.')));
+						$d9->update(array('cName'=>t('System & Maintenance'), 'cDescription'=>t('Backup, cleanup and update.')));
+						$d9b->update(array('cName'=>t('Backup & Restore')));	
 						$d10->update(array('cName'=>t('Sitewide Settings'), 'cDescription'=>t('Secure and setup your site.')));
 
 						$d11->update(array('cName'=>t('Email'), 'cDescription'=>t('Enable post via email and other settings.')));
@@ -512,6 +553,20 @@ class InstallController extends Controller {
 						$fs->setPermissions($g1, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE);
 						$fs->setPermissions($g2, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE);
 						$fs->setPermissions($g3, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL);
+						
+						$tp0 = TaskPermission::addTask('access_task_permissions', t('Change Task Permissions'), false);
+						$tp1 = TaskPermission::addTask('access_sitemap', t('Access Sitemap and Page Search'), false);
+						$tp2 = TaskPermission::addTask('access_user_search', t('Access User Search'), false);
+						$tp3 = TaskPermission::addTask('access_group_search', t('Access Group Search'), false);
+						$tp4 = TaskPermission::addTask('access_page_defaults', t('Change Content on Page Type Default Pages'), false);
+						$tp5 = TaskPermission::addTask('backup', t('Perform Full Database Backups'), false);
+						$tp6 = TaskPermission::addTask('sudo', t('Sign in as User'), false);
+						$tp7 = TaskPermission::addTask('uninstall_packages', t('Uninstall Packages'), false);
+						
+						$tp1->addAccess($g3);
+						$tp2->addAccess($g3);
+						$tp3->addAccess($g3);
+						$tp5->addAccess($g3);
 						
 						/* install default content */	
 						if ($_POST['INSTALL_SAMPLE_CONTENT']) {
@@ -905,10 +960,15 @@ class InstallController extends Controller {
 						Job::installByHandle('index_search');
 						Job::installByHandle('generate_sitemap');
 						Job::installByHandle('process_email');
-						
-						// NOTE: This is too memory intensive to run during initial install. Let's not run it and just give nicer feedback
 						Job::runAllJobs();
-
+						
+						if (is_array($this->installData['packages'])) {
+							foreach($this->installData['packages'] as $pkgHandle) {
+								$p = Loader::package($pkgHandle);
+								$p->install();
+							}
+						}
+						
 						// write the config file
 						$configuration = "<?php \n";
 						$configuration .= "define('DB_SERVER', '" . addslashes($_POST['DB_SERVER']) . "');\n";
@@ -921,10 +981,15 @@ class InstallController extends Controller {
 							$configuration .= "define('PERMISSIONS_MODEL', '" . addslashes($setPermissionsModel) . "');\n";
 						}
 						$configuration .= "define('PASSWORD_SALT', '{$salt}');\n";
+						if (is_array($_POST['SITE_CONFIG'])) {
+							foreach($_POST['SITE_CONFIG'] as $key => $value) { 
+								$configuration .= "define('" . $key . "', '" . $value . "');\n";
+							}
+						}
 						$configuration .= "?" . ">";
 						$res = fwrite($this->fp, $configuration);
 						fclose($this->fp);
-						chmod($this->installData['DIR_BASE'] . '/config/site.php', 0777);
+						chmod($this->installData['DIR_CONFIG_SITE'] . '/site.php', 0777);
 						
 						// save some options into the database
 						Config::save('SITE', $_POST['SITE']);
@@ -962,8 +1027,8 @@ class InstallController extends Controller {
 			if (is_resource($this->fp)) {
 				fclose($this->fp);
 			}
-			if (file_exists($this->installData['DIR_BASE'] . '/config/site.php')) {
-				unlink($this->installData['DIR_BASE'] . '/config/site.php');
+			if (file_exists($this->installData['DIR_CONFIG_SITE'] . '/site.php')) {
+				unlink($this->installData['DIR_CONFIG_SITE'] . '/site.php');
 			}
 			$this->set('error', $e);
 		}

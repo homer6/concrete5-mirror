@@ -20,11 +20,11 @@
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	class ValidationFormHelper {	
 		
-		private $fields = array();
-		private $fieldsInvalid = array();
-		private $data = array();
-		private $files = array();
-		private $error;
+		protected $fields = array();
+		protected $fieldsInvalid = array();
+		protected $data = array();
+		protected $files = array();
+		protected $error;
 		
 		/**
 		 * @access private
@@ -77,7 +77,7 @@
 		 */
 		public function addInteger($field, $errorMsg = null, $emptyIsOk = true) {
 			$const = ($emptyIsOk) ? ValidationFormHelper::VALID_INTEGER : ValidationFormHelper::VALID_INTEGER_REQUIRED;
-			$this->addRequired($field, $errorMsg, ValidationFormHelper::VALID_INTEGER);
+			$this->addRequired($field, $errorMsg, $const);
 		}
 
 		/** 
@@ -134,7 +134,7 @@
 		/** 
 		 * @access private
 		 */
-		private function setErrorsFromInvalidFields() {
+		protected function setErrorsFromInvalidFields() {
 			foreach($this->fieldsInvalid as $f) {
 				$this->error->add($f->message);	
 			}

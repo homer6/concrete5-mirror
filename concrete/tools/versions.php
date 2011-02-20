@@ -23,7 +23,7 @@
 		*/
 		?>
 		
-		<iframe border="0" id="v<?php echo time()?>" frameborder="0" height="100%" width="100%" src="<?php echo BASE_URL . DIR_REL?>/index.php?cvID=<?php echo $_REQUEST['cvID']?>&cID=<?php echo $_REQUEST['cID']?>" />
+		<iframe border="0" id="v<?php echo time()?>" frameborder="0" height="100%" width="100%" src="<?php echo BASE_URL . DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?cvID=<?php echo $_REQUEST['cvID']?>&cID=<?php echo $_REQUEST['cID']?>" />
 	
 	<?php  
 		exit;
@@ -383,7 +383,7 @@ $("input[name=vRemove]").click(function() {
 			print $v->getVersionApproverUserName();
 			
 			?></td>
-		<td><?php echo date('m/d/Y g:i A', strtotime($v->getVersionDateCreated('user')))?></td>
+		<td><?php echo date(DATE_APP_PAGE_VERSIONS, strtotime($v->getVersionDateCreated('user')))?></td>
 	</tr>	
 	<?php  } ?>
 	</table>
@@ -403,7 +403,7 @@ $("input[name=vRemove]").click(function() {
 
 			<div>
 				<strong class="important"><?php echo t('DELETION')?></strong>
-				<?php echo t('(Marked by: <strong>%s</strong> at <strong>%s</strong>)',$ud->getUserName(),$c->getPendingActionDateTime())?>
+				<?php echo t('(Marked by: <strong>%s</strong> on <strong>%s</strong>)',$ud->getUserName(), date(DATE_APP_PAGE_VERSIONS, strtotime($c->getPendingActionDateTime())))?>
 			</div>
 
 			<?php  if ($cp->canApproveCollection()) { ?>
@@ -439,7 +439,7 @@ $("input[name=vRemove]").click(function() {
 
 			<div>
 				<strong class="important"><?php echo t('MOVE')?></strong>  
-				<?php echo t('(Marked by: <strong>%s</strong> at <strong>%s</strong>)',$ud->getUserName(),$c->getPendingActionDateTime() )?>
+				<?php echo t('(Marked by: <strong>%s</strong> on <strong>%s</strong>)',$ud->getUserName(), date(DATE_APP_PAGE_VERSIONS, strtotime($c->getPendingActionDateTime()) ))?>
 			</div>
 			<?php  $nc = Page::getByID($c->getPendingActionTargetCollectionID(), 'ACTIVE'); ?>
 				<?php  if (is_object($nc)) { ?>

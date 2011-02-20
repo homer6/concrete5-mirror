@@ -22,7 +22,7 @@ function printAttributeRow($ak, $uo) {
 	$vo = $uo->getAttributeValueObject($ak);
 	$value = '';
 	if (is_object($vo)) {
-		$value = $vo->getValue('display');
+		$value = $vo->getValue('displaySanitized', 'display');
 	}
 	
 	if ($value == '') {
@@ -68,7 +68,13 @@ if (intval($_GET['uID'])) {
 	
 	$uo = UserInfo::getByID(intval($_GET['uID']));
 	if (is_object($uo)) {
-		$uID = intval($_REQUEST['uID']);		
+		$uID = intval($_REQUEST['uID']);
+		
+		if (isset($_GET['task'])) {
+			if ($uo->getUserID() == USER_SUPER_ID && (!$u->isSuperUser())) {
+				throw new Exception(t('Only the super user may edit this account.'));
+			}
+		}
 		
 		if ($_GET['task'] == 'activate') {
 			if( !$valt->validate("user_activate") ){
@@ -351,39 +357,48 @@ if (is_object($uo)) {
 	<h1><span><?php echo t('View User')?></span></h1>
 	
 	<div class="ccm-dashboard-inner">
-		<div class="actions" >			<?php  define('USER_VALIDATE_EMAIL', 1);?>
-
-			<?php  print $ih->button(t('Edit User'), $this->url('/dashboard/users/search?uID=' . intval($uID) ) . '&task=edit', 'left');?>
-
-			<?php  if (USER_VALIDATE_EMAIL == true) { ?>
-				<?php  if ($uo->isValidated() < 1) { ?>
-				<?php  print $ih->button(t('Mark Email as Valid'), $this->url('/dashboard/users/search?uID=' . intval($uID) . '&task=validate_email'), 'left');?>
+		<div class="actions" >			
+		
+			<?php  if ($uo->getUserID() != USER_SUPER_ID || $u->isSuperUser()) { ?>
+	
+				<?php  print $ih->button(t('Edit User'), $this->url('/dashboard/users/search?uID=' . intval($uID) ) . '&task=edit', 'left');?>
+	
+				<?php  if (USER_VALIDATE_EMAIL == true) { ?>
+					<?php  if ($uo->isValidated() < 1) { ?>
+					<?php  print $ih->button(t('Mark Email as Valid'), $this->url('/dashboard/users/search?uID=' . intval($uID) . '&task=validate_email'), 'left');?>
+					<?php  } ?>
 				<?php  } ?>
+				
+				<?php  if ($uo->getUserID() != USER_SUPER_ID) { ?>
+					<?php  if ($uo->isActive()) { ?>
+						<?php  print $ih->button(t('Deactivate User'), $this->url('/dashboard/users/search?uID=' . intval($uID) . '&task=deactivate&ccm_token='.$valt->generate('user_deactivate')), 'left');?>
+					<?php  } else { ?>
+						<?php  print $ih->button(t('Activate User'), $this->url('/dashboard/users/search?uID=' . intval($uID) . '&task=activate&ccm_token='.$valt->generate('user_activate')), 'left');?>
+					<?php  } ?>
+				<?php  } ?>
+			
 			<?php  } ?>
 			
-			<?php  if ($uo->isActive()) { ?>
-				<?php  print $ih->button(t('Deactivate User'), $this->url('/dashboard/users/search?uID=' . intval($uID) . '&task=deactivate&ccm_token='.$valt->generate('user_deactivate')), 'left');?>
-			<?php  } else { ?>
-				<?php  print $ih->button(t('Activate User'), $this->url('/dashboard/users/search?uID=' . intval($uID) . '&task=activate&ccm_token='.$valt->generate('user_activate')), 'left');?>
-			<?php  } ?>
-			
-			<?php  if ($u->isSuperUser()) { ?>
-				<?php  
+			<?php 
+			$tp = new TaskPermission();
+			if ($uo->getUserID() != $u->getUserID()) {
+				if ($tp->canSudo()) { 
 				
-				$loginAsUserConfirm = t('This will end your current session and sign you in as %s', $uo->getUserName());
-				
-				print $ih->button_js(t('Sign In as User'), 'loginAsUser()', 'left');?>
-
-				<script type="text/javascript">
-				loginAsUser = function() {
-					if (confirm('<?php echo $loginAsUserConfirm?>')) { 
-						location.href = "<?php echo $this->url('/dashboard/users/search', 'sign_in_as_user', $uo->getUserID(), $valt->generate('sudo'))?>";				
+					$loginAsUserConfirm = t('This will end your current session and sign you in as %s', $uo->getUserName());
+					
+					print $ih->button_js(t('Sign In as User'), 'loginAsUser()', 'left');?>
+	
+					<script type="text/javascript">
+					loginAsUser = function() {
+						if (confirm('<?php echo $loginAsUserConfirm?>')) { 
+							location.href = "<?php echo $this->url('/dashboard/users/search', 'sign_in_as_user', $uo->getUserID(), $valt->generate('sudo'))?>";				
+						}
 					}
-				}
-				</script>
-
-			<?php  } else { ?>
-				<?php  print $ih->button_js(t('Sign In as User'), 'alert(\'' . t('Only the super user may sign in as another account.') . '\')', 'left', 'ccm-button-inactive');?>
+					</script>
+	
+				<?php  } else { ?>
+					<?php  print $ih->button_js(t('Sign In as User'), 'alert(\'' . t('You do not have permission to sign in as other users.') . '\')', 'left', 'ccm-button-inactive');?>
+				<?php  } ?>
 			<?php  } ?>
 
 		</div>
@@ -444,9 +459,9 @@ if (is_object($uo)) {
 			<?php  if (is_object($uk3)) { ?><td  style="width: 33%"class="subheader"><?php echo $uk3->getAttributeKeyDisplayHandle()?></td><?php  } else { ?><td style="width: 33%" class="subheader">&nbsp;</td><?php  } ?>
 		</tr>
 		<tr>
-			<td><?php echo $uo->getAttribute($uk->getAttributeKeyHandle(), 'display')?></td>
-			<?php  if (is_object($uk2)) { ?><td><?php echo $uo->getAttribute($uk2->getAttributeKeyHandle(), 'display')?></td><?php  } else { ?><td style="width: 33%">&nbsp;</td><?php  } ?>
-			<?php  if (is_object($uk3)) { ?><td><?php echo $uo->getAttribute($uk3->getAttributeKeyHandle(), 'display')?></td><?php  } else { ?><td>&nbsp;</td><?php  } ?>
+			<td><?php echo $uo->getAttribute($uk->getAttributeKeyHandle(), 'displaySanitized', 'display')?></td>
+			<?php  if (is_object($uk2)) { ?><td><?php echo $uo->getAttribute($uk2->getAttributeKeyHandle(), 'displaySanitized', 'display')?></td><?php  } else { ?><td style="width: 33%">&nbsp;</td><?php  } ?>
+			<?php  if (is_object($uk3)) { ?><td><?php echo $uo->getAttribute($uk3->getAttributeKeyHandle(), 'displaySanitized', 'display')?></td><?php  } else { ?><td>&nbsp;</td><?php  } ?>
 		</tr>
 		<?php  } ?>
 		
@@ -592,6 +607,12 @@ $(function() {
 
 <div class="ccm-dashboard-inner">
 
+	<?php 
+	$tp = new TaskPermission();
+	if ($tp->canAccessUserSearch()) { 
+	
+	?>
+
 	<table id="ccm-search-form-table" >
 		<tr>
 			<td valign="top" class="ccm-search-form-advanced-col">
@@ -602,7 +623,7 @@ $(function() {
 				
 				<div id="ccm-search-advanced-results-wrapper">
 					
-					<div id="ccm-search-results">
+					<div id="ccm-user-search-results">
 					
 						<?php  Loader::element('users/search_results', array('users' => $users, 'userList' => $userList, 'pagination' => $pagination)); ?>
 					
@@ -613,6 +634,10 @@ $(function() {
 			</td>	
 		</tr>
 	</table>		
+
+	<?php  } else { ?>
+		<p><?php echo t('You do not have access to user search. This setting may be changed in the access section of the dashboard settings page.')?></p>
+	<?php  } ?>
 	
 </div>
 

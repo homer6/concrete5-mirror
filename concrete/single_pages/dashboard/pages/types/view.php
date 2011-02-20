@@ -1,7 +1,6 @@
 <?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
-$attribs = CollectionAttributeKey::getList();
 $ih = Loader::helper('concrete/interface');
 $valt = Loader::helper('validation/token');
 
@@ -14,7 +13,7 @@ $pageTypeIconsFS = FileSet::getByName("Page Type Icons");
 
 if ($_GET['cID'] && $_GET['task'] == 'load_master') { 
 	$u->loadMasterCollectionEdit($_GET['cID'], 1);
-	header('Location: ' . BASE_URL . DIR_REL . '/index.php?cID=' . $_GET['cID'] . '&mode=edit');
+	header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit');
 	exit;
 }
 
@@ -160,7 +159,7 @@ if ($ctEditMode) {
 		</td>
 	</tr>
 	<tr>
-		<td colspan="3" class="header" class="subheader"><?php echo t('Available Metadata Attributes')?></td>
+		<td colspan="3" class="header" class="subheader"><?php echo t('Default Attributes')?></td>
 	</tr>
 	<?php 
 		$attribs = CollectionAttributeKey::getList();
@@ -305,7 +304,7 @@ if ($ctEditMode) {
         </td>
 	</tr>
 	<tr>
-		<td colspan="3" class="subheader"><?php echo t('Available Metadata Attributes')?></td>
+		<td colspan="3" class="subheader"><?php echo t('Default Attributes')?></td>
 	</tr>
 	<?php 
 		$attribs = CollectionAttributeKey::getList();
@@ -383,12 +382,14 @@ if ($ctEditMode) {
 			?></td>
 		<td>
 		<?php  if ($ct->getMasterCollectionID()) {?>
-			<?php  if ($u->getUserID() == USER_SUPER_ID) { ?>
+			<?php 
+			$tp = new TaskPermission();
+			if ($tp->canAccessPageDefaults()) { ?>
 				<?php  print $ih->button_js(t('Defaults'), "window.open('" . $this->url('/dashboard/pages/types?cID=' . $ct->getMasterCollectionID() . '&task=load_master')."')", 'left', false, array('title'=>t('Lets you set default permissions and blocks for a particular page type.')) );?>
 			<?php  } else { 
-				$defaultsErrMsg = t('You must be logged in as %s to edit default content on page types.', USER_SUPER);
+				$defaultsErrMsg = t('You do not have access to page type default content.');
 				?>
-				<?php  print $ih->button_js(t('Defaults'), "alert('" . $defaultsErrMsg . "')", 'left', false, array('title'=>t('Lets you set default permissions and blocks for a particular page type.')) );?>
+				<?php  print $ih->button_js(t('Defaults'), "alert('" . $defaultsErrMsg . "')", 'left', 'ccm-button-inactive', array('title'=>t('Lets you set default permissions and blocks for a particular page type.')) );?>
 			<?php  } ?>
 		<?php  } ?>
 	
@@ -406,21 +407,6 @@ if ($ctEditMode) {
 	<br/>
 	<div class="ccm-buttons">
 		<a class="ccm-button" href="<?php echo $this->url('/dashboard/pages/types?task=add')?>"><span><em class="ccm-button-add"><?php echo t('Add a Page Type')?></em></span></a>	
-	</div>
-	<div class="ccm-spacer">&nbsp;</div>
-
-	</div>
-	
-	
-	<h1><a class="ccm-dashboard-header-option" href="<?php echo $this->url('/dashboard/settings/', 'manage_attribute_types')?>">Manage Attribute Types</a>
-	<span><?php echo t('Page Attributes')?></span></h1>
-	<div class="ccm-dashboard-inner">
-	
-	<?php echo  Loader::element('dashboard/attributes_table', array('category' => $category, 'attribs'=>$attribs, 'editURL' => '/dashboard/pages/types/attributes')); ?>
-	
-	<br/>
-	<div class="ccm-buttons">
-		<a class="ccm-button" href="<?php echo $this->url('/dashboard/pages/types/attributes')?>"><span><?php echo t('Add Page Attribute')?></span></a>	
 	</div>
 	<div class="ccm-spacer">&nbsp;</div>
 

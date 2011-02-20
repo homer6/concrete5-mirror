@@ -5,7 +5,7 @@ $token = '&' . $valt->getParameter();
 $html = Loader::helper('html');
 
 if (isset($cp)) {
-	if ($cp->canWrite() || $cp->canAddSubContent() || $cp->canAdminPage()) {
+	if ($cp->canWrite() || $cp->canAddSubContent() || $cp->canAdminPage() || $cp->canApproveCollection()) {
 
 $this->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_REQUIRED . '/i18n_js"></script>'); 
 $this->addHeaderItem($html->javascript('jquery.js'));
@@ -37,6 +37,7 @@ $this->addHeaderItem($html->javascript('ccm.themes.js'));
 $this->addHeaderItem($html->javascript('ccm.filemanager.js'));
 $this->addHeaderItem($html->javascript('ccm.search.js'));
 $this->addHeaderItem($html->javascript('ccm.ui.js'));
+$this->addHeaderItem($html->javascript('ccm.layout.js'));
 $this->addHeaderItem($html->javascript('tiny_mce/tiny_mce.js'));
 
 $this->addHeaderItem($html->css('jquery.rating.css'));
@@ -49,10 +50,9 @@ $this->addHeaderItem($html->css('ccm.search.css'));
 $this->addHeaderItem($html->css('ccm.filemanager.css'));
 $this->addHeaderItem($html->css('ccm.colorpicker.css'));
 
-$this->addHeaderItem($html->javascript('ccm.popup_login.js'));  
-$this->addHeaderItem($html->css('ccm.popup_login.css'));
+$cID = ($c->isAlias()) ? $c->getCollectionPointerOriginalID() : $c->getCollectionID();
 
-$this->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_REQUIRED . '/page_controls_menu_js?cID=' . $c->getCollectionID() . '&amp;cvID=' . $cvID . '&amp;btask=' . $_REQUEST['btask'] . '&amp;ts=' . time() . '"></script>'); 
+$this->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_REQUIRED . '/page_controls_menu_js?cID=' . $cID . '&amp;cvID=' . $cvID . '&amp;btask=' . $_REQUEST['btask'] . '&amp;ts=' . time() . '"></script>'); 
 
 	}
 	

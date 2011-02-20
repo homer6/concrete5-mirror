@@ -1,6 +1,6 @@
 <?php 
 /* 
-V5.07 18 Dec 2008   (c) 2000-2008 John Lim (jlim#natsoft.com). All rights reserved.
+V5.10 10 Nov 2009   (c) 2000-2009 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. 
@@ -159,6 +159,41 @@ class ADODB_mssql extends ADOConnection {
 			return $this->GetOne($this->identitySQL);
 		}
 	}
+
+
+
+	/**
+	* Correctly quotes a string so that all strings are escaped. We prefix and append
+	* to the string single-quotes.
+	* An example is  $db->qstr("Don't bother",magic_quotes_runtime());
+	* 
+	* @param s         the string to quote
+	* @param [magic_quotes]    if $s is GET/POST var, set to get_magic_quotes_gpc().
+	*              This undoes the stupidity of magic quotes for GPC.
+	*
+	* @return  quoted string to be sent back to database
+	*/
+	function qstr($s,$magic_quotes=false)
+	{
+ 		if (!$magic_quotes) {
+ 			return  "'".str_replace("'",$this->replaceQuote,$s)."'";
+		}
+
+ 		// undo magic quotes for " unless sybase is on
+ 		$sybase = ini_get('magic_quotes_sybase');
+ 		if (!$sybase) {
+ 			$s = str_replace('\\"','"',$s);
+ 			if ($this->replaceQuote == "\\'")  // ' already quoted, no need to change anything
+ 				return "'$s'";
+ 			else {// change \' to '' for sybase/mssql
+ 				$s = str_replace('\\\\','\\',$s);
+ 				return "'".str_replace("\\'",$this->replaceQuote,$s)."'";
+ 			}
+ 		} else {
+ 			return "'".$s."'";
+		}
+	}
+// moodle change end - see readme_moodle.txt
 
 	function _affectedrows()
 	{
@@ -331,14 +366,14 @@ class ADODB_mssql extends ADOConnection {
 		
 		See http://www.swynk.com/friends/achigrik/SQL70Locks.asp
 	*/
-	function RowLock($tables,$where,$flds='top 1 null as ignore') 
+	function RowLock($tables,$where,$col='top 1 null as ignore') 
 	{
 		if (!$this->transCnt) $this->BeginTrans();
-		return $this->GetOne("select $flds from $tables with (ROWLOCK,HOLDLOCK) where $where");
+		return $this->GetOne("select $col from $tables with (ROWLOCK,HOLDLOCK) where $where");
 	}
 	
 	
-	function MetaIndexes($table,$primary=false)
+	function MetaIndexes($table,$primary=false, $owner=false)
 	{
 		$table = $this->qstr($table);
 
@@ -516,11 +551,7 @@ order by constraint_name, referenced_table_name, keyno";
 	// returns true or false, newconnect supported since php 5.1.0.
 	function _connect($argHostname, $argUsername, $argPassword, $argDatabasename,$newconnect=false)
 	{
-		if (!function_exists('mssql_connect')) return null;
-		// Task 2270 fix: the port is required for mssql_connect to work, even the default port
-		if (!empty($this->port)) {
-			$argHostname .= ':' . $this->port;
-		}
+		if (!function_exists('mssql_pconnect')) return null;
 		$this->_connectionID = mssql_connect($argHostname,$argUsername,$argPassword,$newconnect);
 		if ($this->_connectionID === false) return false;
 		if ($argDatabasename) return $this->SelectDB($argDatabasename);
@@ -673,7 +704,7 @@ order by constraint_name, referenced_table_name, keyno";
 	}
 	
 	// returns query ID if successful, otherwise false
-	function _query($sql,$inputarr)
+	function _query($sql,$inputarr=false)
 	{
 		$this->_errorMsg = false;
 		if (is_array($inputarr)) {

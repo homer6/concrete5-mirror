@@ -42,7 +42,7 @@ foreach($s1 as $s) {
 	</table>
 	</form>
 	</td>
-	<td valign="top"><?php  Loader::element('files/upload_single'); ?></td>
+	<td valign="top"><?php  Loader::element('files/upload_single', array('searchInstance' => $searchInstance)); ?></td>
 </tr>
 </table>
 

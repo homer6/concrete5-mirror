@@ -1,8 +1,11 @@
 /**
- * $Id: editor_plugin_src.js 425 2007-11-21 15:17:39Z spocke $
+ * editor_plugin_src.js
  *
- * @author Moxiecode
- * @copyright Copyright © 2004-2008, Moxiecode Systems AB, All rights reserved.
+ * Copyright 2009, Moxiecode Systems AB
+ * Released under LGPL License.
+ *
+ * License: http://tinymce.moxiecode.com/license
+ * Contributing: http://tinymce.moxiecode.com/contributing
  */
 
 (function() {
@@ -15,7 +18,7 @@
 				author : 'Moxiecode Systems AB',
 				authorurl : 'http://tinymce.moxiecode.com',
 				infourl : 'http://wiki.moxiecode.com/index.php/TinyMCE:Plugins/spellchecker',
-				version : "2.0.2"
+				version : tinymce.majorVersion + "." + tinymce.minorVersion
 			};
 		},
 
@@ -312,7 +315,7 @@
 		},
 
 		_sendRPC : function(m, p, cb) {
-			var t = this, url = t.editor.getParam("spellchecker_rpc_url", this.url+'/rpc.php');
+			var t = this, url = t.editor.getParam("spellchecker_rpc_url", "{backend}");
 
 			if (url == '{backend}') {
 				t.editor.setProgressState(0);

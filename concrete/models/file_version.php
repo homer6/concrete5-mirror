@@ -245,6 +245,8 @@ class FileVersion extends Object {
 		$db->Execute("update FileVersions set fvTitle = ? where fID = ? and fvID = ?", array($title, $this->getFileID(), $this->getFileVersionID()));
 		$this->logVersionUpdate(FileVersion::UT_TITLE);
 		$this->fvTitle = $title;
+		$fo = $this->getFile();
+		$fo->refreshCache();
 	}
 
 	public function updateTags($tags) {
@@ -253,6 +255,8 @@ class FileVersion extends Object {
 		$db->Execute("update FileVersions set fvTags = ? where fID = ? and fvID = ?", array($tags, $this->getFileID(), $this->getFileVersionID()));
 		$this->logVersionUpdate(FileVersion::UT_TAGS);
 		$this->fvTitle = $tags;
+		$fo = $this->getFile();
+		$fo->refreshCache();
 	}
 
 
@@ -261,6 +265,8 @@ class FileVersion extends Object {
 		$db->Execute("update FileVersions set fvDescription = ? where fID = ? and fvID = ?", array($descr, $this->getFileID(), $this->getFileVersionID()));
 		$this->logVersionUpdate(FileVersion::UT_DESCRIPTION);
 		$this->fvTitle = $descr;
+		$fo = $this->getFile();
+		$fo->refreshCache();
 	}
 
 	public function updateFile($filename, $prefix) {
@@ -289,6 +295,8 @@ class FileVersion extends Object {
 	public function deny() {
 		$db = Loader::db();
 		$db->Execute("update FileVersions set fvIsApproved = 0 where fID = ? and fvID = ?", array($this->getFileID(), $this->getFileVersionID()));
+		$fo = $this->getFile();
+		$fo->refreshCache();
 	}
 
 
@@ -305,10 +313,9 @@ class FileVersion extends Object {
 	
 	
 	/** 
-	 * Removes a version of a file
+	 * Removes a version of a file. Note, does NOT remove the file because we don't know where the file might elsewhere be used/referenced.
 	 */
 	public function delete() {
-		// first, we remove all files from the drive
 		if ($this->fvIsApproved == 1) {
 			return false; // can only delete non-live files
 		}
@@ -350,12 +357,16 @@ class FileVersion extends Object {
 		return BASE_URL . View::url('/download_file', $this->getFileID());
 	}
 	
-	public function getRelativePath() {
+	public function getRelativePath($fullurl = false) {
 		$f = Loader::helper('concrete/file');
 		if ($this->fslID > 0) {
 			$path = BASE_URL . View::url('/download_file', 'view_inline', $this->getFileID());
 		} else {
-			$path = $f->getFileRelativePath($this->fvPrefix, $this->fvFilename );
+			if ($fullurl) {
+				$path = BASE_URL . $f->getFileRelativePath($this->fvPrefix, $this->fvFilename );
+			} else {
+				$path = $f->getFileRelativePath($this->fvPrefix, $this->fvFilename );
+			}
 		}		
 		return $path;
 	}
@@ -396,7 +407,7 @@ class FileVersion extends Object {
 	}
 	
 	// 
-	public function refreshThumbnails() {
+	public function refreshThumbnails($refreshCache = true) {
 		$db = Loader::db();
 		$f = Loader::helper('concrete/file');
 		for ($i = 1; $i <= $this->numThumbnailLevels; $i++) {
@@ -406,6 +417,11 @@ class FileVersion extends Object {
 				$hasThumbnail = 1;
 			}
 			$db->Execute("update FileVersions set fvHasThumbnail" . $i . "= ? where fID = ? and fvID = ?", array($hasThumbnail, $this->fID, $this->fvID));
+		}
+		
+		if ($refreshCache) {
+			$fo = $this->getFile();
+			$fo->refreshCache();
 		}
 	}
 	
@@ -449,8 +465,9 @@ class FileVersion extends Object {
 				
 			}
 		}
-		$this->refreshThumbnails();
+		$this->refreshThumbnails(false);
 		$f = $this->getFile();
+		$f->refreshCache();
 		$f->reindex();
 	}
 

@@ -19,7 +19,7 @@
 
 						</td>
 						<td valign="top">
-							<h2><?php echo $subject?></h2>
+							<h2><?php echo $text->entities($subject)?></h2>
 							<div><?php echo $dateAdded?></div>
 						</td>
 					</tr>
@@ -71,7 +71,7 @@
 						<a href="<?php echo $this->url('/profile', 'view', $msg->getMessageRelevantUserID())?>"><?php echo $av->outputUserAvatar($msg->getMessageRelevantUserObject())?></a>
 						<a href="<?php echo $this->url('/profile', 'view', $msg->getMessageRelevantUserID())?>"><?php echo $msg->getMessageRelevantUserName()?></a>
 						</td>
-						<td class="ccm-profile-messages-item-name"><a href="<?php echo $this->url('/profile/messages', 'view_message', $mailbox, $msg->getMessageID())?>"><?php echo $msg->getMessageSubject()?></a></td>
+						<td class="ccm-profile-messages-item-name"><a href="<?php echo $this->url('/profile/messages', 'view_message', $mailbox, $msg->getMessageID())?>"><?php echo $text->entities($msg->getMessageSubject())?></a></td>
 						<td style="white-space: nowrap"><?php echo $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A'))?></td>
 						<td><?php echo $msg->getMessageStatus()?></td>
 					</tr>
@@ -117,9 +117,9 @@
 					<?php echo $form->hidden("msgID", $msgID)?>
 					<?php echo $form->hidden("box", $box)?>
 				<?php  
-					$subject = t('Re: %s', $msgSubject);
+					$subject = t('Re: %s', $text->entities($msgSubject));
 				} else {
-					$subject = $msgSubject;
+					$subject = $text->entities($msgSubject);
 				}
 				?>
 				
@@ -171,7 +171,7 @@
     				<td class="ccm-profile-mailbox-last-message"><?php 
     				$msg = $inbox->getLastMessageObject();
     				if (is_object($msg)) {
-    					print t('<strong>%s</strong>, sent by %s on %s', $msg->getMessageSubject(), $msg->getMessageAuthorName(), $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')));
+    					print t('<strong>%s</strong>, sent by %s on %s', $text->entities($msg->getMessageSubject()), $msg->getMessageAuthorName(), $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')));
     				}
     				?></td>
     			</tr>
@@ -181,7 +181,7 @@
     				<td class="ccm-profile-mailbox-last-message"><?php 
      				$msg = $sent->getLastMessageObject();
     				if (is_object($msg)) {
-    					print t('<strong>%s</strong>, sent by %s on %s', $msg->getMessageSubject(), $msg->getMessageAuthorName(), $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')));
+    					print t('<strong>%s</strong>, sent by %s on %s', $text->entities($msg->getMessageSubject()), $msg->getMessageAuthorName(), $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')));
     				}
     				?>
    				</td>

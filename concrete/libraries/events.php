@@ -110,7 +110,7 @@ class Events {
 	 * @return void
 	 */
 	public static function fire($event) {
-		if (ENABLE_APPLICATION_EVENTS == false) {
+		if ((!defined('ENABLE_APPLICATION_EVENTS')) || (ENABLE_APPLICATION_EVENTS == false)) {
 			return;
 		}
 		
@@ -132,16 +132,19 @@ class Events {
 				if ($type == Events::EVENT_TYPE_PAGETYPE) {
 					// then the first argument in the event fire() method will be the page
 					// that this applies to. We check to see if the page type is the right type
+					$proceed = false;
 					if (is_object($args[0]) && $args[0] instanceof Page && $args[0]->getCollectionTypeID() > 0) {
-						if ($ev[3] != Loader::pageTypeControllerPath($args[0]->getCollectionTypeHandle())) {
-							$proceed = false;
+						if ($ev[3] == Loader::pageTypeControllerPath($args[0]->getCollectionTypeHandle())) {
+							$proceed = true;
 						}
 					}
 				}
 				
 				if ($proceed) {
 					if ($ev[3] != false) {
-						if (substr($ev[3], 0, 1) == '/') {
+						// HACK - second part is for windows and its paths
+					
+						if (substr($ev[3], 0, 1) == '/' || substr($ev[3], 1, 1) == ':') {
 							// then this means that our path is a full one
 							require_once($ev[3]);
 						} else {

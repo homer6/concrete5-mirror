@@ -41,7 +41,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$db = Loader::db();
 			$this->btArray = array();
 						
-			$q = "select btID, btHandle, pkgID, btIncludeAll, btInterfaceWidth, btInterfaceHeight, btCopyWhenPropagate, btName, btDescription, btActiveWhenAdded from BlockTypes where btIsInternal = 0 ";
+			$q = "select btID from BlockTypes where btIsInternal = 0 ";
 			if ($allowedBlocks != null) {
 				$q .= ' and btID in (' . implode(',', $allowedBlocks) . ') ';
 			}
@@ -51,9 +51,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	
 			if ($r) {
 				while ($row = $r->fetchRow()) {
-					$bt = new BlockType;
-					$bt->setPropertiesFromArray($row);
-					$this->btArray[] = $bt;
+					$bt = BlockType::getByID($row['btID']);
+					if (is_object($bt)) {
+						$this->btArray[] = $bt;
+					}
 				}
 				$r->free();
 			}
@@ -113,30 +114,33 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 		public static function getInstalledList() {
 			$db = Loader::db();
-			$r = $db->query("select * from BlockTypes order by btName asc");
+			$r = $db->query("select btID from BlockTypes order by btName asc");
 			$btArray = array();
 			while ($row = $r->fetchRow()) {
-				$pkg = new BlockType;
-				$pkg->setPropertiesFromArray($row);
-				$btArray[] = $pkg;
+				$bt = BlockType::getByID($row['btID']);
+				if (is_object($bt)) {
+					$btArray[] = $bt;
+				}
 			}
 			return $btArray;
 		}
 		
+		// not really sure why these have two different calls.
+		
 		function getBlockTypeArray() {
 			$db = Loader::db();
-			$q = "select btID, pkgID, btHandle, btCopyWhenPropagate, btName, btActiveWhenAdded, btIncludeAll, btIsInternal, btInterfaceWidth, btInterfaceHeight from BlockTypes order by btID asc";
+			$q = "select btID from BlockTypes order by btID asc";
 			$r = $db->query($q);
-	
+			$btArray = array();
 			if ($r) {
 				while ($row = $r->fetchRow()) {
-					$bt = new BlockType();
-					$bt->setPropertiesFromArray($row);
-					$btArray[] = $bt;
+					$bt = BlockType::getByID($row['btID']);
+					if (is_object($bt)) {
+						$btArray[] = $bt;
+					}
 				}
 				$r->free();
 			}
-			
 			return $btArray;
 		}
 		
@@ -196,13 +200,32 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public $controller;
 		
 		public static function getByHandle($handle) {
-			$where = 'btHandle = ?';
-			return BlockType::get($where, array($handle));			
+			$ca = new Cache();
+			$bt = $ca->get('blockTypeByHandle', $handle);
+			if (!is_object($bt)) {
+				$where = 'btHandle = ?';
+				$bt = BlockType::get($where, array($handle));
+				$ca->set('blockTypeByHandle', $handle, $bt);
+			}
+			if (is_object($bt)) {
+				$bt->controller = Loader::controller($bt);
+				return $bt;
+			}
 		}
-		
+
 		public static function getByID($btID) {
-			$where = 'btID = ?';
-			return BlockType::get($where, array($btID));			
+			$ca = new Cache();
+			$bt = $ca->get('blockTypeByID', $btID);
+			if (!is_object($bt)) {
+				$where = 'btID = ?';
+				$bt = BlockType::get($where, array($btID));			
+				$ca->set('blockTypeByID', $btID, $bt);
+			}
+			if (is_object($bt)) {
+				$bt->controller = Loader::controller($bt);
+				return $bt;
+			}
+			return $bt;
 		}
 		
 		private static function get($where, $properties) {
@@ -215,7 +238,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$row = $r->fetchRow();
 				$bt = new BlockType;
 				$bt->setPropertiesFromArray($row);
-				$bt->controller = Loader::controller($bt);
 				return $bt;
 			}
 			
@@ -317,6 +339,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES)) {
 				$templates = array_merge($templates, $fh->getDirectoryContents(DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES));
 			}
+
+			$templates = array_unique($templates);
 	
 			return $templates;
 		}
@@ -453,8 +477,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					require_once($dir . '/' . $btHandle . '/' . FILENAME_BLOCK_CONTROLLER);
 				}
 				
-				Localization::setDomain($dir . '/' . $btHandle);
-
 				if (!class_exists($class)) {
 					throw new Exception(t("%s not found. Please check that the block controller file contains the correct class name.", $class));
 				}
@@ -484,6 +506,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				} else {
 					$r = $btd->save();
 				}
+				
+				// now we remove the block type from cache
+				$ca = new Cache();
+				$ca->delete('blockTypeByID', $btID);
+				$ca->delete('blockTypeByHandle', $btHandle);
+				$ca->delete('blockTypeList', false);		 	
 				
 				if (!$r) {
 					return $db->ErrorMsg();
@@ -587,6 +615,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 */
 		public function delete() {
 			$db = Loader::db();
+			$ca = new Cache();
+			$ca->delete('blockTypeByID', $this->btID);
+			$ca->delete('blockTypeByHandle', $btHandle);		 	
+			$ca->delete('blockTypeList', false);		 	
 			$db->Execute("delete from BlockTypes where btID = ?", array($this->btID));
 		}
 		
@@ -610,6 +642,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 		$btDescription = $data['btDescription'];
 		 	}
 		 	$db->Execute('update BlockTypes set btHandle = ?, btName = ?, btDescription = ? where btID = ?', array($btHandle, $btName, $btDescription, $this->btID));
+
+			// now we remove the block type from cache
+			$ca = new Cache();
+			$ca->delete('blockTypeByID', $this->btID);
+			$ca->delete('blockTypeByHandle', $btHandle);
+			$ca->delete('blockTypeList', false);		 	
 		 }
 		 
 		 
@@ -652,6 +690,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$bc->setCollectionObject($c);
 				}
 				$bc->save($data);
+				
+				// the previous version of the block above is cached without the values				
+				$nb->refreshCache();
 				
 				return Block::getByID($bIDnew);
 				

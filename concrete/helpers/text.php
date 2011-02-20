@@ -94,6 +94,13 @@ class TextHelper {
 		return $text;
 	}
 
+	/**
+	 * always use in place of htmlentites(), so it works with different langugages
+	**/
+	public function entities($v){
+		return htmlentities( $v, ENT_COMPAT, APP_CHARSET); 
+	}
+	 
 	 
 	/**
 	 * Like sanitize, but requiring a certain number characters, and assuming a tail
@@ -168,6 +175,18 @@ class TextHelper {
 		$output = nl2br($output);
 		return $output;
 	}
+	
+	/** 
+	 * A wrapper for PHP's fnmatch() function, which some installations don't have.
+	 */
+	public function fnmatch($pattern, $string) {
+		if(!function_exists('fnmatch')) {
+			return preg_match("#^".strtr(preg_quote($pattern, '#'), array('\*' => '.*', '\?' => '.', '\[' => '[', '\]' => ']'))."$#i", $string);
+		} else {
+			return fnmatch($pattern, $string);
+		}
+	}
+	
 	
 	/** 
 	 * Takes a CamelCase string and turns it into camel_case

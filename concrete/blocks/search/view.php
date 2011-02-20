@@ -1,5 +1,5 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
-<style>
+<style type="text/css">
 #searchResults .pageLink{ font-size:12px; color:#999; margin:2px 0px 8px 0px; padding:0px; display:block }
 #searchResults .searchResult{ margin-bottom:16px; margin-top:24px }
 #searchResults .searchResult h3{ margin-bottom:0px; padding-bottom:0px }
@@ -36,7 +36,7 @@ if (strlen($query)) {
 		<?php  foreach($results as $r) { 
 			$currentPageBody = $this->controller->highlightedExtendedMarkup($r->getBodyContent(), $query);?>
 			<div class="searchResult">
-				<h3><a href="<?php echo DIR_REL?>/index.php?cID=<?php echo $r->getID()?>"><?php echo $r->getName()?></a></h3>
+				<h3><a href="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?cID=<?php echo $r->getID()?>"><?php echo $r->getName()?></a></h3>
 				<p>
 					<?php  echo ($currentPageBody ? $currentPageBody .'<br />' : '')?>
 					<?php  echo $this->controller->highlightedMarkup($tt->shortText($r->getDescription()),$query)?>

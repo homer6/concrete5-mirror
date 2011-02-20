@@ -53,7 +53,7 @@ class BooleanAttributeTypeController extends AttributeTypeController  {
 	}
 	
 	public function search() {
-		$this->form();
+		print Loader::helper('form')->checkbox($this->field('value'), 1, $this->request('value') == 1) . ' ' . t('Yes');
 	}
 
 	public function type_form() {
@@ -70,10 +70,18 @@ class BooleanAttributeTypeController extends AttributeTypeController  {
 	
 	public function deleteKey() {
 		$db = Loader::db();
+		$db->Execute('delete from atBooleanSettings where akID = ?', array($this->getAttributeKey()->getAttributeKeyID()));
+
 		$arr = $this->attributeKey->getAttributeValueIDList();
 		foreach($arr as $id) {
 			$db->Execute('delete from atBoolean where avID = ?', array($id));
 		}
+	}
+	
+	public function duplicateKey($newAK) {
+		$this->load();
+		$db = Loader::db();
+		$db->Execute('insert into atBooleanSettings (akID, akCheckedByDefault) values (?, ?)', array($newAK->getAttributeKeyID(), $this->akCheckedByDefault));	
 	}
 	
 	public function saveKey($data) {

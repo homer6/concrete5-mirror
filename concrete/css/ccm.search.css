@@ -20,10 +20,11 @@ table.ccm-results-list tr th.ccm-results-list-active-sort-desc a, table.ccm-resu
 table.ccm-results-list tr th.ccm-results-list-active-sort-desc a {background: #efefef url(../images/icons/arrow_down_black.png) no-repeat scroll right 5px}
 table.ccm-results-list tr th.ccm-results-list-active-sort-asc a {background: #efefef url(../images/icons/arrow_up_black.png) no-repeat scroll right 4px}
 
-table.ccm-results-list tr.ccm-list-record-alt td, table.ccm-results-list tr.ccm-row-alt td {background-color: #ECFBFF}
-table#ccm-file-list tr.ccm-list-record:hover td {cursor: pointer;background-color: #DDECF0 !important}
+table.ccm-results-list tr.ccm-list-record td {border-bottom: 1px solid #dedede;}
+table.ccm-results-list tr.ccm-list-record-alt td, table.ccm-results-list tr.ccm-row-alt td {background-color: #f2f2f2}
+table.ccm-results-list tr.ccm-list-record:hover td {cursor: pointer; background-color: rgba(214,237,247,0.6) !important; }
 
-img#ccm-search-loading { display: none; float:right; }
+img#ccm-search-loading,img.ccm-search-loading { display: none; float:right; }
 div.ccm-results-list-none { font-weight: bold}
 
 div#ccm-search-overlay {display: block; width: 100%; font-size: 11px; padding:0px; margin:0px; height:auto; overflow:hidden }
@@ -61,3 +62,6 @@ img.ccm-attribute-editable-field-loading {display: none}
 div.ccm-attribute-editable-field-form {display: none}
 div.ccm-attribute-editable-field-type-text input {width: 100%}
 div.ccm-attribute-editable-field-type-number input {width: 60px}
+
+div#ccm-search-export {float: left; width: 80px; text-align: left; background: transparent url(../images/icons/excel.png) no-repeat; padding-left: 22px; margin-top: 2px; padding-top: 3px; padding-bottom: 10px}
+div#ccm-search-export a {font-size: 11px}

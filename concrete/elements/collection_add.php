@@ -54,6 +54,8 @@ for ($i = 0; $i < count($ctArray); $i++) {
 
 	<form method="post" action="<?php echo $c->getCollectionAction()?>" id="ccmAddPage">		
 	<input type="hidden" name="rel" value="<?php echo $_REQUEST['rel']?>" />
+	<?php  // sitemap mode ?>
+	<input type="hidden" name="mode" value="<?php echo $_REQUEST['mode']?>" />
 	<input type="hidden" name="ctID" value="0" />
 	 
 	<div class="ccm-form-area">
@@ -133,7 +135,7 @@ for ($i = 0; $i < count($ctArray); $i++) {
 			<label><?php echo t('Description')?></label> <textarea name="cDescription" style="width: 100%; height: 80px"></textarea>
 		</div>
 		
-		<style>
+		<style type="text/css">
 		#ccm-metadata-fields{display:none; }
 		</style>
 		<?php 
@@ -146,7 +148,7 @@ for ($i = 0; $i < count($ctArray); $i++) {
 
 	<div class="ccm-buttons">
 	<!--	<a href="javascript:void(0)" onclick="ccm_hidePane()" class="ccm-button-left cancel"><span><em class="ccm-button-close">Cancel</em></span></a>//-->
-	<a href="javascript:void(0)" onclick="ccm_doAddSubmit()" class="ccm-button-right accept"><span><?php echo t('Add')?></span></a>
+	<a href="javascript:void(0)" onclick="$('#ccmAddPage').submit()" class="ccm-button-right accept"><span><?php echo t('Add')?></span></a>
 	</div>	
 	<input type="hidden" name="add" value="1" />
 	<input type="hidden" name="processCollection" value="1">
@@ -213,14 +215,13 @@ $(function() {
 	}
 	
 	$("#ccmAddPage").submit(function() {
-		return ccm_testAddSubmit();
-	});
-	
-	ccm_doAddSubmit = function() {
 		if (ccm_testAddSubmit()) {
-			$("#ccmAddPage").get(0).submit();
+			jQuery.fn.dialog.showLoader();
+			return true;
+		} else {
+			return false;
 		}
-	}
+	});
 	
 	$('a.ccm-scroller-l').click(function() {
 		var item = $(this).parent().children('div.ccm-scroller-inner').children('ul');

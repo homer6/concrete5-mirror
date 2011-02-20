@@ -1,10 +1,18 @@
 <?php 
 	## This constant ensures that we're operating inside dispatcher.php. There is a LATER check to ensure that dispatcher.php is being called correctly. ##
-	define('C5_EXECUTE', true);
+	if (!defined("C5_EXECUTE")) {
+		define('C5_EXECUTE', true);
+	} 
+	
+	## Startup check ##	
+	require(dirname(__FILE__) . '/config/base_pre.php');
 
 	## Startup check ##	
 	require(dirname(__FILE__) . '/startup/config_check.php');
-
+	
+	## Check to see if, based on a config variable, we need to point to an alternate core ##
+	require(dirname(__FILE__) . '/startup/updated_core_check.php');
+	
 	## Load the base config file ##
 	require(dirname(__FILE__) . '/config/base.php');
 
@@ -14,6 +22,10 @@
 	## Load the database ##
 	Loader::database();
 
+	## Startup cache ##
+	Loader::library('cache');	
+	Cache::startup();
+	
 	## Load required libraries ##
 	Loader::library('object');
 	Loader::library('log');
@@ -44,7 +56,7 @@
 	Loader::model('attribute/set');
 	Loader::model('attribute/type');
 	Loader::model('block');
-	Loader::model('block_styles');
+	Loader::model('custom_style');
 	Loader::model('file');
 	Loader::model('file_version');
 	Loader::model('block_types');
@@ -52,21 +64,18 @@
 	Loader::model('collection_version');
 	Loader::model('config');
 	Loader::model('groups');
+	Loader::model('layout');  
 	Loader::model('package');
 	Loader::model('page');
 	Loader::model('page_theme');
 	Loader::model('permissions');
 	Loader::model('user');
 	Loader::model('userinfo');
+	Loader::model('task_permission');
 
 	## Setup timzone support
 	require(dirname(__FILE__) . '/startup/timezone.php'); // must be included before any date related functions are called (php 5.3 +)
 
-	## Startup cache ##
-	Loader::library('cache/abstract');	
-	Loader::library('cache/' . CACHE_LIBRARY);
-	Cache::startup();
-	
 	## Startup check, install ##	
 	require(dirname(__FILE__) . '/startup/magic_quotes_gpc_check.php');
 
@@ -91,21 +100,26 @@
 	## Check host for redirection ##	
 	require(dirname(__FILE__) . '/startup/url_check.php');
 	
+	## Set debug-related and logging activities
+	require(dirname(__FILE__) . '/startup/debug_logging.php');
+
 	## Site-level config POST user/app config ##
 	if (file_exists(DIR_BASE . '/config/site_post.php')) {
 		require(DIR_BASE . '/config/site_post.php');
 	}
-
-	## Set debug-related and logging activities
-	require(dirname(__FILE__) . '/startup/debug_logging.php');
+	
+	## Site-level config POST user/app config - managed by c5, do NOT add your own stuff here ##
+	if (file_exists(DIR_BASE . '/config/site_post_restricted.php')) {
+		require(DIR_BASE . '/config/site_post_restricted.php');
+	}
 
 	require(dirname(__FILE__) . '/startup/tools_upgrade_check.php');
 
 	## Specific site routes for various content items (if they exist) ##
-	@include('config/site_theme_paths.php');
+	@include(DIR_CONFIG_SITE . '/site_theme_paths.php');
 
 	## Specific site routes for various content items (if they exist) ##
-	@include('config/site_file_types.php');
+	@include(DIR_CONFIG_SITE . '/site_file_types.php');
 
 	## Package events
 	require(dirname(__FILE__) . '/startup/packages.php');
@@ -114,10 +128,9 @@
 	// Include Tools. Format: index.php?task=include_frontend&fType=TOOL&filename=test.php
 	require(dirname(__FILE__) . '/startup/tools.php');
 
-	## Specific site/app events if they are enabled ##
 	## This must come before packages ##
 	if (defined('ENABLE_APPLICATION_EVENTS') && ENABLE_APPLICATION_EVENTS == true) {
-		@include('config/site_events.php');
+		@include(DIR_CONFIG_SITE . '/site_events.php');
 	}
 	
 	
@@ -129,7 +142,11 @@
 		// figure out where we need to go
 		$req = Request::get();
 		if ($req->getRequestCollectionPath() != '') {
-			$c = Page::getByPath($req->getRequestCollectionPath(), false);		
+			if (ENABLE_LEGACY_CONTROLLER_URLS) {
+				$c = Page::getByPath($req->getRequestCollectionPath(), false);		
+			} else {
+				$c = $req->getRequestedPage();
+			}
 		} else {
 			$c = Page::getByID($req->getRequestCollectionID(), false);
 		}
@@ -199,6 +216,11 @@
 			}
 		}
 		
+		## Any custom site-related process
+		if (file_exists(DIR_BASE . '/config/site_process.php')) {
+			require(DIR_BASE . '/config/site_process.php');
+		}
+
 		## Make sure that any submitted forms, etc... are handled correctly
 		## This is legacy cms specific stuff, like adding pages
 		require(dirname(__FILE__) . '/startup/process.php');

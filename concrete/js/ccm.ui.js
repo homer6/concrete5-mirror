@@ -10,6 +10,7 @@ var ccm_blockError = "";
 var ccm_menuActivated = false;
 var ccm_bcEnabled = false;
 var ccm_bcEnabledTimer = false;
+var ccm_arrangeMode = false;
 
 ccm_menuInit = function(obj) {
 	
@@ -59,23 +60,30 @@ ccm_showBlockMenu = function(obj, e) {
 		//html += '<li class="header"></li>';
 		if (obj.canWrite) {
 			html += (obj.editInline) ? '<li><a class="ccm-icon" id="menuEdit' + obj.bID + '-' + obj.aID + '" href="' + CCM_DISPATCHER_FILENAME + '?cID=' + CCM_CID + '&bID=' + obj.bID + '&arHandle=' + obj.arHandle + '&isGlobal=' + obj.isGlobal + '&btask=edit#_edit' + obj.bID + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/edit_small.png)">' + ccmi18n.editBlock + '</span></a></li>'
-				: '<li><a class="ccm-icon" dialog-title="' + ccmi18n.editBlock + '" dialog-modal="true" dialog-width="' + obj.width + '" dialog-height="' + obj.height + '" id="menuEdit' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&arHandle=' + obj.arHandle + '&isGlobal=' + obj.isGlobal + '&btask=edit"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/edit_small.png)">' + ccmi18n.editBlock + '</span></a></li>';
+				: '<li><a class="ccm-icon" dialog-title="' + ccmi18n.editBlock + '" dialog-modal="false" dialog-width="' + obj.width + '" dialog-height="' + obj.height + '" id="menuEdit' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&arHandle=' + obj.arHandle + '&isGlobal=' + obj.isGlobal + '&btask=edit"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/edit_small.png)">' + ccmi18n.editBlock + '</span></a></li>';
 		}
 		html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.copyBlockToScrapbook + '" dialog-modal="false" dialog-width="250" dialog-height="100" id="menuAddToScrapbook' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/pile_manager.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&arHandle=' + obj.arHandle + '&btask=add"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/paste_small.png)">' + ccmi18n.copyBlockToScrapbook + '</span></a></li>';
 
 		if (obj.canArrange) {
-			html += '<li><a class="ccm-icon" id="menuArrange' + obj.bID + '-' + obj.aID + '" href="' + CCM_DISPATCHER_FILENAME + '?cID=' + CCM_CID + '&btask=arrange"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/up_down.png)">' + ccmi18n.arrangeBlock + '</span></a></li>';
+			html += '<li><a class="ccm-icon" id="menuArrange' + obj.bID + '-' + obj.aID + '" href="javascript:ccm_arrangeInit()"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/up_down.png)">' + ccmi18n.arrangeBlock + '</span></a></li>';
+
+			//html += '<li><a class="ccm-icon" id="menuArrange' + obj.bID + '-' + obj.aID + '" href="' + CCM_DISPATCHER_FILENAME + '?cID=' + CCM_CID + '&btask=arrange"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/up_down.png)">' + ccmi18n.arrangeBlock + '</span></a></li>';
 		}
 		if (obj.canDelete) {
 			html += '<li><a class="ccm-icon" id="menuDelete' + obj.bID + '-' + obj.aID + '" href="#" onclick="javascript:ccm_deleteBlock(' + obj.bID + ',' + obj.aID + ', \'' + obj.arHandle + '\', \'' + obj.deleteMessage + '\');return false;"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/delete_small.png)">' + ccmi18n.deleteBlock + '</span></a></li>';
 		} 		
+		if (obj.canWrite) {
+			html += '<li class="header"></li>';
+			if (obj.canDesign) {
+				html += '<li><a class="ccm-icon" dialog-modal="false" dialog-title="' + ccmi18n.changeBlockBaseStyle + '" dialog-width="450" dialog-height="420" id="menuChangeCSS' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&isGlobal=' + obj.isGlobal + '&arHandle=' + obj.arHandle + '&btask=block_css&modal=true&width=300&height=100" title="' + ccmi18n.changeBlockCSS + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/design_small.png)">' + ccmi18n.changeBlockCSS + '</span></a></li>';
+			}
+			html += '<li><a class="ccm-icon" dialog-modal="false" dialog-title="' + ccmi18n.changeBlockTemplate + '" dialog-width="300" dialog-height="100" id="menuChangeTemplate' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&isGlobal=' + obj.isGlobal + '&arHandle=' + obj.arHandle + '&btask=template&modal=true&width=300&height=100" title="' + ccmi18n.changeBlockTemplate + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/wrench.png)">' + ccmi18n.changeBlockTemplate + '</span></a></li>';
+		}
+
 		if (obj.canModifyGroups || obj.canAliasBlockOut) {
 			html += '<li class="header"></li>';
 		}
-		if (obj.canWrite) {
-			html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.changeBlockBaseStyle + '" dialog-width="450" dialog-height="350" id="menuChangeCSS' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&isGlobal=' + obj.isGlobal + '&arHandle=' + obj.arHandle + '&btask=block_css&modal=true&width=300&height=100" title="' + ccmi18n.changeBlockCSS + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/design_small.png)">' + ccmi18n.changeBlockCSS + '</span></a></li>';
-			html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.changeBlockTemplate + '" dialog-width="300" dialog-height="100" id="menuChangeTemplate' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&isGlobal=' + obj.isGlobal + '&arHandle=' + obj.arHandle + '&btask=template&modal=true&width=300&height=100" title="' + ccmi18n.changeBlockTemplate + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/wrench.png)">' + ccmi18n.changeBlockTemplate + '</span></a></li>';
-		}
+
 		if (obj.canModifyGroups) {
 			html += '<li><a title="' + ccmi18n.setBlockPermissions + '" class="ccm-icon" dialog-width="400" dialog-height="380" id="menuBlockGroups' + obj.bID + '-' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_block_popup.php?cID=' + CCM_CID + '&bID=' + obj.bID + '&arHandle=' + obj.arHandle + '&btask=groups" dialog-title="' + ccmi18n.setBlockPermissions + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/permissions_small.png)">' + ccmi18n.setBlockPermissions + '</span></a></li>';
 		}
@@ -111,15 +119,97 @@ ccm_showBlockMenu = function(obj, e) {
 
 }
 
-ccm_showAreaMenu = function(obj, e) {
-	var addOnly = (obj.addOnly)?1:0;
+ccm_openAreaAddBlock = function(arHandle, addOnly) {
+	if (!addOnly) {	
+		addOnly = 0;
+	}
+	
 	$.fn.dialog.open({
 		title: ccmi18n.blockAreaMenu,
-		href: CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&arHandle=' + obj.arHandle + '&addOnly=' + addOnly,
+		href: CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&atask=add&arHandle=' + arHandle + '&addOnly=' + addOnly,
 		width: 550,
 		modal: false,
-		height: 380
+		height: 380,
+		onClose: function() {
+			ccm_activateHeader();
+		}
 	});
+}
+
+ccm_showAreaMenu = function(obj, e) {
+	var addOnly = (obj.addOnly)?1:0;
+
+	if (e.shiftKey) {
+		ccm_openAreaAddBlock(obj.arHandle, addOnly);
+	} else {
+		ccm_hideMenus();
+		e.stopPropagation();
+		ccm_menuActivated = true;
+		
+		// now, check to see if this menu has been made
+		var aobj = document.getElementById("ccm-area-menu" + obj.aID);
+		
+		if (!aobj) {
+			// create the 1st instance of the menu
+			el = document.createElement("DIV");
+			el.id = "ccm-area-menu" + obj.aID;
+			el.className = "ccm-menu";
+			el.style.display = "none";
+			document.body.appendChild(el);
+			
+			aobj = $("#ccm-area-menu" + obj.aID);
+			aobj.css("position", "absolute");
+			
+			//contents  of menu
+			var html = '<div class="ccm-menu-tl"><div class="ccm-menu-tr"><div class="ccm-menu-t"></div></div></div>';
+			html += '<div class="ccm-menu-l"><div class="ccm-menu-r">';
+			html += '<ul>';
+			//html += '<li class="header"></li>';
+			if (obj.canAddBlocks) {
+				html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.addBlockNew + '" dialog-modal="false" dialog-width="550" dialog-height="380" id="menuAddNewBlock' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&arHandle=' + obj.arHandle + '&atask=add&addOnly=' + addOnly + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/add.png)">' + ccmi18n.addBlockNew + '</span></a></li>';
+				html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.addBlockPaste + '" dialog-modal="false" dialog-width="550" dialog-height="380" id="menuAddPaste' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&arHandle=' + obj.arHandle + '&atask=paste&addOnly=' + addOnly + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/paste_small.png)">' + ccmi18n.addBlockPaste + '</span></a></li>';
+			}
+			if (obj.canAddBlocks && (obj.canDesign || obj.canLayout)) {
+				html += '<li class="header"></li>';
+			}
+			if (obj.canLayout) {
+				html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.addAreaLayout + '" dialog-modal="false" dialog-width="550" dialog-height="280" id="menuAreaLayout' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&arHandle=' + obj.arHandle + '&atask=layout"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/layout_small.png)">' + ccmi18n.addAreaLayout + '</span></a></li>';
+			}
+			if (obj.canDesign) {
+				html += '<li><a class="ccm-icon" dialog-title="' + ccmi18n.changeAreaCSS + '" dialog-modal="false" dialog-width="450" dialog-height="420" id="menuAreaStyle' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&arHandle=' + obj.arHandle + '&atask=design"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/design_small.png)">' + ccmi18n.changeAreaCSS + '</span></a></li>';
+			}
+			if (obj.canWrite && obj.canModifyGroups) { 
+				html += '<li class="header"></li>';			
+			}
+			if (obj.canModifyGroups) {
+				html += '<li><a title="' + ccmi18n.setAreaPermissions + '" dialog-modal="false" class="ccm-icon" dialog-width="580" dialog-height="420" id="menuAreaGroups' + obj.aID + '" href="' + CCM_TOOLS_PATH + '/edit_area_popup.php?cID=' + CCM_CID + '&arHandle=' + obj.arHandle + '&atask=groups" dialog-title="' + ccmi18n.setAreaPermissions + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/permissions_small.png)">' + ccmi18n.setAreaPermissions + '</span></a></li>';
+			}
+			
+			html += '</ul>';
+			html += '</div></div>';
+			html += '<div class="ccm-menu-bl"><div class="ccm-menu-br"><div class="ccm-menu-b"></div></div></div>';
+			aobj.append(html);
+			
+			// add dialog elements where necessary
+			if (obj.canAddBlocks) {
+				$('a#menuAddNewBlock' + obj.aID).dialog();
+				$('a#menuAddPaste' + obj.aID).dialog(); 
+			}
+			if (obj.canWrite) {
+				$('a#menuAreaStyle' + obj.aID).dialog();
+				$('a#menuAreaLayout' + obj.aID).dialog();
+			}
+			if (obj.canModifyGroups) {
+				$('a#menuAreaGroups' + obj.aID).dialog();
+			}
+		
+		} else {
+			aobj = $("#ccm-area-menu" + obj.aID);
+		}
+
+		ccm_fadeInMenu(aobj, e);		
+
+	}
 }
 
 ccm_hideHighlighter = function() {
@@ -127,8 +217,12 @@ ccm_hideHighlighter = function() {
 }
 
 ccm_addError = function(err) {
+	if (!ccm_isBlockError) {
+		ccm_blockError += '<ul>';
+	}
+	
 	ccm_isBlockError = true;
-	ccm_blockError += err;
+	ccm_blockError += "<li>" + err + "</li>";;
 }
 
 ccm_resetBlockErrors = function() {
@@ -138,14 +232,20 @@ ccm_resetBlockErrors = function() {
 
 ccm_deleteBlock = function(bID, aID, arHandle, msg) {
 	if (confirm(msg)) {
+		ccm_mainNavDisableDirectExit();
 		// got to grab the message too, eventually
 		ccm_hideHighlighter();
+		ccm_menuActivated = true;
 		$.ajax({
  		type: 'POST',
  		url: CCM_DISPATCHER_FILENAME,
  		data: 'cID=' + CCM_CID + '&ccm_token=' + CCM_SECURITY_TOKEN + '&isAjax=true&btask=remove&bID=' + bID + '&arHandle=' + arHandle,
  		success: function(resp) {
- 			$("#b" + bID + '-' + aID).fadeOut(100);
+ 			ccm_hideHighlighter();
+ 			$("#b" + bID + '-' + aID).fadeOut(100, function() {
+ 				ccm_menuActivated = false;
+ 			});
+ 			ccmAlert.hud(ccmi18n.deleteBlockMsg, 2000, 'delete_small', ccmi18n.deleteBlock);
  		}});		
 	}
 }
@@ -156,8 +256,85 @@ ccm_hideMenus = function() {
 	ccm_menuActivated = false;
 }
 
+ccm_parseBlockResponse = function(r, currentBlockID, task) {
+	try { 
+		resp = eval('(' + r + ')');
+		if (resp.error == true) {
+			var message = '<ul>'
+			for (i = 0; i < resp.response.length; i++) {						
+				message += '<li>' + resp.response[i] + '<\/li>';
+			}
+			message += '<\/ul>';
+			ccmAlert.notice(ccmi18n.error, message);
+		} else {
+			ccm_blockWindowClose();
+			var action = CCM_TOOLS_PATH + '/edit_block_popup?cID=' + CCM_CID + '&bID=' + resp.bID + '&arHandle=' + encodeURI(resp.arHandle) + '&btask=view_edit_mode';	 
+			$.get(action, 		
+				function(r) { 
+					if ($("#ccm-scrapbook-list").length > 0) {
+						window.location.reload();
+					} 
+					if (task == 'add') {
+						if ($("#a" + resp.aID + " div.ccm-area-styles-a"+ resp.aID).length > 0) {
+							$("#a" + resp.aID + " div.ccm-area-styles-a"+ resp.aID).append(r);
+						} else {
+							$("#a" + resp.aID).append(r);
+						}
+					} else {
+						$('#b' + currentBlockID + '-' + resp.aID).before(r).remove();
+					}
+					jQuery.fn.dialog.hideLoader();
+					ccm_mainNavDisableDirectExit();
+					setTimeout(function() {
+						ccm_menuActivated = false;
+					}, 200);
+					if (task == 'add') {
+						ccmAlert.hud(ccmi18n.addBlockMsg, 2000, 'add', ccmi18n.addBlock);
+						// second closetop. Not very elegant
+						jQuery.fn.dialog.closeTop();
+					} else {
+						ccmAlert.hud(ccmi18n.updateBlockMsg, 2000, 'success', ccmi18n.updateBlock);
+					}
+				}
+			);
+		}
+	} catch(e) { 
+		ccmAlert.notice(ccmi18n.error, r); 
+	}
+}
+
+ccm_mainNavDisableDirectExit = function(disableShow) {
+	// make sure that exit edit mode is enabled
+	$("li.ccm-main-nav-exit-edit-mode-direct").remove();
+	if (!disableShow) {
+		$("li.ccm-main-nav-exit-edit-mode").show();
+	}
+}
+
+ccm_setupBlockForm = function(form, currentBlockID, task) {
+	form.ajaxForm({
+		type: 'POST',
+		iframe: true,
+		beforeSubmit: function() {
+			ccm_hideHighlighter();
+			jQuery.fn.dialog.showLoader();
+			ccm_menuActivated = true;
+			return ccm_blockFormSubmit();
+		},
+		success: function(r) {
+			ccm_parseBlockResponse(r, currentBlockID, task);
+		}
+	});
+}
+
+
+
 ccm_activate = function(obj, domID) { 
 	if (ccm_topPaneDeactivated) {
+		return false;
+	}
+	
+	if (ccm_arrangeMode) {
 		return false;
 	}
 	
@@ -169,7 +346,7 @@ ccm_activate = function(obj, domID) {
 	aobj.addClass('selected');
 	ccm_selectedDomID = domID;
 	
-	offs = aobj.offset({padding: true});
+	offs = aobj.offset();
 
 	/* put highlighter over item. THanks dimensions plugin! */
 	
@@ -200,9 +377,19 @@ ccm_activate = function(obj, domID) {
 
 ccm_editInit = function() {
 	ccm_setupHeaderMenu();
+
+	document.write = function() {
+		// stupid javascript in html blocks
+		void(0);
+	}
+
 	$(document.body).append('<div style="position: absolute; display:none" id="ccm-highlighter">&nbsp;</div>');
 	$(document).click(function() {ccm_hideMenus();});
-	
+	$(document.body).css('user-select', 'none');
+	$(document.body).css('-khtml-user-select', 'none');
+	$(document.body).css('-webkit-user-select', 'none');
+	$(document.body).css('-moz-user-select', 'none');
+
 	$("a").click(function(e) {
 		ccm_hideMenus();
 		return false;	
@@ -227,6 +414,11 @@ ccm_editInit = function() {
 		ccm_showPane(this, CCM_TOOLS_PATH + "/check_in.php?cID=" + CCM_CID);
 	});
 	
+	$("a#ccm-nav-exit-edit-direct").click(function() {
+		window.location.href=$(this).attr('href');
+	});
+	
+
 	$("a#ccm-nav-permissions").click(function() {
 		ccm_showPane(this, CCM_TOOLS_PATH + "/edit_collection_popup.php?ctask=edit_permissions&cID=" + CCM_CID);
 	});
@@ -450,6 +642,7 @@ ccm_setupGroupSearch = function() {
 
 ccm_saveArrangement = function() {
 	
+	ccm_mainNavDisableDirectExit(true);
 	var serial = '';
 	$('div.ccm-area').each(function() {
 		areaStr = '&area[' + $(this).attr('id').substring(1) + '][]=';
@@ -458,7 +651,10 @@ ccm_saveArrangement = function() {
 		for (i = 0; i < bArray.length; i++ ) {
 			if (bArray[i] != '' && bArray[i].substring(0, 1) == 'b') {
 				// make sure to only go from b to -, meaning b28-9 becomes "28"
-				serial += areaStr + bArray[i].substring(1, bArray[i].indexOf('-'));
+				var bID = bArray[i].substring(1, bArray[i].indexOf('-'));
+				var bObj = $('#' + bArray[i]);
+				bID += '-' + bObj.attr('custom-style');
+				serial += areaStr + bID;
 			}
 		}
 	});
@@ -468,25 +664,47 @@ ccm_saveArrangement = function() {
  		url: CCM_DISPATCHER_FILENAME,
  		data: 'cID=' + CCM_CID + '&ccm_token=' + CCM_SECURITY_TOKEN + '&btask=ajax_do_arrange' + serial,
  		success: function(msg) {
-			location.href= CCM_DISPATCHER_FILENAME + "?cID=" + CCM_CID;
+			$("div.ccm-area").removeClass('ccm-move-mode');
+			$('div.ccm-block-arrange').each(function() {
+				$(this).addClass('ccm-block');
+				$(this).removeClass('ccm-block-arrange');
+			});
+			ccm_arrangeMode = false;
+			$("li.ccm-main-nav-arrange-option").fadeOut(300, function() {
+				$("li.ccm-main-nav-edit-option").fadeIn(300, function() {
+					ccm_removeHeaderLoading();
+				});
+			});
+ 			ccmAlert.hud(ccmi18n.arrangeBlockMsg, 2000, 'up_down', ccmi18n.arrangeBlock);
  		}});
- 		
 }
 
 ccm_arrangeInit = function() {
 	//$(document.body).append('<img src="' + CCM_IMAGE_PATH + '/topbar_throbber.gif" width="16" height="16" id="ccm-topbar-loader" />');
-	$("a").click(function(e) {
-		ccm_hideMenus();
-		return false;	
+	
+	ccm_arrangeMode = true;
+	
+	ccm_hideHighlighter();
+	ccm_menuActivated = true;
+	
+	$('div.ccm-block').each(function() {
+		$(this).addClass('ccm-block-arrange');
+		$(this).removeClass('ccm-block');
 	});
 	
 	ccm_setupHeaderMenu();
-	$("div.ccm-area").each(function() {
-		$(this).sortable({
-		connectWith: $("div.ccm-area"),
-		accept: 'div.ccm-block-arrange',
-		opacity: 0.5
+	$("li.ccm-main-nav-edit-option").fadeOut(300, function() {
+		$("li.ccm-main-nav-arrange-option").fadeIn(300);
 	});
+	
+	$("div.ccm-area").each(function() {
+		$(this).addClass('ccm-move-mode');
+		$(this).sortable({
+			items: 'div.ccm-block-arrange',
+			connectWith: $("div.ccm-area"),
+			accept: 'div.ccm-block-arrange',
+			opacity: 0.5
+		});
 	});
 	
 	$("a#ccm-nav-save-arrange").click(function() {
@@ -502,7 +720,7 @@ ccm_init = function() {
 		if (!ccm_topPaneDeactivated) {
 			setTimeout(function() {
 				// stupid safari? wtf?
-				window.location.href = CCM_REL + '/index.php?cID=' + CCM_CID + '&ctask=check-out&ccm_token=' + CCM_SECURITY_TOKEN;
+				window.location.href = CCM_DISPATCHER_FILENAME + '?cID=' + CCM_CID + '&ctask=check-out&ccm_token=' + CCM_SECURITY_TOKEN;
 			}, 50);
 		}
 	});
@@ -551,19 +769,21 @@ ccm_blockWindowClose = function() {
 	ccmValidateBlockForm = function() {return true;}
 }
 
-ccm_blockFormInit = function() {
-	$("form.validate").submit(function() {
+ccm_blockFormSubmit = function() {
 	if (typeof window.ccmValidateBlockForm == 'function') {
-		window.ccmValidateBlockForm();
+		r = window.ccmValidateBlockForm();
+		if (!r) {
+			jQuery.fn.dialog.hideLoader();
+		}
 		if (ccm_isBlockError) {
-			if(ccm_blockError) 
-				alert(ccm_blockError);
+			if(ccm_blockError) {
+				ccmAlert.notice(ccmi18n.error, ccm_blockError + '</ul>');
+			}
 			ccm_resetBlockErrors();
 			return false;
 		}
 	}
 	return true;
-	});
 }
 
 ccm_setupGridStriping = function(tbl) {
@@ -589,23 +809,55 @@ ccm_headerMenuPreloads = function(){
 
 ccm_setupDashboardHeaderMenu = function(){	
 	ccm_headerMenuPreloads();
-	
-	var helpEl=$("a#ccm-nav-dashboard-help");
-	if(!helpEl || !helpEl.html()) return false;
-	
-	if(helpEl.attr('helpwaiting')==1) 
-		setTimeout('ccm_support.helpPulse();',1500);
-	helpEl.click(function() { 
-		$(this).addClass('ccm-nav-loading'); 
-		try{
-			if($(this).attr('helpwaiting')==1) 
-				 ccm_support.showMyTickets();
-			else ccm_support.show();
-		}catch(e){alert(e.message);}
-		return false;
-	});		
+	$("#ccm-nav-dashboard-help").dialog();
 }
 
+ccm_dashboardRequestRemoteInformation = function() {
+	$.get(CCM_TOOLS_PATH + '/dashboard/get_remote_information');
+}
+
+
+ccm_getMarketplaceItem = function(args) {
+	var mpID = args.mpID;
+	var closeTop = args.closeTop;
+	
+	this.onComplete = function() { }
+
+	if (args.onComplete) {
+		ccm_getMarketplaceItem.onComplete = args.onComplete;
+	}
+	
+	if (closeTop) {
+		jQuery.fn.dialog.closeTop(); // this is here due to a weird safari behavior
+	}
+	jQuery.fn.dialog.showLoader();
+	// first, we check our local install to ensure that we're connected to the
+	// marketplace, etc..
+	params = {'mpID': mpID};
+	$.getJSON(CCM_TOOLS_PATH + '/marketplace/connect', params, function(resp) {
+		jQuery.fn.dialog.hideLoader();
+		if (resp.isConnected) {
+			if (!resp.purchaseRequired) {
+				$.fn.dialog.open({
+					title: ccmi18n.community,
+					href:  CCM_TOOLS_PATH + '/marketplace/download?install=1&mpID=' + mpID,
+					width: 350,
+					modal: false,
+					height: 240
+				});
+			}
+
+		} else {
+			$.fn.dialog.open({
+				title: ccmi18n.community,
+				href:  CCM_TOOLS_PATH + '/marketplace/frame?mpID=' + mpID,
+				width: '90%',
+				modal: false,
+				height: '70%'
+			});
+		}
+	});
+}
 
 ccm_setupHeaderMenu = function() {
 	
@@ -619,6 +871,7 @@ ccm_setupHeaderMenu = function() {
 	$("ul#ccm-system-nav a").click(function() {
 		$(this).addClass('ccm-nav-loading');
 	});
+	$("#ccm-nav-help").dialog();
 	$("a#ccm-nav-dashboard").click(function() {
 		var dash = $(this).attr('href');
 		setTimeout(function() {
@@ -627,16 +880,6 @@ ccm_setupHeaderMenu = function() {
 		}, 50);
 		
 	});
-	
-	var helpEl=$("a#ccm-nav-help");
-	if(helpEl.attr('helpwaiting')==1) 
-		setTimeout('ccm_support.helpPulse()',1500);
-	helpEl.click(function() { 
-		$(this).addClass('ccm-nav-loading'); 
-		if($(this).attr('helpwaiting')==1) 
-			 ccm_support.showMyTickets();
-		else ccm_support.show();
-	});	
 	
 	$("a#ccm-nav-logout").click(function() {
 		var href = $(this).attr('href');
@@ -769,224 +1012,110 @@ $(function(){
 */
 
 /* Block Styles Customization Popup */
-var ccmCustomBlockCss = {   
+var ccmCustomStyle = {   
 	tabs:function(aLink,tab){
-		$('.ccm-blockEditPane').hide();
-		$('#ccm-blockEditPane-'+tab).show();
+		$('.ccm-styleEditPane').hide();
+		$('#ccm-styleEditPane-'+tab).show();
 		$(aLink.parentNode.parentNode).find('li').removeClass('ccm-nav-active');
 		$(aLink.parentNode).addClass('ccm-nav-active');
 		return false;
 	},
 	resetAll:function(){
-		if( !confirm( ccmi18n.confirmBlockCssReset ) ) return false;
-		$('#ccm-reset-block-css').val(1);
+		if (!confirm( ccmi18n.confirmCssReset)) {  
+			return false;
+		}
+		jQuery.fn.dialog.showLoader();
+
+		$('#ccm-reset-style').val(1);
 		$('#ccmCustomCssForm').get(0).submit();
 		return true;
+	},
+	showPresetDeleteIcon: function() {
+		if ($('select[name=cspID]').val() > 0) {
+			$("#ccm-style-delete-preset").show();		
+		} else {
+			$("#ccm-style-delete-preset").hide();
+		}	
+	},
+	deletePreset: function() {
+		var cspID = $('select[name=cspID]').val();
+		if (cspID > 0) {
+			
+			if( !confirm(ccmi18n.confirmCssPresetDelete) ) return false;
+			
+			var action = $('#ccm-custom-style-refresh-action').val() + '&deleteCspID=' + cspID + '&subtask=delete_custom_style_preset';
+			jQuery.fn.dialog.showLoader();
+			
+			$.get(action, function(r) {
+				$("#ccm-custom-style-wrapper").html(r);
+				jQuery.fn.dialog.hideLoader();
+			});
+		}
+	},
+	initForm: function() {
+		if ($("#cspFooterPreset").length > 0) {
+			$("#ccmCustomCssFormTabs input, #ccmCustomCssFormTabs select").bind('change click', function() {
+				$("#cspFooterPreset").show();
+				$("#cspFooterNoPreset").remove();
+				$("#ccmCustomCssFormTabs input, #ccmCustomCssFormTabs select").unbind('change click');
+			});		
+		}
+		$('input[name=cspPresetAction]').click(function() {
+			if ($(this).val() == 'create_new_preset' && $(this).attr('checked')) {
+				$('input[name=cspName]').attr('disabled', false).focus();
+			} else { 
+				$('input[name=cspName]').val('').attr('disabled', true); 
+			}
+		});
+		ccmCustomStyle.showPresetDeleteIcon();
+		
+		ccmCustomStyle.lastPresetID=parseInt($('select[name=cspID]').val());
+		
+		$('select[name=cspID]').change(function(){ 
+			var cspID = parseInt($(this).val());
+			var selectedCsrID = parseInt($('input[name=selectedCsrID]').val());
+			
+			if(ccmCustomStyle.lastPresetID==cspID) return false;
+			ccmCustomStyle.lastPresetID=cspID;
+			
+			jQuery.fn.dialog.showLoader();
+			if (cspID > 0) {
+				var action = $('#ccm-custom-style-refresh-action').val() + '&cspID=' + cspID;
+			} else {
+				var action = $('#ccm-custom-style-refresh-action').val() + '&csrID=' + selectedCsrID;
+			}
+			
+			
+			$.get(action, function(r) {
+				$("#ccm-custom-style-wrapper").html(r);
+				jQuery.fn.dialog.hideLoader();
+			});
+			
+		});
+		
+		$('#ccmCustomCssForm').submit(function() {
+			if ($('input[name=cspCreateNew]').attr('checked') == true) {
+				if ($('input[name=cspName]').val() == '') { 
+					$('input[name=cspName]').focus();
+					alert(ccmi18n.errorCustomStylePresetNoName);
+					return false;
+				}
+			}
+
+			jQuery.fn.dialog.showLoader();		
+			return true;
+		});
+		
+		//IE bug fix 0 can't focus on txt fields if new block just added 
+		if(!parseInt(ccmCustomStyle.lastPresetID))  
+			setTimeout('$("#ccmCustomCssFormTabs input").attr("disabled", false).get(0).focus()',500);
 	},
 	validIdCheck:function(el,prevID){
 		var selEl = $('#'+el.value); 
 		if( selEl && selEl.get(0) && selEl.get(0).id!=prevID ){		
-			$('#ccm-block-styles-invalid-id').css('display','block');
+			$('#ccm-styles-invalid-id').css('display','block');
 		}else{
-			$('#ccm-block-styles-invalid-id').css('display','none');
+			$('#ccm-styles-invalid-id').css('display','none');
 		}
-	}
-}
-
-/* SUPPORT SECTION */
-
-var ccm_support = {    
-	
-	show:function(){ 
-		//alert(helpurl);
-		var supportWrap=document.getElementById('ccm-supportWrap');
-		//load into existing window, if help is already open
-		if(supportWrap){ 
-			$.ajax({
-				type: 'GET',
-				url: CCM_TOOLS_PATH + '/support/search.php', 
-				success: function(resp) {
-					var supportWrap=document.getElementById('ccm-supportWrap');
-					if(!supportWrap) return false;
-					$(supportWrap.parentNode).html(resp); 
-					ccm_removeHeaderLoading();
-					//setTimeout('ccm_support.checkedLogged()',500);
-				}	
-			});
-		}else{
-			this.dialog(CCM_TOOLS_PATH + '/support/search/');
-		}		
-	},
-	
-	dialog:function(url){
-		$.fn.dialog.open({
-			title: ccmi18n.helpPopup,
-			href:  url,
-			width: 550,
-			modal: false,
-			height: 400,
-			onLoad:function(){ 				
-			},
-			onOpen:function(){ 
-				ccm_removeHeaderLoading();
-			}
-		});
-	},
-	
-	isLoggedIn:0,
-	isLogged:function(){
-		var el=$('#ccm-isRemotelyLogged');		
-		if(el && el.get(0)){
-			this.isLoggedIn=parseInt(el.val());
-		}
-		return this.isLoggedIn;
-	},
-	
-	signOut:function(closeFn){
-		$.ajax({
-			type: 'GET',
-			url: CCM_TOOLS_PATH + '/support/auth/?logout=1', 
-			success: function() {
-				ccm_support.isLoggedIn=0;
-				if (typeof closeFn == 'function') {
-					closeFn();
-				}
-			}	
-		});	
-	}, 
-	searchAnswers:function(form){
-		this.showLoading();
-		try{  
-			//$("#ccm-dialog-throbber").css('visibility', 'visible');
-			$.ajax({
-				type: 'POST',
-				url: CCM_TOOLS_PATH + '/support/search/',
-				data: $(form).formSerialize(),
-				success: function(resp) {
-					ccm_support.hideLoading();
-					var supportWrap=document.getElementById('ccm-supportWrap');
-					if(!supportWrap) return false;
-					$(supportWrap.parentNode).html(resp); 
-				}		
-			});
-		}catch(e){
-			alert('Error in ccm_support.askQuestion(): '+e.message);
-		}
-		return false;
-	},
-	
-	showMyTickets:function(){
-		this.showLoading();
-		var supportWrap=document.getElementById('ccm-supportWrap');
-		//load into existing window, if help is already open
-		if(supportWrap){
-			if( !ccm_support.isLogged() ){
-				ccm_support.login(function(){
-						ccm_support.isLoggedIn=1;
-						$('#ccm-isRemotelyLogged').remove();
-						ccm_support.showMyTickets();
-					});
-				return;
-			}			
-			$.ajax({
-				type: 'GET',
-				url: CCM_TOOLS_PATH + '/support/tickets/',
-				success: function(resp) {
-					ccm_support.hideLoading();
-					var supportWrap=document.getElementById('ccm-supportWrap');
-					if(!supportWrap) return false;
-					$(supportWrap.parentNode).html(resp); 
-					ccm_removeHeaderLoading();
-				}		
-			});
-		}else{ 
-			this.dialog(CCM_TOOLS_PATH + '/support/tickets/');
-		}		
-	},
-	
-	login:function(loggedInFunc){
-		if(typeof(loggedInFunc)!='function'){
-			loggedInFunc=function(){
-				ccm_support.isLoggedIn=1;
-				$('#ccm-isRemotelyLogged').remove();
-				ccm_support.showQuestionForm() 
-			}
-		}
-		ccmPopupLogin.show( '', loggedInFunc, 'ccm-supportWrap', 1, function(){ 
-				var plm=$('#ccm-popupLoginIntroMsg');
-				plm.css('display','block');
-				plm.css('margin-top','8px');
-				plm.css('margin-bottom','16px');
-				plm.html(ccmi18n.helpPopupLoginMsg);
-			});
-	},
-	
-	showQuestionForm:function(){
-		this.showLoading();	
-		if( !ccm_support.isLogged() ){
-			ccm_support.login();
-			return;
-		}
-		$.ajax({
-			type: 'POST',
-			url: CCM_TOOLS_PATH + '/support/post/?pg_url='+encodeURIComponent(window.location),
-			success: function(resp) {
-				ccm_support.hideLoading();
-				var supportWrap=document.getElementById('ccm-supportWrap');
-				if(!supportWrap) return false;
-				$(supportWrap.parentNode).html(resp); 
-			}		
-		});
-	},
-	
-	submitNewQuestion:function(form){ 
-		this.showLoading();
-		try{
-			$.ajax({
-				type: 'POST',
-				url: CCM_TOOLS_PATH + '/support/post/',
-				data: $(form).formSerialize(),
-				success: function(resp) {
-					ccm_support.hideLoading();
-					var supportWrap=document.getElementById('ccm-supportWrap');
-					if(!supportWrap) return false;
-					$(supportWrap.parentNode).html(resp); 
-				}		
-			});
-		}catch(e){
-			alert('Error in ccm_support.submitNewQuestion(): '+e.message);
-		}
-		return false;
-	},
-	
-	showLoading:function(){
-		$('#ccm-supportWrap .ccm-throbber').css('display','block');
-	},
-	
-	hideLoading:function(){
-		$('#ccm-supportWrap .ccm-throbber').css('display','none');
-	},
-	
-	helpIconOrigImg:'',
-	helpIconOrigClr:'',
-	helpPulse:function(){
-		var el=document.getElementById('ccm-nav-help');
-		if(!el) el=document.getElementById('ccm-nav-dashboard-help'); 
-		el=$(el);
-		this.helpIconOrigClr=el.css('background-color');
-		
-		el.css('background-color','#fafafa');
-		el.animate({backgroundColor:"#ffa"},'','',function(){
-		}).animate({backgroundColor:"#fafafa"},'','',function(){
-		}).animate({backgroundColor:"#ffa"},'','',function(){
-		}).animate({backgroundColor:"#fafafa"},'','',function(){					
-		}).animate({backgroundColor:"#ffa"},'','',function(){
-		}).animate({backgroundColor:"#fafafa"},'','',function(){
-		}).animate({backgroundColor:"#ffa"},'','',function(){
-		}).animate({backgroundColor:"#fafafa"},'','',function(){
-		}).animate({backgroundColor:"#ffa"},'','',function(){			
-		}).animate({backgroundColor:"#fafafa"},'','',function(){
-			$(this).css('background-color',ccm_support.helpIconOrigClr);	 
-		}); 		
 	}
 }

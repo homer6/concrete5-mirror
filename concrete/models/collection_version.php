@@ -24,6 +24,8 @@
 		var $cvIsApproved;
 		var $cID;
 		protected $attributes = array();
+		public $customAreaStyles = array();
+		public $layoutStyles = array();
 		
 		/** 
 		 * Returns the actual cvID numerical value for a particular cID/cvID combo
@@ -116,6 +118,11 @@
 			
 			$cv->cID = $c->getCollectionID();			
 			$cv->cvIsMostRecent = $cv->_checkRecent();
+			
+			$r = $db->GetAll('select csrID, arHandle from CollectionVersionAreaStyles where cID = ? and cvID = ?', array($c->getCollectionID(), $cvID));
+			foreach($r as $styles) {
+				$cv->customAreaStyles[$styles['arHandle']] = $styles['csrID'];
+			}
 			
 			$ca = new Cache();
 			$ca->set('collection_version', $c->getCollectionID() . ':' . $cvID, $cv);
@@ -239,6 +246,7 @@
 			if (($oldHandle != $newHandle) && (!$c->isGeneratedCollection())) {
 				$c->rescanCollectionPath();
 			}
+			Events::fire('on_page_version_approve', $c);
 			$c->reindex();
 			$this->refreshCache();
 		}
@@ -306,6 +314,10 @@
 					$cav->delete();
 				}
 			}
+			
+			$db->Execute('delete from CollectionVersionBlockStyles where cID = ? and cvID = ?', array($cID, $cvID));
+			$db->Execute('delete from CollectionVersionAreaStyles where cID = ? and cvID = ?', array($cID, $cvID));
+			$db->Execute('delete from CollectionVersionAreaLayouts where cID = ? and cvID = ?', array($cID, $cvID));
 			
 			$q = "delete from CollectionVersions where cID = '{$cID}' and cvID='{$cvID}'";
 			$r = $db->query($q);

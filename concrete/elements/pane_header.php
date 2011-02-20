@@ -5,11 +5,6 @@
 		$close = 'ccm_hidePane';
 	}
 ?>
-<script type="text/javascript">
-$(function() {
-	ccm_activateFileSelectors();
-});
-</script>
 
 <a class="ccm-button" href="javascript:void(0)" onclick="<?php echo $close?>()"><span><em class="ccm-button-close"><?php echo t('Close')?></em></span></a>
 

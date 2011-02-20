@@ -14,8 +14,10 @@ var ccm_dialogOpen=0;
 
 jQuery.fn.dialog._create = function(opts) {
 	jQuery.fn.dialog.overlay(opts);
+	jQuery.fn.dialog.showLoader(opts);
+	
 	jQuery.fn.dialog.position(opts);
-	jQuery.fn.dialog.loadShell(opts);	
+	
 	if (jQuery.fn.dialog.totalDialogs > 0) {
 		jQuery.fn.dialog.deactivate(jQuery.fn.dialog.totalDialogs-1);
 	}
@@ -25,7 +27,6 @@ jQuery.fn.dialog._create = function(opts) {
 	}
 	*/
 	
-	jQuery.fn.dialog.showLoader(opts);
 	jQuery.fn.dialog.load(opts);
 	jQuery.fn.dialog.dialogs.push(opts);
 	jQuery.fn.dialog.totalDialogs++;
@@ -138,6 +139,7 @@ jQuery.fn.dialog.getTotalOpen = function() {
 jQuery.fn.dialog.load = function(fnd) {
 	if (fnd.element != null) {
 		// we are loading some content on the page rather than through AJAX
+		jQuery.fn.dialog.loadShell(fnd);
 		jQuery.fn.dialog.position(fnd);
 		jQuery.fn.dialog.hideLoader();
 		$("#ccm-dialog-content" + fnd.n).append($(fnd.element));
@@ -153,40 +155,50 @@ jQuery.fn.dialog.load = function(fnd) {
 		if (fnd.href.indexOf('?') > -1) {
 			qsi = '&';
 		}
-		var url = encodeURI(fnd.href);
+		var durl = encodeURI(fnd.href) + qsi + 'random=' + (new Date().getTime());
 		
-		$("#ccm-dialog-content" + fnd.n).load(url += qsi + "random=" + (new Date().getTime()),function(){//to do a post change this load method
-			jQuery.fn.dialog.position(fnd);
-			jQuery.fn.dialog.hideLoader();
-			$("#ccm-dialog-content" + fnd.n + " .ccm-dialog-close").click(function() {
-				jQuery.fn.dialog.close(fnd);
-			});
-			$("#ccm-dialog-content" + fnd.n + " .dialog-launch").dialog();
-
-			if (typeof fnd.onOpen != "undefined") {
-				if ((typeof fnd.onOpen) == 'function') {
-					fnd.onOpen();
-				} else {
-					eval(fnd.onOpen);
+		$.ajax({
+			type: 'GET',
+			url: durl,
+			success: function(resp) {
+				jQuery.fn.dialog.loadShell(fnd);
+				jQuery.fn.dialog.position(fnd);
+				jQuery.fn.dialog.hideLoader();
+				$("#ccm-dialog-content" + fnd.n).html(resp);
+				$("#ccm-dialog-content" + fnd.n + " .ccm-dialog-close").click(function() {
+					jQuery.fn.dialog.close(fnd);
+				});
+				$("#ccm-dialog-content" + fnd.n + " .dialog-launch").dialog();
+	
+				if (typeof fnd.onOpen != "undefined") {
+					if ((typeof fnd.onOpen) == 'function') {
+						fnd.onOpen();
+					} else {
+						eval(fnd.onOpen);
+					}
 				}
+				
 			}
 		});
 	}
+	
 	if (typeof(fnd.onLoad) == 'function') {
 		fnd.onLoad();
 	}
 }
 
 jQuery.fn.dialog.hideLoader = function() {
-	$("#ccm-dialog-loader").hide();
+	$("#ccm-dialog-loader-wrapper").hide();
 }
 
 jQuery.fn.dialog.showLoader = function(fnd) {
 	if (typeof(imgLoader)=='undefined' || !imgLoader || !imgLoader.src) return false; 
 	if ($('#ccm-dialog-loader').length < 1) {
-		$("body").append("<img id='ccm-dialog-loader' src='"+imgLoader.src+"' />");//add loader to the page
+		$("body").append("<div id='ccm-dialog-loader-wrapper'><img id='ccm-dialog-loader' src='"+imgLoader.src+"' /></div>");//add loader to the page
 	}
-	$('#ccm-dialog-loader').show();//show loader
+	$('#ccm-dialog-loader-wrapper').css('opacity', 0.8);
+	$('#ccm-dialog-loader-wrapper').show();//show loader
+	//$('#ccm-dialog-loader-wrapper').fadeTo('slow', 0.2);
 }
 
 jQuery.fn.dialog.deactivate = function(w) {
@@ -217,15 +229,16 @@ jQuery.fn.dialog.close = function(fnd) {
 
 	if (fnd.onDestroy == "undefined" && ccm_animEffects) {
 		$("#ccm-dialog-window" + jQuery.fn.dialog.totalDialogs).fadeOut("fast",function(){
-			$('#ccm-dialog-window' + jQuery.fn.dialog.totalDialogs).trigger("unload").unbind().remove();
+			$('#ccm-dialog-window' + jQuery.fn.dialog.totalDialogs).remove();
 		});
 	} else {
 		$("#ccm-dialog-window" + jQuery.fn.dialog.totalDialogs).hide();
-		$('#ccm-dialog-window' + jQuery.fn.dialog.totalDialogs).trigger("unload").unbind().remove();
+		$('#ccm-dialog-window' + jQuery.fn.dialog.totalDialogs).remove();
 	}
 	
 	if (jQuery.fn.dialog.totalDialogs == 0) {
 		$("#TB_HideSelect").trigger("unload").unbind().remove();
+		$("div." + fnd.wrapperClass).remove();
 		if (ccm_initialSiteActivated) {
 			ccm_activateSite();
 		}
@@ -237,8 +250,8 @@ jQuery.fn.dialog.close = function(fnd) {
 		jQuery.fn.dialog.activate(jQuery.fn.dialog.totalDialogs-1);
 	}
 
-	document.onkeydown = "";
-	document.onkeyup = ""; 
+	//document.onkeydown = "";
+	//document.onkeyup = ""; 
 	ccm_dialogOpen=0;
 
 	if (typeof fnd.onDestroy != "undefined") {
@@ -255,6 +268,10 @@ jQuery.fn.dialog.position = function(fnd) {
 	fnd.modifiedWidth = parseInt(fnd.width) + 30;
 	fnd.modifiedHeight = parseInt(fnd.height)  + 40;
 	fnd.contentWidth = fnd.modifiedWidth - 44;
+	
+	if (!ccm_dialogCanTransparent) {
+		fnd.contentWidth = fnd.contentWidth + 24;
+	}
 	fnd.contentHeight = fnd.modifiedHeight;
 	
 	$("#ccm-dialog-window" + fnd.n).css({marginLeft: '-' + parseInt((fnd.modifiedWidth / 2),10) + 'px', width: fnd.modifiedWidth + 'px'});
@@ -320,8 +337,13 @@ jQuery.fn.dialog.overlay = function(fnd) {
 		sz = jQuery.fn.dialog.startZindex + fnd.n;
 	}
 	
+	if (ccm_dialogCanTransparent) {
+		var transparentClass = 'ccm-dialog-window-transparent';
+	} else {
+		var transparentClass = 'ccm-dialog-window-no-transparent';
+	}
 	fnd.realZ = sz;
-	$("body").append("<div class=\"" + fnd.wrapperClass + "\"><div class='ccm-dialog-window' id='ccm-dialog-window" + fnd.n + "' style='display: none; z-index: " + sz + "'></div>");
+	$("body").append("<div class=\"" + fnd.wrapperClass + " " + transparentClass + " \"><div class='ccm-dialog-window' id='ccm-dialog-window" + fnd.n + "' style='display: none; z-index: " + sz + "'></div>");
 
 	if(jQuery.fn.dialog.isMacFF(fnd)){
 		$("#TB_overlay" + fnd.n).addClass("TB_overlayMacFFBGHack");//use png overlay so hide flash
@@ -355,7 +377,11 @@ jQuery.fn.dialog.loaderImage = CCM_IMAGE_PATH + "/throbber_white_32.gif";
 
 var ccm_initialHeaderDeactivated;
 var ccm_initialOverlay;
-var ccm_dialogCanDrag = (typeof($.fn.draggable) == 'function');
+var ccm_dialogCanDrag = (typeof($.fn.draggable) == 'function' && (!jQuery.browser.safari));
+var ccm_dialogCanTransparent = true;
+if (jQuery.browser.msie && jQuery.browser.version.substring(0, 1) == 6) {
+	var ccm_dialogCanTransparent = false;
+}
 var imgLoader;
 
 var ccmAlert = {  
@@ -371,12 +397,46 @@ var ccmAlert = {
 			},
 			onDestroy: onCloseFn
         }); 
+    },
+    
+    hud: function(message, time, icon, title) {
+    	if ($('#ccm-notification-inner').length == 0) { 
+    		$(document.body).append('<div id="ccm-notification"><div id="ccm-notification-inner"></div></div>');
+    	}
+    	
+    	if (icon == null) {
+    		icon = 'edit_small';
+    	}
+    	
+    	if (title == null) {	
+	    	var messageText = message;
+	    } else {
+	    	var messageText = '<h3>' + title + '</h3>' + message;
+	    }
+    	$('#ccm-notification-inner').html('<table border="0" cellspacing="0" cellpadding="0"><tr><td valign="top"><img id="ccm-notification-icon" src="' + CCM_IMAGE_PATH + '/icons/' + icon + '.png" width="16" height="16" /></td><td valign="top">' + messageText + '</td></tr></table>');
+		
+		$('#ccm-notification').fadeIn({easing: 'easeInQuart', duration: 100});
+    	if (time > 0) {
+    		setTimeout(function() {
+    			$('#ccm-notification').fadeOut({easing: 'easeOutExpo', duration: 800});
+    		}, time);
+    	}
+    	
     }
 }       
 
 $(document).ready(function(){   
 	imgLoader = new Image();// preload image
 	imgLoader.src = jQuery.fn.dialog.loaderImage;
+	
+	$(document.body).keypress(function(e) {
+		if (e.keyCode == 27 && jQuery.fn.dialog.totalDialogs > 0) {
+			var obj = jQuery.fn.dialog.dialogs[jQuery.fn.dialog.totalDialogs-1];
+			if (!obj.modal) {
+				jQuery.fn.dialog.closeTop();
+			}
+		}
+	});
 
 	// preload assets for the dialog window
 	i1 = new Image();// preload image

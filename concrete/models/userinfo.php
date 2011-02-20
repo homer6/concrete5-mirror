@@ -319,7 +319,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (is_object($ak)) {
 				$av = $this->getAttributeValueObject($ak);
 				if (is_object($av)) {
-					return $av->getValue($displayMode);
+					$args = func_get_args();
+					if (count($args) > 1) {
+						array_shift($args);
+						return call_user_func_array(array($av, 'getValue'), $args);						
+					} else {
+						return $av->getValue($displayMode);
+					}
 				}
 			}
 		}
@@ -707,77 +713,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				return $this->upEndDate;
 			}
 		}
-		
-		//Remote Authentication Stuff
-		//****************************
-		
-		static function setRemoteAuthToken($token=''){ $_SESSION['remote_auth_token']=$token; }
-		static function getRemoteAuthToken(){ return $_SESSION['remote_auth_token']; }		
-		
-		static function setRemoteAuthTimestamp($timestamp=0){ $_SESSION['remote_auth_timestamp']=intval($timestamp); }		
-		static function getRemoteAuthTimestamp(){ return $_SESSION['remote_auth_timestamp']; }		
-		
-		static function setRemoteAuthUserName($uname=''){ $_SESSION['remote_auth_uname']=$uname; }		
-		static function getRemoteAuthUserName(){ return $_SESSION['remote_auth_uname'];	}
-		
-		static function setRemoteAuthUserId($uid=0){ $_SESSION['remote_auth_uid']=intval($uid); }		
-		static function getRemoteAuthUserId(){ return intval($_SESSION['remote_auth_uid']);	}
-		
-		static function setRemoteAuthInSupportGroup($in_support_group=0){ //boolean 
-			$_SESSION['remote_auth_support_group']=intval($in_support_group); 
-		}		
-		static function getRemoteAuthInSupportGroup(){ return intval($_SESSION['remote_auth_support_group']);	}				
-		
-		static function endRemoteAuthSession(){
-			unset($_SESSION['remote_auth_token']);
-			unset($_SESSION['remote_auth_uname']);
-			unset($_SESSION['remote_auth_timestamp']);
-			unset($_SESSION['remote_auth_support_group']);
-		}
-		
-		//necessary name value pair for remote authentication
-		static function getAuthData(){
-			$authData=array();
-			$authData['auth_token']=UserInfo::getRemoteAuthToken();
-			$authData['auth_timestamp']=UserInfo::getRemoteAuthTimestamp();
-			$authData['auth_uname']=UserInfo::getRemoteAuthUserName();
-			return $authData;
-		}		
-		
-		static function generateAuthToken( $uname='', $timestamp=0){
-			if( !intval($timestamp) ) $timestamp=time();
-			$raw_identifier = intval($timestamp).trim(strtolower($uname));
-			//echo intval($timestamp).' '.$uname;
-			return User::encryptPassword( $raw_identifier, PASSWORD_SALT);
-		}
-		
-		//c5 install checks with c5org to see if this user is logged in
-		static function isRemotelyLoggedIn(){ 
-			$authData = UserInfo::getAuthData();
-			if( strlen($authData['auth_token']) && intval($authData['auth_timestamp']) && strlen($authData['auth_uname']) ){
-				Loader::helper('json');
-				$qStr = http_build_query( $authData, '', '&');
-				$authURL=KNOWLEDGE_BASE_AUTH_URL.'?'.$qStr; 
-				
-				//echo $authURL;
-				
-				if (function_exists('curl_init')) {
-					$curl_handle = curl_init();
-					curl_setopt($curl_handle, CURLOPT_URL, $authURL);
-					curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 15);
-					curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
-					$response = curl_exec($curl_handle); 
-					if( !$response || !strstr($response,'logged') ) return false;
-					$responseData = JsonHelper::decode($response);
-					if($responseData->logged==1) return true; 
-				} 
-				return false;
-			}else{
-				UserInfo::endRemoteAuthSession();
-				return false;			
-			}
-		}	
-
 	}
 
 	class UserInfoList extends Object {
@@ -839,6 +774,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 								if( !$ui || !method_exists($ui,'getUserID') ) continue;
 								$this->uiArray[]=$ui;								
 						}
+					}
+					break;
+				case 'taskpermissionlist':
+					$tpis = $obj->getTaskPermissionIDs();
+					$q = "select distinct uID from TaskPermissionUserGroups where tpID in (" . implode(',', $tpis) . ") and uID > 0";
+					$r = $db->Execute($q);
+					while ($row = $r->FetchRow()) {
+						$userPermissionsArray['permissions'] = $row;
+						$ui = UserInfo::getByID($row['uID'], $userPermissionsArray);
+						if( !$ui || !method_exists($ui,'getUserID') ) continue;
+						$this->uiArray[]=$ui;
 					}
 					break;
 				case 'filesetlist':

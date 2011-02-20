@@ -91,7 +91,9 @@ class ConcreteUpgradeVersion532Helper {
 		$db = Loader::db();
 		
 		Cache::disableLocalCache();
-		Loader::model('collection_attributes');
+		Loader::model('attribute/categories/collection');
+		Loader::model('attribute/categories/file');
+		Loader::model('attribute/categories/user');
 		$collectionErrors = array();
 		$fileErrors = array();
 		$userErrors = array();
@@ -234,7 +236,6 @@ class ConcreteUpgradeVersion532Helper {
 	
 	protected function upgradeCollectionAttributes() {
 		$messages = array();
-		Loader::model('attribute/categories/collection');
 		$db = Loader::db();
 		$r = $db->Execute('select _CollectionAttributeKeys.* from _CollectionAttributeKeys order by _CollectionAttributeKeys.akID asc');
 		while ($row = $r->FetchRow()) {
@@ -316,7 +317,6 @@ class ConcreteUpgradeVersion532Helper {
 
 	protected function upgradeFileAttributes() {
 		$messages = array();
-		Loader::model('attribute/categories/file');
 		$db = Loader::db();
 		$r = $db->Execute('select _FileAttributeKeys.* from _FileAttributeKeys order by fakID asc');
 		while ($row = $r->FetchRow()) {
@@ -337,6 +337,7 @@ class ConcreteUpgradeVersion532Helper {
 						if ($row['akAllowOtherValues']) {
 							$args['akSelectAllowMultipleValues'] = 1;
 						}
+						$sttype = 'SELECT';
 						break;
 					case 'SELECT_MULTIPLE':
 						$sttype = 'SELECT';
@@ -391,7 +392,6 @@ class ConcreteUpgradeVersion532Helper {
 
 	protected function upgradeUserAttributes() {
 		$messages = array();
-		Loader::model('attribute/categories/user');
 		$db = Loader::db();
 		$r = $db->Execute('select _UserAttributeKeys.* from _UserAttributeKeys order by displayOrder asc');
 		while ($row = $r->FetchRow()) {
@@ -433,8 +433,10 @@ class ConcreteUpgradeVersion532Helper {
 			$r2 = $db->Execute('select * from _UserAttributeValues where ukID = ? and isImported = 0', $row['ukID']);
 			while ($row2 = $r2->FetchRow()) {
 				$ui = UserInfo::getByID($row2['uID']);
-				$value = $row2['value'];
-				$ui->setAttribute($ak, $value);
+				if(is_object($ui)) {
+					$value = $row2['value'];
+					$ui->setAttribute($ak, $value);
+				}
 				unset($ui);
 				
 				$db->Execute('update _UserAttributeValues set isImported = 1 where ukID = ? and uID = ?', array($row['ukID'], $row2['uID']));

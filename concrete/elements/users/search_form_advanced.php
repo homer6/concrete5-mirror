@@ -42,7 +42,7 @@ foreach($searchFieldAttributes as $ak) {
 	
 		<input type="hidden" name="search" value="1" />
 		<div id="ccm-search-box-title">
-			<img src="<?php echo ASSETS_URL_IMAGES?>/throbber_white_16.gif" width="16" height="16" id="ccm-search-loading" />
+			<img src="<?php echo ASSETS_URL_IMAGES?>/throbber_white_16.gif" width="16" height="16" class="ccm-search-loading"  id="ccm-user-search-loading" />
 			<h2><?php echo t('Search')?></h2>			
 		</div>
 		
@@ -98,6 +98,7 @@ foreach($searchFieldAttributes as $ak) {
 			</div>
 			
 			<div id="ccm-search-fields-submit">
+				<div id="ccm-search-export"><a href="javascript:void(0)" onclick="$('#ccm-user-advanced-search').attr('action', '<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/users/search_results_export'); $('#ccm-user-advanced-search').get(0).submit(); $('#ccm-user-advanced-search').attr('action', '<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/users/search_results');"><?php echo t('Export All')?></a></div>
 				<?php echo $form->submit('ccm-search-users', 'Search')?>
 			</div>
 		</div>

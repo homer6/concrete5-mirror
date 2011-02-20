@@ -80,6 +80,11 @@
 					}
 					$where = "fsID in (" . implode(',', $fsIDs) . ")";
 					break;
+				case 'taskpermissionlist':
+					$tpis = $obj->getTaskPermissionIDs();
+					$table = 'TaskPermissionUserGroups';
+					$where = "tpID in (" . implode(',', $tpis) . ")";
+					break;
 				case 'file':
 					$table = 'FilePermissions';
 					$fID = $obj->getFileID();
@@ -254,6 +259,13 @@
 					$this->permissions = $p;
 
 					break;
+				case 'taskpermission':
+					$q = "select canRead from TaskPermissionUserGroups where tpID = ? and gID = ?";
+					$permissions = $db->GetRow($q, array($obj->getTaskPermissionID(), $this->gID));
+					if ($permissions) {
+						$this->permissions = $permissions;
+					}
+					break;
 				case 'fileset':
 					$fsID = $obj->getFileSetID();
 					$gID = $this->gID;
@@ -404,7 +416,7 @@
 				$dh = Loader::helper('date');
 				return $dh->getLocalDateTime($this->cgStartDate);
 			} else {
-				return $this->cgEndDate;
+				return $this->cgStartDate;
 			}
 		}
 
@@ -547,7 +559,7 @@
 		
 		public function removeGroupExpiration() {
 			$db = Loader::db();
-			$db->Execute('update Groups set gUserExpirationIsEnabled = 0, gUserExpirationMethod = null, gUserExpirationSetDateTime = null, gUserExpirationInterval = null, gUserExpirationAction = null where gID = ?', array($this->getGroupID()));
+			$db->Execute('update Groups set gUserExpirationIsEnabled = 0, gUserExpirationMethod = null, gUserExpirationSetDateTime = null, gUserExpirationInterval = 0, gUserExpirationAction = null where gID = ?', array($this->getGroupID()));
 		}
 		
 		public function setGroupExpirationByDateTime($datetime, $action) {

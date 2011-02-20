@@ -5,13 +5,16 @@ header('Content-type: text/javascript');?>
 var menuHTML = '';
 
 <?php 
-$c = Page::getByID($_REQUEST['cID'], $_REQUEST['cvID']);
+if ($_REQUEST['cvID'] > 0) {
+	$c = Page::getByID($_REQUEST['cID'], $_REQUEST['cvID']);
+} else {
+	$c = Page::getByID($_REQUEST['cID']);
+}
 $cp = new Permissions($c);
 
 $valt = Loader::helper('validation/token');
 $sh = Loader::helper('concrete/dashboard/sitemap');
 $dh = Loader::helper('concrete/dashboard');
-$supportHelper=Loader::helper('concrete/support');
 $token = '&' . $valt->getParameter();
 
 if (isset($cp)) {
@@ -30,7 +33,7 @@ if (isset($cp)) {
 	
 	if ($c->getCollectionPointerID() > 0) {
 		$statusMessage .= t("This page is an alias of one that actually appears elsewhere. ");
-		$statusMessage .= "<br/><a href='" . DIR_REL . "/" . DISPATCHER_FILENAME . "?cID=" . $c->getCollectionID() . "&ctask=approve-recent'>" . t('View/Edit Original') . "</a>";
+		$statusMessage .= "<br/><a href='" . DIR_REL . "/" . DISPATCHER_FILENAME . "?cID=" . $c->getCollectionID() . "'>" . t('View/Edit Original') . "</a>";
 		if ($cp->canApproveCollection()) {
 			$statusMessage .= "&nbsp;|&nbsp;";
 			$statusMessage .= "<a href='" . DIR_REL . "/" . DISPATCHER_FILENAME . "?cID=" . $c->getCollectionPointerOriginalID() . "&ctask=remove-alias" . $token . "'>" . t('Remove Alias') . "</a>";
@@ -72,7 +75,7 @@ if (isset($cp)) {
 	
 	}
 
-	if ($cp->canWrite() || $cp->canAddSubContent() || $cp->canAdminPage()) { ?>
+	if ($cp->canWrite() || $cp->canAddSubContent() || $cp->canAdminPage() || $cp->canApproveCollection()) { ?>
 
 menuHTML += '<div id="ccm-page-controls">';
 menuHTML += '<div id="ccm-logo-wrapper"><img src="<?php echo ASSETS_URL_IMAGES?>/logo_menu.png" width="49" height="49" id="ccm-logo" /></div>';
@@ -82,32 +85,33 @@ menuHTML += '<ul id="ccm-system-nav">';
 <?php  if ($dh->canRead()) { ?>
 	menuHTML += '<li><a id="ccm-nav-dashboard" href="<?php echo View::url('/dashboard')?>"><?php echo t('Dashboard')?></a></li>';
 <?php  } ?>
-menuHTML += '<li><a id="ccm-nav-help" helpurl="<?php echo MENU_HELP_URL?>" href="javascript:void(0)" helpwaiting="<?php echo ConcreteSupportHelper::hasNewHelpResponse() ?>"><?php echo t('Help')?></a></li>';
+menuHTML += '<li><a id="ccm-nav-help" dialog-title="<?php echo t('Help')?>" dialog-on-open="$(\'#ccm-nav-help\').removeClass(\'ccm-nav-loading\')" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/help/" dialog-width="500" dialog-height="350" dialog-modal="false"><?php echo t('Help')?></a></li>';
 menuHTML += '<li class="ccm-last"><a id="ccm-nav-logout" href="<?php echo View::url('/login', 'logout')?>"><?php echo t('Sign Out')?></a></li>';
 menuHTML += '</ul>';
 menuHTML += '</div>';
 menuHTML += '</div>';
 
 menuHTML += '<ul id="ccm-main-nav">';
-<?php  if ($c->isArrangeMode()) { ?>
-menuHTML += '<li><a href="#" id="ccm-nav-save-arrange"><?php echo t('Save Positioning')?></a></li>';
-<?php  } else if ($c->isEditMode()) { ?>
-menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-exit-edit"><?php echo t('Exit Edit Mode')?></a></li>';
-menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-properties"><?php echo t('Properties')?></a></li>';
+<?php  if (!$c->isAlias()) { ?>
+menuHTML += '<li class="ccm-main-nav-view-option" <?php  if ($c->isEditMode()) { ?> style="display: none" <?php  } ?>><?php  if ($cantCheckOut) { ?><span id="ccm-nav-edit"><?php echo t('Edit Page')?></span><?php  } else if ($cp->canWrite() || $cp->canApproveCollection()) { ?><a href="javascript:void(0)" id="ccm-nav-edit"><?php echo t('Edit Page')?></a><?php  } ?></li>';
+<?php  if ($cp->canAddSubContent()) { ?>
+	menuHTML += '<li class="ccm-main-nav-view-option" <?php  if ($c->isEditMode()) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-add"><?php echo t('Add Page')?></a></li>';
+<?php  } ?>
+menuHTML += '<li class="ccm-main-nav-arrange-option" <?php  if (!$c->isArrangeMode()) { ?> style="display: none" <?php  } ?>><a href="#" id="ccm-nav-save-arrange"><?php echo t('Save Positioning')?></a></li>';
+menuHTML += '<li class="ccm-main-nav-edit-option ccm-main-nav-exit-edit-mode-direct" <?php  if (!$c->isEditMode() || ($vo->isNew()))  { ?> style="display: none" <?php  } ?>><a href="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?cID=<?php echo $c->getCollectionID()?>&ctask=check-in<?php echo $token?>" id="ccm-nav-exit-edit-direct"><?php echo t('Exit Edit Mode')?></a></li>';
+menuHTML += '<li class="ccm-main-nav-edit-option ccm-main-nav-exit-edit-mode" <?php  if (!$c->isEditMode() || (!$vo->isNew())) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-exit-edit"><?php echo t('Exit Edit Mode')?></a></li>';
+<?php  if ($cp->canWrite()) { ?>
+	menuHTML += '<li class="ccm-main-nav-edit-option" <?php  if (!$c->isEditMode()) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-properties"><?php echo t('Properties')?></a></li>';
+<?php  } ?>
 <?php  if ($cp->canAdminPage()) { ?>
-menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-design"><?php echo t('Design')?></a></li>';
-menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-permissions"><?php echo t('Permissions')?></a></li>';
+menuHTML += '<li class="ccm-main-nav-edit-option" <?php  if (!$c->isEditMode()) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-design"><?php echo t('Design')?></a></li>';
+menuHTML += '<li class="ccm-main-nav-edit-option" <?php  if (!$c->isEditMode()) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-permissions"><?php echo t('Permissions')?></a></li>';
 <?php  } ?>
 <?php  if ($cp->canReadVersions()) { ?>
-	menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-versions"><?php echo t('Versions')?></a></li>';
+	menuHTML += '<li class="ccm-main-nav-edit-option" <?php  if (!$c->isEditMode()) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-versions"><?php echo t('Versions')?></a></li>';
 <?php  } ?>
 <?php  if ($sh->canRead() || $cp->canDeleteCollection()) { ?>
-	menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-mcd"><?php echo t('Move/Delete')?></a></li>';
-<?php  } ?>
-<?php  } else { ?>
-menuHTML += '<li><?php  if ($cantCheckOut) { ?><span id="ccm-nav-edit"><?php echo t('Edit Page')?></span><?php  } else if ($cp->canWrite()) { ?><a href="javascript:void(0)" id="ccm-nav-edit"><?php echo t('Edit Page')?></a><?php  } ?></li>';
-<?php  if ($cp->canAddSubContent()) { ?>
-	menuHTML += '<li><a href="javascript:void(0)" id="ccm-nav-add"><?php echo t('Add Page')?></a></li>';
+	menuHTML += '<li class="ccm-main-nav-edit-option" <?php  if (!$c->isEditMode()) { ?> style="display: none" <?php  } ?>><a href="javascript:void(0)" id="ccm-nav-mcd"><?php echo t('Move/Delete')?></a></li>';
 <?php  } ?>
 <?php  } ?>
 menuHTML += '</ul>';
@@ -137,7 +141,7 @@ menuHTML += '</div>';
 
 <?php 
 if ($statusMessage != '') {?> 
-menuHTML += '<div id="ccm-notification"><div id="ccm-notification-inner"><?php echo str_replace("'",'"',$statusMessage) ?></div></div>';
+	$(function() { ccmAlert.hud('<?php echo str_replace("'",'"',$statusMessage) ?>', 5000); });
 <?php  } ?>
 
 	

@@ -155,14 +155,15 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			static $_db;
 			if (!isset($_db) || $create) {
 				if ($server == null && defined('DB_SERVER')) {	
-					$dsn = DB_TYPE . '://' . DB_USERNAME . ':' . DB_PASSWORD . '@' . DB_SERVER . '/' . DB_DATABASE;
+					$dsn = DB_TYPE . '://' . DB_USERNAME . ':' . rawurlencode(DB_PASSWORD) . '@' . rawurlencode(DB_SERVER) . '/' . DB_DATABASE;
 				} else if ($server) {
-					$dsn = DB_TYPE . '://' . $username . ':' . $password . '@' . $server . '/' . $database;
+					$dsn = DB_TYPE . '://' . $username . ':' . rawurlencode($password) . '@' . rawurlencode($server) . '/' . $database;
 				}
 
 				if (isset($dsn) && $dsn) {
 					$_dba = @NewADOConnection($dsn);
 					if (is_object($_dba)) {
+						$_dba->setFetchMode(ADODB_FETCH_ASSOC);
 						if (DB_CHARSET != '') {
 							$names = 'SET NAMES \'' . DB_CHARSET . '\'';
 							if (DB_COLLATE != '') {
@@ -179,6 +180,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						ADOdb_Active_Record::SetDatabaseAdapter($_dba);
 						$_db = new Database();
 						$_db->setDatabaseObject($_dba);
+						//$_db->setLogging(true);
 					} else if (defined('DB_SERVER')) {
 						$v = View::getInstance();
 						$v->renderError(t('Unable to connect to database.'), t('A database error occurred while processing this request.'));
@@ -401,6 +403,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						$include = true;
 					} else if ($item->getPackageID() > 0 && (file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $path . '/'. FILENAME_COLLECTION_CONTROLLER))) {
 						include(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $path . '/'. FILENAME_COLLECTION_CONTROLLER);
+						$include = true;
+					} else if ($item->getPackageID() > 0 && (file_exists(DIR_PACKAGES_CORE . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $controllerFile))) {
+						include(DIR_PACKAGES_CORE . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $controllerFile);
+						$include = true;
+					} else if ($item->getPackageID() > 0 && (file_exists(DIR_PACKAGES_CORE . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $path . '/'. FILENAME_COLLECTION_CONTROLLER))) {
+						include(DIR_PACKAGES_CORE . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $path . '/'. FILENAME_COLLECTION_CONTROLLER);
 						$include = true;
 					}
 				}

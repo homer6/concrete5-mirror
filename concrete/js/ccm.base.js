@@ -21,6 +21,11 @@ ccm_deactivateSite = function(onDone) {
 		$(document.body).append('<div id="ccm-overlay"></div>');
 	}
 	
+	$("embed,object").each(function() {
+		$(this).attr('ccm-style-old-visibility', $(this).css('visibility'));
+		$(this).css('visibility', 'hidden');
+	});
+	
 	if (ccm_animEffects) {				
 		$("#ccm-overlay").fadeIn(60, function() {
 			ccm_siteActivated = false;
@@ -44,25 +49,43 @@ ccm_activateSite = function() {
 	} else {
 		$("#ccm-overlay").hide();
 	}
+
+	$("embed,object").each(function() {
+		$(this).css('visibility', $(this).attr('ccm-style-old-visibility'));
+	});
+
 	ccm_siteActivated = true;
 	ccm_topPaneDeactivated = false;
 }
 
 ccm_addHeaderItem = function(item, type) {
-	$.ajax({
-		url: item,
-		async: false,
-		success: function(data) {
-			switch(type) {
-				case 'CSS':
-					$('head').append('<style type="text/css">' + data + '</style>');
-					break;
-				case 'JAVASCRIPT':
-					$('head').append('<script type="text/javascript">' + data + '</script>');
-					break;
+	var doLoad = true;
+	if (type == 'CSS') {
+		for (i = 0; i < document.styleSheets.length; i++) {
+			ss = document.styleSheets[i];			
+			if (ss.href == item) {
+				doLoad = false;
+				break;
 			}
 		}
-	});
+	} else if (type == 'JAVASCRIPT') {
+		$("script").each(function(i, obj) {
+			var src = $(obj).attr('src');
+			if (src == item) {
+				doLoad = false;
+			}
+		});
+	}
+	if (doLoad) {
+		switch(type) {
+			case 'CSS':
+				$('head').append('<link rel="stylesheet" type="text/css" href="' + item + '?ts=' + new Date().getTime() + '" />');
+				break;
+			case 'JAVASCRIPT':
+				$('head').append('<script type="text/javascript" src="' + item + '?ts=' + new Date().getTime() + '"></script>');
+				break;
+		}
+	}
 }
 
 // called in versions popup

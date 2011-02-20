@@ -10,7 +10,6 @@ Loader::model('page_list');
 
 class IndexedSearchResult {
 
-
 	public function __construct($id, $name, $description, $score, $cPath, $content) {
 		$this->cID = $id;
 		$this->cName = $name;
@@ -27,83 +26,29 @@ class IndexedSearchResult {
 	public function getCollectionPath() {return $this->cPath;}
 	public function getCpath() {return $this->cPath;}
 	public function getBodyContent() {return $this->content;}
+	public function getDate($mask = '') {
+		if ($mask == '') {
+			$mask = t('Y-m-d H:i:s');
+		}
+		return date($mask, strtotime($this->cDate));
+	}
+	public function setDate($date) { $this->cDate = $date;}
 }
 
-class IndexedPageList extends DatabaseItemList {
+/** 
+ * @DEPRECATED.
+ * Just use PageList with filterByKeywords instead. We'll keep this around so people know what to expect
+ */
+class IndexedPageList extends PageList {
 
-	protected $itemsPerPage = 10;
-	
-	public function filterByKeywordsBoolean($kw) {
-		return $this->filterByKeywords($kw);
-	}
-	
-	public function filterByKeywords($kw) {
-		$db = Loader::db();
-		$kw = $db->quote($kw);
-		$this->addToQuery("select PageSearchIndex.*, match(cName, cDescription, content) against ({$kw} in boolean mode) as score from PageSearchIndex inner join Pages on PageSearchIndex.cID = Pages.cID inner join CollectionSearchIndexAttributes on PageSearchIndex.cID = CollectionSearchIndexAttributes.cID");
-		Loader::model('attribute/categories/collection');
-		
-		$keys = CollectionAttributeKey::getSearchableIndexedList();
-		$attribsStr = '';
-		foreach ($keys as $ak) {
-			$attribsStr=' OR ak_' . $ak->getAttributeKeyHandle() . ' like '.$kw.' ';	
-		}
-
-		$this->filter(false, "(match(cName, cDescription, content) against ({$kw} in boolean mode) {$attribsStr})");
-
-	}
-	
-	private $searchPaths = array();
-	
-	public function addSearchPath($path) {
-		$this->searchPaths[] = $path;
-	}
-
-	public function setupPermissions() {
-		$u = new User();
-		if ($u->isSuperUser()) {
-			return; // super user always sees everything. no need to limit
-		}
-		$groups = $u->getUserGroups();
-		$groupIDs = array();
-		foreach($groups as $key => $value) {
-			$groupIDs[] = $key;
-		}
-		
-		$uID = -1;
-		if ($u->isRegistered()) {
-			$uID = $u->getUserID();
-		}
-
-		$this->addToQuery('left join PagePermissions pp1 on (pp1.cID = Pages.cInheritPermissionsFromCID)');
-		$this->filter(false, "(pp1.cgPermissions like 'r%' and (pp1.gID in (" . implode(',', $groupIDs) . ") or pp1.uID = {$uID}))");
-	}
-	
 	public function getPage() {
-		$db = Loader::db(); 
-		$this->setupPermissions();
-
-		if (count($this->searchPaths) > 0) { 
-			$i = 0;
-			$subfilter = '';
-			foreach($this->searchPaths as $sp) {
-				if ($sp == '') {
-					continue;
-				}
-				$sp = $db->quote($sp . '%');
-				$subfilter .= "cPath like {$sp} ";
-				if (($i+1) < count($this->searchPaths)) {
-					$subfilter .= "or ";
-				}
-				$i++;
-			}
-			if ($subfilter != '') {
-				$this->filter(false, $subfilter);
-			}
+		$this->sortByMultiple('cIndexScore desc', 'cDatePublic desc');
+		$r = parent::getPage();
+		$results = array();
+		foreach($r as $c) {
+			$results[] = array('cID' => $c->getCollectionID(), 'cName' => $c->getCollectionName(), 'cDescription' => $c->getCollectionDescription(), 'score' => $c->getPageIndexScore(), 'cPath' => $c->getCollectionPath(), 'content' => $c->getPageIndexContent());
 		}
-
-		$this->sortByMultiple('score desc', 'cDatePublic desc');
-		return parent::getPage();
+		return $results;
 	}
 }
 
@@ -116,14 +61,47 @@ class IndexedPageList extends DatabaseItemList {
 class IndexedSearch {
 	
 	private $cPathSections = array();
-	private $searchableAreaNames = array('Main Content', 'Main');
+	private $searchableAreaNamesManual = array();
 	
 	public function addSearchableArea($arr) {
-		$this->searchableAreaNames[] = $arr;
+		$this->searchableAreaNamesManual[] = $arr;
+	}
+	
+	public function getSearchableAreaAction() {
+		$action = Config::get('SEARCH_INDEX_AREA_METHOD');
+		if (!$action) {
+			$action = 'whitelist';
+		}
+		return $action;
+	}
+	
+	public function getSavedSearchableAreas() {
+		$areas = Config::get('SEARCH_INDEX_AREA_LIST');
+		$areas = unserialize($areas);
+		if (!is_array($areas)) {
+			$areas = array();
+		}
+		return $areas;
 	}
 	
 	public function getBodyContentFromPage($c) {
-		$searchableAreaNames=$this->searchableAreaNames;
+		$searchableAreaNamesInitial=$this->getSavedSearchableAreas();
+		foreach($this->searchableAreaNamesManual as $sm) {
+			$searchableAreaNamesInitial[] = $sm;
+		}
+		
+		$searchableAreaNames = array();
+		if ($this->getSearchableAreaAction() == 'blacklist') {
+			$areas = Area::getHandleList();
+			foreach($areas as $arHandle) {
+				if (!in_array($arHandle, $searchableAreaNamesInitial)) {
+					$searchableAreaNames[] = $arHandle;
+				}
+			}
+		} else {
+			$searchableAreaNames = $searchableAreaNamesInitial;
+		}		
+
 		$blarray=array();
 		foreach($searchableAreaNames as $searchableAreaName){
 		 	$blarray = array_merge( $blarray, $c->getBlocks($searchableAreaName) );
@@ -169,7 +147,7 @@ class IndexedSearch {
 				continue;
 			}		
 			
-			$c->reindex();
+			$c->reindex($this);
 			$num++;
 		
 			unset($c);

@@ -75,7 +75,7 @@
 					$p = new Permissions($b);
 					if ($p->canWrite()){ 					
 					
-						Loader::model('block_styles');						
+						Loader::model('custom_style');						
 						
 						$nvc = $c->getVersionToModify();
 						$b->loadNewCollection($nvc);
@@ -87,30 +87,26 @@
 							$b = $nb; 					
 						}			
 						
-						$cssData=array();
-						$cssData['bID'] = $b->bID;
-						$cssData['cID'] = $nvc->cID;
-						
-						if($_POST['reset_block_css']!=1){ 
-							$cssData['css_id'] = str_replace( array('"', "'", ';', "<", ">"), '', $_POST['css_id']);							
-							$cssData['css_class'] = str_replace( array('"', "'", ';', "<", ">"), '', $_POST['css_class_name']);
-							$cssData['css_custom'] = str_replace( '"' , "'", $_POST['css_custom'] );	
-						
-							$blockStylesKeys=array('font_family','color','font_size','line_height','text_align','background_color','border_style',
-								'border_color','border_width','border_position','margin_top','margin_right','margin_bottom','margin_left',
-								'padding_top','padding_right','padding_bottom','padding_left');
-								
-							$cssDataRaw=array();
-							foreach($blockStylesKeys as $blockStyleKey){
-								$cssDataRaw[$blockStyleKey]=$_POST[$blockStyleKey];
+						if ($_POST['reset_css']) {
+							$b->resetBlockCustomStyle();
+						} else {
+							
+							if ($_POST['cspID'] > 0 && ($_POST['cspPresetAction'] == 'update_existing_preset')) {
+								$csp = CustomStylePreset::getByID($_POST['cspID']);
+								$csr = $csp->getCustomStylePresetRuleObject();
+								// we update the csr in case anything has been changed
+								$csr->update($_POST['css_id'], $_POST['css_class_name'], $_POST['css_custom'], $_POST);
+								$b->setBlockCustomStyle($csr);
+							} else {
+								$csr = CustomStyleRule::add($_POST['css_id'], $_POST['css_class_name'], $_POST['css_custom'], $_POST);
+								$b->setBlockCustomStyle($csr);
 							}
-							$cssData['css_unserialized']=$cssDataRaw;
-						}						
-						
-						$blockStyles = new BlockStyles();
-						$blockStyles->setData( $cssData );
-						$blockStyles->save( $nvc );
-												
+							
+							if ($_POST['cspPresetAction'] == 'create_new_preset') {
+								CustomStylePreset::add($_POST['cspName'], $csr);
+							}
+						}
+
 						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);				
 					}
 				}
@@ -130,9 +126,13 @@
 							$b->updateBlockGroups();
 						}
 						
-						$redirectCID = (intval($_REQUEST['rcID'])) ? intval($_REQUEST['rcID']) : intval($_REQUEST['cID']);
-					
-						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $redirectCID . '&mode=edit' . $step);
+						$obj = new stdClass;
+						$obj->bID = $b->getBlockID();
+						$obj->aID = $a->getAreaID();
+						$obj->arHandle= $a->getAreaHandle();
+						$obj->error = false;
+						
+						print Loader::helper('json')->encode($obj);
 						exit;
 					}
 				}
@@ -163,7 +163,15 @@
 								
 							}
 						}
-						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
+
+
+						$obj = new stdClass;
+						$obj->bID = $b->getBlockID();
+						$obj->aID = $a->getAreaID();
+						$obj->arHandle= $a->getAreaHandle();
+						$obj->error = false;
+						
+						print Loader::helper('json')->encode($obj);
 						exit;
 					}
 				}
@@ -182,10 +190,17 @@
 					$b->updateBlockInformation($data);
 					$b->refreshCacheAll();
 					
-					$redirectCID = (intval($_REQUEST['rcID'])) ? intval($_REQUEST['rcID']) : intval($_REQUEST['cID']);
+					$obj = new stdClass;
+					$obj->bID = $b->getBlockID();
+					$obj->aID = $a->getAreaID();
+					$obj->arHandle= $a->getAreaHandle();
+					$obj->error = false;
 					
-					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $redirectCID . '&mode=edit' . $step);
+					print Loader::helper('json')->encode($obj);
 					exit;
+					
+					//header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $redirectCID . '&mode=edit' . $step);
+					//exit;
 				}
 				break;
 			case 'passthru':
@@ -204,7 +219,7 @@
 	}
 	
 	if ($_GET['atask'] && $valt->validate()) {
-		switch($_GET['atask']) {
+		switch($_GET['atask']) { 		
 			case 'update':
 				if ($cp->canAdminPage()) {
 					$area = Area::get($c, $_GET['arHandle']);
@@ -220,6 +235,118 @@
 					exit;
 				}				
 				break;
+			case 'design':
+				$area = Area::get($c, $_GET['arHandle']);
+				$ap = new Permissions($area);
+				if ($ap->canWrite() ) {
+					Loader::model('custom_style');				
+					
+					$nvc = $c->getVersionToModify();
+
+					if ($_POST['reset_css']) {
+						$nvc->resetAreaCustomStyle($area);
+					} else {
+						
+						if ($_POST['cspID'] > 0 && ($_POST['cspPresetAction'] == 'update_existing_preset')) {
+							$csp = CustomStylePreset::getByID($_POST['cspID']);
+							$csr = $csp->getCustomStylePresetRuleObject();
+							// we update the csr in case anything has been changed
+							$csr->update($_POST['css_id'], $_POST['css_class_name'], $_POST['css_custom'], $_POST);
+							$nvc->setAreaCustomStyle($area, $csr);
+						} else {
+							$csr = CustomStyleRule::add($_POST['css_id'], $_POST['css_class_name'], $_POST['css_custom'], $_POST);
+							$nvc->setAreaCustomStyle($area, $csr);
+						}
+						
+						if ($_POST['cspPresetAction'] == 'create_new_preset') {
+							CustomStylePreset::add($_POST['cspName'], $csr);
+						}
+					}
+
+					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
+					exit;
+				}
+				break; 
+			case 'layout':
+				$area = Area::get($c, $_GET['arHandle']);
+				$ap = new Permissions($area);
+				if ($ap->canWrite() ) {
+					Loader::model('custom_style');				
+					
+					$nvc = $c->getVersionToModify();
+					
+					//Loader::model('layout'); 
+					$originalLayoutID = intval($_REQUEST['originalLayoutID']);
+					$layoutID = intval($_REQUEST['layoutID']); 
+					$params = array('type'=>'table',
+									'rows'=>intval($_REQUEST['layout_rows']),
+									'columns'=>intval($_REQUEST['layout_columns']),  
+									'locked'=>intval($_REQUEST['locked']),  
+									'spacing'=>intval($_REQUEST['spacing']),  
+									'layoutID'=>$layoutID );					
+					
+					
+					//Save Existing layout preset 
+					
+					$lpID = intval($_REQUEST['lpID']);
+					if($lpID && $_POST['layoutPresetAction']=='update_existing_preset'){
+						$layoutPreset = LayoutPreset::getByID($lpID);
+						if($layoutPreset) $layout = $layoutPreset->getLayoutObject();
+						if(!$layout || !intval($layout->layoutID)) throw new Exception(t('Layout preset not found'));
+						$layoutID = intval($layout->layoutID);
+						if($layoutID!=$originalLayoutID) $updateLayoutId=1;
+					} 
+					
+					//is this an existing layout?  
+					if($layoutID){  
+						//security check: make sure this layout belongs to this area & collection
+						$db = Loader::db();
+						$vals = array( $layoutID, $area->getAreaHandle(), intval($nvc->cID), intval($c->getVersionID()), intval($nvc->getVersionID())  ); 
+						$layoutExistsInArea = intval($db->getOne('SELECT count(*) FROM CollectionVersionAreaLayouts WHERE layoutID=? AND arHandle=? AND cID=? AND cvID IN (?,?)',$vals))?1:0;
+						$validLayout = ($layoutExistsInArea)?1:0;
+
+						if(!$layout) $layout = Layout::getById($layoutID); 
+						
+						if( is_object($layout) && (in_array($_POST['layoutPresetAction'],array('update_existing_preset','create_new_preset')) || $validLayout) ){ 
+							
+							$layout->fill( $params );
+							
+							// if there's no unique layout record for this collection version, and it's not a preset, then treat this as a new record 
+							// bypassed if editing a preset or creating a new one 
+							if( (!$layoutPreset && !$layout->isUniqueToCollectionVersion($nvc)) || $_POST['layoutPresetAction']=='create_new_preset' || $_POST['layoutPresetAction']=='save_as_custom'){ 
+								$updateLayoutId=1;
+								$layout->layoutID=0;
+							} 
+							
+							$layout->save( $nvc ); 
+							//if($oldLayoutId) $nvc->updateAreaLayoutId($area, $oldLayoutId, $layout->layoutID);  
+						}else throw new Exception(t('Access Denied: Invalid Layout'));
+						
+					}else{ //new layout  
+						$layout = new Layout( $params );   
+						$position = ( $_REQUEST['add_to_position']=='top' ) ? 'top' : 'bottom';  
+						$layout->save( $nvc ); 
+						//$nvc->addAreaLayout($area, $layout, $position);  
+					} 
+					
+					//are we adding a new layout to an area, or updating an existing one? 
+					$cvalID=intval($_REQUEST['cvalID']);
+					if( $cvalID ){
+						if($updateLayoutId) $nvc->updateAreaLayoutId( $cvalID, $layout->layoutID);  
+					}else{ 
+						$nvc->addAreaLayout($area, $layout, $position);  
+					}
+					
+					
+					if ( $_POST['layoutPresetAction']=='create_new_preset' ) { 
+						$newPresetName = (strlen($_POST['layoutPresetNameAlt']))?$_POST['layoutPresetNameAlt']:$_POST['layoutPresetName'];
+						if(strlen(trim($newPresetName))) LayoutPreset::add(trim($newPresetName), $layout);
+					}	
+
+					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
+					exit;
+				}				
+				break;					
 		}
 	}
 	
@@ -282,7 +409,7 @@
 				break;
 			case 'check-out':
 			case 'check-out-first':
-				if ($cp->canWrite()) {
+				if ($cp->canWrite() || $cp->canApproveCollection()) {
 					// checking out the collection for editing
 					$u = new User();
 					$u->loadCollectionEdit($c);
@@ -297,7 +424,7 @@
 				}
 				break;
 			case 'check-in':
-				if ($cp->canWrite()) {
+				if ($cp->canWrite() || $cp->canApproveCollection()) {
 					// checking out the collection for editing
 					$v = CollectionVersion::get($c, "RECENT");
 					
@@ -381,32 +508,53 @@
 			
 			$b = Block::getByID($_REQUEST['bID'], $c, $a);
 			$p = new Permissions($b);
+			
 			if ($p->canWrite()) {
-				$bt = BlockType::getByHandle($b->getBlockTypeHandle());
-				if (!$bt->includeAll()) {
-					// we make sure to create a new version, if necessary				
-					$nvc = $c->getVersionToModify();
-				} else {
-					$nvc = $c; // keep the same one
-				}
-				$ob = $b;
-				// replace the block with the version of the block in the later version (if applicable)
-				$b = Block::getByID($_REQUEST['bID'], $nvc, $a);
-				
-				
-				if ($b->isAlias()) {
 
-					// then this means that the block we're updating is an alias. If you update an alias, you're actually going
-					// to duplicate the original block, and update the newly created block. If you update an original, your changes
-					// propagate to the aliases
-					$nb = $ob->duplicate($nvc);
-					$b->deleteBlock();
-					$b = &$nb;
+				$bi = $b->getInstance();
+				$e = $bi->validate($_POST);
+				$obj = new stdClass;
+				$obj->aID = $a->getAreaID();
+				$obj->arHandle = $a->getAreaHandle();
+				$obj->cID = $c->getCollectionID();
+			
+				if ((!is_object($e)) || (($e instanceof ValidationErrorHelper) && (!$e->has()))) {
+					$bt = BlockType::getByHandle($b->getBlockTypeHandle());
+					if (!$bt->includeAll()) {
+						// we make sure to create a new version, if necessary				
+						$nvc = $c->getVersionToModify();
+					} else {
+						$nvc = $c; // keep the same one
+					}
+					$ob = $b;
+					// replace the block with the version of the block in the later version (if applicable)
+					$b = Block::getByID($_REQUEST['bID'], $nvc, $a);
 					
+					
+					if ($b->isAlias()) {
+	
+						// then this means that the block we're updating is an alias. If you update an alias, you're actually going
+						// to duplicate the original block, and update the newly created block. If you update an original, your changes
+						// propagate to the aliases
+						$nb = $ob->duplicate($nvc);
+						$b->deleteBlock();
+						$b = &$nb;
+						
+					}
+					
+					// we can update the block that we're submitting
+					$b->update($_POST);
+					$obj->error = false;
+					$obj->bID = $b->getBlockID();
+				} else {
+					$obj->error = true;
+					$obj->response = $e->getList();
 				}
 				
-				// we can update the block that we're submitting
-				$b->update($_POST);
+				print Loader::helper('json')->encode($obj);
+				exit;
+				
+				/*
 					
 				$redirectCID = (intval($_REQUEST['rcID'])) ? intval($_REQUEST['rcID']) : intval($_REQUEST['cID']);
 					
@@ -414,6 +562,7 @@
 					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $redirectCID . $edit . $step);
 					exit;
 				}
+				*/
 			}
 						
 		} else if ($_REQUEST['add'] || $_REQUEST['_add']) {
@@ -451,8 +600,9 @@
 						}
 					} else if (isset($_REQUEST['bID'])) {
 						$b = Block::getByID($_REQUEST['bID']); 
-						if($_REQUEST['globalBlock'])
+						if($_REQUEST['globalBlock']) {
 							$b->setBlockAreaObject($a);
+						}
 						$bt = BlockType::getByHandle($b->getBlockTypeHandle());						
 						if ($ap->canAddBlock($bt)) {
 							if (!$bt->includeAll()) {
@@ -463,33 +613,52 @@
 							}
 						}					
 					}
-					if ($_REQUEST['isAjax']) {
-						exit;
-					}
-					
-					if (!$_SESSION['disableRedirect']) {
-						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_REQUEST['cID'] . $edit . $step);
-						exit;				
-					}
+
+					$obj = new stdClass;
+					$obj->aID = $a->getAreaID();
+					$obj->arHandle = $a->getAreaHandle();
+					$obj->cID = $c->getCollectionID();
+					$obj->bID = $b->getBlockID();
+					$obj->error = false;
+					print Loader::helper('json')->encode($obj);
+					exit;
 				} else { 
 
 					$bt = BlockType::getByID($_REQUEST['btID']);			
 					if ($ap->canAddBlock($bt)) {
 						$data = $_POST;
 						$data['uID'] = $u->getUserID();
-						if (!$bt->includeAll()) {
-							$nvc = $c->getVersionToModify();
-							$nb = $nvc->addBlock($bt, $a, $data);
+
+						$class = $bt->getBlockTypeClass();
+						$bi = new $class($bt);
+						$e = $bi->validate($data);
+						$obj = new stdClass;
+						$obj->aID = $a->getAreaID();
+						$obj->arHandle = $a->getAreaHandle();
+						$obj->cID = $c->getCollectionID();
+					
+						if ((!is_object($e)) || (($e instanceof ValidationErrorHelper) && (!$e->has()))) {
+
+							if (!$bt->includeAll()) {
+								$nvc = $c->getVersionToModify();
+								$nb = $nvc->addBlock($bt, $a, $data);
+							} else {
+								// if we apply to all, then we don't worry about a new version of the page
+								$nb = $c->addBlock($bt, $a, $data);
+							}
+
+							$obj->error = false;
+							$obj->bID = $nb->getBlockID();
+							
 						} else {
-							// if we apply to all, then we don't worry about a new version of the page
-							$nb = $c->addBlock($bt, $a, $data);
+							
+							$obj->error = true;
+							$obj->response = $e->getList();
+						
 						}
 						
-					
-						if (!$_SESSION['disableRedirect']) {
-							header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_REQUEST['cID'] . $edit . $step);
-							exit;
-						}
+						print Loader::helper('json')->encode($obj);
+						exit;
 					}
 				}
 			}
@@ -589,13 +758,15 @@
 				}
 				
 				if ($_POST['rel'] == 'SITEMAP') { 
-					header('Location: ' . URL_SITEMAP);
+					$obj = new stdClass;
+					$obj->rel = 'SITEMAP';
+					$obj->cID = $c->getCollectionID();
+					print Loader::helper('json')->encode($obj);
 					exit;
 				} else {
 					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
 					exit;
 				}
-				
 			}		
 		} else if ($_POST['update_metadata']) { 
 			// updating a collection
@@ -625,20 +796,26 @@
 				$nvc->update($data);
 				processMetaData($nvc);
 				
+				$obj = new stdClass;
+
 				if ($_POST['rel'] == 'SITEMAP') { 
+					$obj->rel = $_POST['rel'];
 					if ($cp->canApproveCollection()) {
 						$v = CollectionVersion::get($c, "RECENT");
 						$v->approve();
 						$u = new User();
 						$u->unloadCollectionEdit($c);
+						$obj->name = $v->getVersionName();
 					}
 					
-					header('Location: ' . URL_SITEMAP);
-					exit;
 				} else {
-					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
-					exit;
+					//header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
+					//exit;
 				}
+
+				$obj->cID = $c->getCollectionID();
+				print Loader::helper('json')->encode($obj);
+				exit;
 			}	
 		} else if ($_POST['update_external']) {
 			if ($cp->canWrite()) {
@@ -672,16 +849,22 @@
 				} else {
 					$c->updatePermissions();
 				}
+
+				$obj = new stdClass;
+
 				if ($_POST['rel'] == 'SITEMAP') { 
 					$u = new User();
 					$u->unloadCollectionEdit($c);
-
-					header('Location: ' . URL_SITEMAP);
-					exit;
+					$obj->rel = 'SITEMAP';
 				} else {
-					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
-					exit;
+					//header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
+					//exit;
 				}
+
+				$obj->cID = $c->getCollectionID();
+				print Loader::helper('json')->encode($obj);
+				exit;
+
 			}	
 		} else if ($_POST['add']) { 
 			// adding a collection to a collection
@@ -709,11 +892,20 @@
 						if ($cp->canApproveCollection()) {
 							$v = CollectionVersion::get($nc, "RECENT");
 							$v->approve();
-							$u = new User();
-							$u->unloadCollectionEdit($nc);
 						}
-						header('Location: ' . URL_SITEMAP);
-						exit;
+						$u = new User();
+						$u->unloadCollectionEdit($nc);
+
+						if ($_POST['mode'] == 'explore' ) {
+							header('Location: ' . BASE_URL . View::url('/dashboard/sitemap/explore', $c->getCollectionID()));
+							exit;
+						} else if ($_POST['mode'] == 'search') {
+							header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $nc->getCollectionID() . '&mode=edit&ctask=check-out-first' . $step . $token);
+							exit;
+						} else {
+							header('Location: ' . URL_SITEMAP);
+							exit;							
+						}
 					} else {
 						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $nc->getCollectionID() . '&mode=edit&ctask=check-out-first' . $step . $token);
 						exit;

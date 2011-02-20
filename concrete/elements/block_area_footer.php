@@ -19,6 +19,8 @@ $arHandleTrunc = strtolower(preg_replace("/[^0-9A-Za-z]/", "", $a->getAreaHandle
 $c = $a->getAreaCollectionObject();
 $cID = $c->getCollectionID();
 $u = new User();
+$ap = new Permissions($a);
+$cp = new Permissions($c);
 
 if ($a->areaAcceptsBlocks()) { ?>
 
@@ -28,7 +30,21 @@ if ($a->areaAcceptsBlocks()) { ?>
 	ccm_areaMenuObj<?php echo $a->getAreaID()?>.type = "AREA";
 	ccm_areaMenuObj<?php echo $a->getAreaID()?>.aID = <?php echo $a->getAreaID()?>;
 	ccm_areaMenuObj<?php echo $a->getAreaID()?>.arHandle = "<?php echo $arHandle?>";
-
+	ccm_areaMenuObj<?php echo $a->getAreaID()?>.canAddBlocks = <?php echo $ap->canAddBlocks()?>;
+	ccm_areaMenuObj<?php echo $a->getAreaID()?>.canWrite = <?php echo $ap->canWrite()?>;
+	<?php  if ($cp->canAdmin() && PERMISSIONS_MODEL != 'simple') { ?>
+		ccm_areaMenuObj<?php echo $a->getAreaID()?>.canModifyGroups = true;
+	<?php  } ?>
+	<?php  if ($ap->canWrite() && ENABLE_AREA_LAYOUTS == true && (!$c->isMasterCollection())) { ?>
+		ccm_areaMenuObj<?php echo $a->getAreaID()?>.canLayout = true;
+	<?php  } else { ?>
+		ccm_areaMenuObj<?php echo $a->getAreaID()?>.canLayout = false;
+	<?php  } ?>
+	<?php  if ($ap->canWrite() && ENABLE_CUSTOM_DESIGN == true && (!$c->isMasterCollection())) { ?>
+		ccm_areaMenuObj<?php echo $a->getAreaID()?>.canDesign = true;
+	<?php  } else { ?>
+		ccm_areaMenuObj<?php echo $a->getAreaID()?>.canDesign = false;
+	<?php  } ?>
 	$(function() {ccm_menuInit(ccm_areaMenuObj<?php echo $a->getAreaID()?>)});
 	</script>
 	<div id="a<?php echo $a->getAreaID()?>controls" class="ccm-add-block"><?php echo t('Add To %s', $arHandle)?></div>

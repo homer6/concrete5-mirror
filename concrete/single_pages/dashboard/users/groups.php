@@ -98,6 +98,9 @@ $gResults = $gl->getPage();
 <h1><span><?php echo t('Groups')?></span></h1>
 <div class="ccm-dashboard-inner">
 
+<?php 
+$tp = new TaskPermission();
+if ($tp->canAccessGroupSearch()) { ?>
 
 <form id="ccm-group-search" method="get" style="top: -30px; left: 10px" action="<?php echo $this->url('/dashboard/users/groups')?>">
 <div id="ccm-group-search-fields">
@@ -128,6 +131,10 @@ foreach ($gResults as $g) { ?>
 	
 <?php  } ?>
 
+<?php  } else { ?>
+	<p><?php echo t('You do not have access to group search. This setting may be changed in the access section of the dashboard settings page.')?></p>
+
+<?php  } ?>
 </div>
 
 <h1><span><?php echo t('Add Group')?> (<em class="required">*</em> - <?php echo t('required field')?>)</span></h1>

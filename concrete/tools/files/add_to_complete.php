@@ -1,5 +1,6 @@
 <?php 
  
+$searchInstance = $_REQUEST['searchInstance'];
 
 ?>
 
@@ -10,9 +11,9 @@
 	</div>
 	
 	<div style="margin-bottom:24px">
-		<a onClick="ccm_filesApplySetsToUploaded([<?php echo join(',',$_REQUEST['fID'])?>]);">Assign File Sets</a> 
+		<a onClick="ccm_filesApplySetsToUploaded([<?php echo join(',',$_REQUEST['fID'])?>], '<?php echo $searchInstance?>');">Assign File Sets</a> 
 			&nbsp;|&nbsp; 
-		<a onClick="ccm_filesApplyPropertiesToUploaded([<?php echo join(',',$_REQUEST['fID'])?>]);">Edit Properties</a>
+		<a onClick="ccm_filesApplyPropertiesToUploaded([<?php echo join(',',$_REQUEST['fID'])?>], '<?php echo $searchInstance?>');">Edit Properties</a>
 	</div>
 	
 	[ <a onClick="jQuery.fn.dialog.closeTop()"><?php echo t('Close Window') ?></a> ]

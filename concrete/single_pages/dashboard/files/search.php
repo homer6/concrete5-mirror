@@ -9,18 +9,18 @@ if ($fp->canSearchFiles()) { ?>
 		<table id="ccm-search-form-table" >
 			<tr>
 				<td valign="top" class="ccm-search-form-advanced-col">
-					<?php  Loader::element('files/search_form_advanced'); ?>
+					<?php  Loader::element('files/search_form_advanced', array('searchInstance' => $searchInstance, 'searchRequest' => $searchRequest, 'searchType' => 'DASHBOARD')); ?>
 				</td>		
-				<?php  /* <div id="ccm-file-search-advanced-fields-gutter">&nbsp;</div> */ ?>		
-				<td valign="top">	
+				<?php  /* <div id="ccm-<?php echo $searchInstance?>-search-advanced-fields-gutter">&nbsp;</div> */ ?>		
+				<td valign="top" width="100%">	
 					
 					<div id="ccm-search-advanced-results-wrapper">
 					
-						<?php  Loader::element('files/upload_single'); ?>
+						<?php  Loader::element('files/upload_single', array('searchInstance' => $searchInstance)); ?>
 						
-						<div id="ccm-search-results">
+						<div id="ccm-<?php echo $searchInstance?>-search-results" class="ccm-file-list">
 						
-							<?php  Loader::element('files/search_results', array('files' => $files, 'fileList' => $fileList, 'pagination' => $pagination)); ?>
+							<?php  Loader::element('files/search_results', array('searchInstance' => $searchInstance, 'searchType' => 'DASHBOARD', 'files' => $files, 'fileList' => $fileList, 'pagination' => $pagination)); ?>
 						
 						</div>
 					
@@ -37,3 +37,5 @@ if ($fp->canSearchFiles()) { ?>
 		<?php echo t('Unable to access file manager.'); ?>
 	</div>
 <?php  } ?>
+
+

@@ -21,6 +21,10 @@
 	width:380px;
 }
 
+
+.ccm-dialog-window-no-transparent .ccm-dialog-window {border: 2px solid #333}
+.ccm-dialog-window-no-transparent .ccm-dialog-title-bar a.ccm-dialog-close {right: 10px; top: 10px}
+
 .ccm-dialog-title-bar a.ccm-dialog-close {
 	position: absolute;
 	top: 8px; 
@@ -46,10 +50,22 @@
 }
 
 
-.ccm-dialog-title-bar-l {background: transparent url(../images/bg_dialog_tl.png) no-repeat scroll 0 0; padding-left: 22px;}
-.ccm-dialog-title-bar-r {background: transparent url(../images/bg_dialog_tr.png) no-repeat scroll 100% 0; padding-right: 22px}
+.ccm-dialog-window-no-transparent .ccm-dialog-title-bar-l {}
+.ccm-dialog-window-no-transparent .ccm-dialog-title-bar-r {}
 
-.ccm-dialog-title-bar {
+.ccm-dialog-window-no-transparent .ccm-dialog-title-bar {
+	background:#eee;
+	height:30px;
+	color: #666666;
+	font-weight: bold;
+	padding: 4px 10px 0px 10px;
+	font-size: 12px;
+}
+
+.ccm-dialog-window-transparent .ccm-dialog-title-bar-l {background: transparent url(../images/bg_dialog_tl.png) no-repeat scroll 0 0; padding-left: 22px;}
+.ccm-dialog-window-transparent .ccm-dialog-title-bar-r {background: transparent url(../images/bg_dialog_tr.png) no-repeat scroll 100% 0; padding-right: 22px}
+
+.ccm-dialog-window-transparent .ccm-dialog-title-bar {
 	background:#eee url(../images/bg_dialog_t.png) right repeat-x;
 	height:30px;
 	color: #666666;
@@ -57,14 +73,18 @@
 	font-size: 12px;
 }
 
-.ccm-dialog-content-b {background: transparent url(../images/bg_dialog_b.png) repeat-x scroll 0 0; height: 27px}
-.ccm-dialog-content-bl {background: transparent url(../images/bg_dialog_bl.png) no-repeat scroll 0 100%; padding-left: 22px;}
-.ccm-dialog-content-br {background: transparent url(../images/bg_dialog_br.png) no-repeat scroll 100% 100%; padding-right: 22px}
+.ccm-dialog-window-transparent .ccm-dialog-content-b {background: transparent url(../images/bg_dialog_b.png) repeat-x scroll 0 0; height: 27px}
+.ccm-dialog-window-transparent .ccm-dialog-content-bl {background: transparent url(../images/bg_dialog_bl.png) no-repeat scroll 0 100%; padding-left: 22px;}
+.ccm-dialog-window-transparent .ccm-dialog-content-br {background: transparent url(../images/bg_dialog_br.png) no-repeat scroll 100% 100%; padding-right: 22px}
+.ccm-dialog-window-transparent .ccm-dialog-content-l {background: transparent url(../images/bg_dialog_l.png) repeat-y scroll 0 0; padding-left: 22px;}
+.ccm-dialog-window-transparent .ccm-dialog-content-r {background: transparent url(../images/bg_dialog_r.png) repeat-y scroll 100% 0; padding-right: 22px}
+
+.ccm-dialog-window-no-transparent .ccm-dialog-content-bl {background: #fafafa;}
+.ccm-dialog-window-no-transparent .ccm-dialog-content-br {background: #fafafa;}
+.ccm-dialog-window-no-transparent .ccm-dialog-content-l {background: #fafafa; padding-left: 12px;}
+.ccm-dialog-window-no-transparent .ccm-dialog-content-r {background: #fafafa;}
 
 .ccm-dialog-title-bar a.ccm-button-right span {color: #fff; font-size: 10px}
-
-.ccm-dialog-content-l {background: transparent url(../images/bg_dialog_l.png) repeat-y scroll 0 0; padding-left: 22px;}
-.ccm-dialog-content-r {background: transparent url(../images/bg_dialog_r.png) repeat-y scroll 100% 0; padding-right: 22px}
 
 .ccm-dialog-content {
 	clear:both;
@@ -91,16 +111,23 @@
 
 .ccm-dialog-window h1 {background: none}
 
-#ccm-dialog-loader {
+#ccm-dialog-loader-wrapper {
 	position: fixed;
 	display:none;
-	height:32px;
-	width:32px;
+	height:60px;
+	width:60px;
 	z-index:300;
 	top: 50%;
 	left: 50%;
-	margin: 16px 0 0 -16px;
+	margin: -16px 0 0 -30px;
+	border: 3px solid #afafaf;
+	background-color: #fefefe;
+	-webkit-border-radius: 6px;
+	-moz-border-radius: 6px;
+	text-align:center;
 }
+
+#ccm-dialog-loader { margin: auto; margin-top: 14px; }
 
 
 #TB_HideSelect{
@@ -116,19 +143,3 @@
 	height:100%;
 	width:100%;
 }
-
-
-/* Help System */
-#ccm-supportWrap a { cursor:pointer }
-#ccm-supportWrap #answers{border:1px solid #999; height:300px; overflow:scroll; overflow-y:scroll; overflow-x:hidden}
-#ccm-supportWrap #answers a {color:inherit}
-#ccm-supportWrap #answers a .answer{border-bottom: 1px solid #ccc; padding:12px;}
-#ccm-supportWrap #answers a:hover .answer{ background:#eee }
-#ccm-supportWrap #answers .answer .title{font-weight:bold}
-#ccm-supportWrap .bigButtonWrap{margin: auto; text-align: center; width: 220px;}
-#ccm-supportWrap .bigButtonWrap span{width:190px}
-#ccm-supportWrap .alertMsg{ border:1px solid #999; background:#ffffaa; padding:4px }
-#ccm-supportWrap .ccm-throbber{width:20px; height:20px; background:url(../images/throbber_white_16.gif) center no-repeat; margin:10px; display:none; }
-#ccm-supportWrap table.ccm-dataGrid {background:#ddd}
-#ccm-supportWrap table.ccm-dataGrid td{ padding:2px; background:#fafafa; }
-#ccm-supportWrap table.ccm-dataGrid tr.header td{background:#eee; font-weight:bold}

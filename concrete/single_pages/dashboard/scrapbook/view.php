@@ -3,7 +3,7 @@ $ih = Loader::helper('concrete/interface');
 $ci = Loader::helper('concrete/urls');
 $u = new User();
 ?> 
-<style>
+<style type="text/css">
 #ccm-scrapbook-list { margin-top:32px; margin-bottom:32px; } 
 #ccm-scrapbook-list .ccm-block-type{border:none 0px}
 #ccm-scrapbook-list .ccm-block-type .options { float:right; padding:8px }
@@ -64,12 +64,7 @@ var GlobalScrapbook = {
 		<?php  if(!$globalScrapbookArea){ ?>
 		return false;
 		<?php  }else{ ?>
-		var ccm_areaScrapbookObj = new Object();
-		ccm_areaScrapbookObj.type = "AREA";	
-		ccm_areaScrapbookObj.aID = <?php echo intval($globalScrapbookArea->getAreaID()) ?>;
-		ccm_areaScrapbookObj.arHandle = "<?php echo $globalScrapbookArea->getAreaHandle() ?>";	
-		ccm_areaScrapbookObj.addOnly = 1;
-		ccm_showAreaMenu(ccm_areaScrapbookObj,e); 
+		ccm_openAreaAddBlock("<?php echo $globalScrapbookArea->getAreaHandle() ?>", true);
 		<?php  } ?>
 	},
 	editBlock:function(bID,w,h){ 
@@ -94,6 +89,17 @@ var GlobalScrapbook = {
 			height: 100
 		});		
 	},
+	editBlockPermissions:function(bID){ 
+		var editBlockURL = '<?php echo REL_DIR_FILES_TOOLS_REQUIRED ?>/edit_block_popup';
+		$.fn.dialog.open({
+			title: ccmi18n.changeBlockTemplate,
+			href: editBlockURL+'?cID='+CCM_CID+'&bID='+bID+'&arHandle=<?php echo urlencode($scrapbookName)?>&btask=groups',
+			width: 400,
+			modal: false,
+			height: 380
+		});		
+	},
+
 	confirmDelete:function(){
 		if(!confirm("<?php echo t('Are you sure you want to delete this block?').'\n'.t('(All page instances will also be removed)') ?>")) return false;
 		return true;
@@ -296,6 +302,7 @@ $(function(){ GlobalScrapbook.init(); });
 				 $b->setBlockAreaObject($globalScrapbookArea);
 				 $bv = new BlockView();
 				 $bt = BlockType::getByID( $b->getBlockTypeID() ); 
+				 $bp = new Permissions($b);
 				 $btIcon = $ci->getBlockTypeIconURL($bt); 			 
 				 
 				 //give this block a name if it doesn't have one
@@ -306,15 +313,29 @@ $(function(){ GlobalScrapbook.init(); });
 				 <div class="ccm-scrapbook-list-item" id="ccm-scrapbook-list-item-<?php echo intval($b->bID)?>"> 
 					 <div class="ccm-block-type">  
 						<div class="options"> 
+							<?php  if ($bp->canWrite()) { ?>
 							<a href="javascript:void(0)" onclick="GlobalScrapbook.toggleRename(<?php echo intval($b->bID) ?>)"><?php echo t('Rename')?></a>
 							&nbsp;|&nbsp; 
-							<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlockTemplate(<?php echo intval($b->bID) ?>)" ><?php echo t('Set Custom Template')?></a> 
+							<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlockTemplate(<?php echo intval($b->bID) ?>)" ><?php echo t('Custom Template')?></a> 
 							&nbsp;|&nbsp; 
 							<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlock(<?php echo intval($b->bID) ?>,<?php echo $bt->getBlockTypeInterfaceWidth()?> , <?php echo $bt->getBlockTypeInterfaceHeight()?> )" ><?php echo t('Edit')?></a> 
-							&nbsp;|&nbsp; 					 
+							&nbsp;|&nbsp; 
+							
+							<?php  } ?>
+							
+							<?php  if (PERMISSIONS_MODEL != 'simple' && $bp->canAdmin()) { ?>
+								<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlockPermissions(<?php echo $b->getBlockID()?>)" ><?php echo t('Permissions')?></a> 
+								<?php  if ($bp->canDeleteBlock()) { ?>
+									&nbsp;|&nbsp;
+								<?php  } ?>
+							<?php  } ?>
+							
+							<?php  if ($bp->canDeleteBlock()) { ?>
 							<a href="<?php echo  $this->url($c->getCollectionPath(),'deleteBlock','?scrapbookName='.urlencode($scrapbookName).'&bID='.intval($b->bID))?>" onclick="return GlobalScrapbook.confirmDelete()">
 								<?php echo t('Delete')?>
 							</a> 
+							
+							<?php  } ?>
 						</div>  
 						<div id="ccm-block-type-inner<?php echo intval($b->bID)?>" class="ccm-block-type-inner">
 							<div class="ccm-block-type-inner-icon ccm-scrapbook-item-handle" style="background: url(<?php echo $btIcon?>) no-repeat center left;">

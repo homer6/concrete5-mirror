@@ -101,6 +101,15 @@ class FileHelper {
 		header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
 		header("Cache-Control: private",false);
 		header("Content-Transfer-Encoding: binary");
+		
+		// This code isn't ready yet. It will allow us to no longer force download
+		
+		/*
+		$h = Loader::helper('mime');
+		$mimeType = $h->mimeFromExtension($this->getExtension($file));
+		header('Content-type: ' . $mimeType);
+		*/
+		
 	
 		$buffer = '';
 		$chunk = 1024*1024;
@@ -163,6 +172,11 @@ class FileHelper {
 				curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, $timeout);
 				curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
 				$contents = curl_exec($curl_handle);
+				$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
+				if ($http_code == 404) {	
+					return false;
+				}
+				
 				return $contents;
 			}
 		} else {

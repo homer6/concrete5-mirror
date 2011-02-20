@@ -60,7 +60,7 @@
 			t.settings = s = extend({
 				theme_concrete_path : true,
 				theme_concrete_toolbar_location : 'bottom',
-				theme_concrete_buttons1 : "bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,hr,|,styleselect,formatselect,fontsizeselect",
+				theme_concrete_buttons1 : "pasteword,|,bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,hr,|,styleselect,formatselect,fontsizeselect",
 				theme_concrete_buttons2 : "forecolor,backcolor,|,bullist,numlist,|,outdent,indent,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,|",
 				theme_concrete_blockformats : "p,address,pre,h1,h2,h3,div,blockquote,cite",
 				theme_concrete_toolbar_align : "left",

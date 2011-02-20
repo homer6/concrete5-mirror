@@ -20,7 +20,7 @@ if(!$scrapbookName || $scrapbookName=='userScrapbook'){ ?>
 			<div class="ccm-scrapbook-list-item" id="ccm-pc-<?php echo $obj->getPileContentID()?>">
 				<div class="ccm-block-type">
 					<a class="ccm-scrapbook-delete" title="Remove from Scrapbook" href="javascript:void(0)" id="sb<?php echo $obj->getPileContentID()?>"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/delete_small.png" width="16" height="16" /></a>
-					<a class="ccm-block-type-inner" style="background-image: url(<?php echo $btIcon?>)" href="<?php echo DIR_REL?>/index.php?pcID[]=<?php echo $obj->getPileContentID()?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>"><?php echo $bt->getBlockTypeName()?></a>
+					<a class="ccm-block-type-inner" style="background-image: url(<?php echo $btIcon?>)" href="javascript:void(0)" onclick="jQuery.fn.dialog.showLoader();$.get('<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?pcID[]=<?php echo $obj->getPileContentID()?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>', function(r) { ccm_parseBlockResponse(r, false, 'add'); })"><?php echo $bt->getBlockTypeName()?></a>
 					<div class="ccm-scrapbook-list-item-detail">	
 						<?php 	
 						try {
@@ -58,7 +58,7 @@ if($scrapbookName && $scrapbookName!='userScrapbook'){
 				<div class="ccm-block-type">
 					<a class="ccm-scrapbook-delete" title="Remove from Scrapbook" href="javascript:void(0)" arHandle="<?php echo addslashes($scrapbookName)?>" id="scrapbook-bID<?php echo intval($b->bID) ?>"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/delete_small.png" width="16" height="16" /></a>				
 					<a class="ccm-block-type-inner" style="background-image: url(<?php echo $btIcon?>)" 
-					   href="<?php echo DIR_REL?>/index.php?globalBlock=1&bID=<?php echo $b->bID ?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>">
+					   href="javascript:void(0)" onclick="jQuery.fn.dialog.showLoader();$.get('<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?globalBlock=1&bID=<?php echo $b->bID ?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>', function(r) { ccm_parseBlockResponse(r, false, 'add'); })">
 							<?php echo $bt->getBlockTypeName()?>: "<?php echo $b->getBlockName() ?>"
 					</a>
 					<div class="ccm-scrapbook-list-item-detail">	

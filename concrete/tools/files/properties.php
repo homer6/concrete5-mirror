@@ -217,6 +217,10 @@ if (!$previewMode) {
 	<td width="100%" colspan="2"><?php echo $fv->getFileName()?></td>
 </tr>
 <tr>
+	<th><?php echo t('URL to File')?></th>
+	<td width="100%" colspan="2"><?php echo $fv->getRelativePath(true)?></td>
+</tr>
+<tr>
 	<th><?php echo t('Type')?></th>
 	<td colspan="2"><?php echo $fv->getType()?></td>
 </tr>
@@ -226,7 +230,7 @@ if (!$previewMode) {
 </tr>
 <tr>
 	<th><?php echo t('Date Added')?></th>
-	<td colspan="2"><?php echo t('Added by <strong>%s</strong> on %s', $fv->getAuthorName(), $f->getDateAdded())?></td>
+	<td colspan="2"><?php echo t('Added by <strong>%s</strong> on %s', $fv->getAuthorName(), date(DATE_APP_FILE_PROPERTIES, strtotime($f->getDateAdded())))?></td>
 </tr>
 <?php 
 Loader::model("file_storage_location");
@@ -361,7 +365,7 @@ foreach($attribs as $at) {
 					?>
 					</td>
 				<td><?php echo $fvv->getAuthorName()?></td>
-				<td><?php echo $fvv->getDateAdded()?></td>
+				<td><?php echo date(DATE_APP_FILE_VERSIONS, strtotime($fvv->getDateAdded()))?></td>
 				<?php  if ($fp->canAdmin()) { ?>
 					<?php  if ($fvv->getFileVersionID() == $fv->getFileVersionID()) { ?>
 						<td>&nbsp;</td>
@@ -412,7 +416,7 @@ foreach($attribs as $at) {
 				} 
 				?>
 			</td>
-			<td><?php echo $download['timestamp']?></td>
+			<td><?php echo date(DATE_APP_FILE_DOWNLOAD, strtotime($download['timestamp']))?></td>
 			<td><?php echo intval($download['fvID'])?></td>
 		</tr>
 		<?php  } ?>

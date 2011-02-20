@@ -5,8 +5,42 @@ class DashboardSettingsController extends Controller {
 
 	var $helpers = array('form'); 
 
+	protected function getRewriteRules() {
+		$rewriteRules = "<IfModule mod_rewrite.c>\n";
+		$rewriteRules .= "RewriteEngine On\n";
+		$rewriteRules .= "RewriteBase " . DIR_REL . "/\n";
+		$rewriteRules .= "RewriteCond %{REQUEST_FILENAME} !-f\n";
+		$rewriteRules .= "RewriteCond %{REQUEST_FILENAME} !-d\n";
+		$rewriteRules .= "RewriteRule ^(.*)$ " . DISPATCHER_FILENAME . "/$1 [L]\n";
+		$rewriteRules .= "</IfModule>";
+		return $rewriteRules;
+	}
+
+	public function access_task_permissions() {
+		$this->addHeaderItem(Loader::helper('html')->javascript('ccm.dashboard.permissions.js'));	
+	}
 	
-	public function view($updated = false) {
+	public function save_task_permissions() {
+		if (!$this->token->validate("update_permissions")) {
+			$this->set('error', array($this->token->getErrorMessage()));
+			return;
+		}	
+		
+		$tp = new TaskPermission();
+		if (!$tp->canAccessTaskPermissions()) {
+			$this->set('error', array(t('You do not have permission to modify these items.')));
+			return;
+		}
+		
+		$post = $this->post();
+		
+		$h = Loader::helper('concrete/dashboard/task_permissions');
+		$h->save($post);
+		$this->redirect('/dashboard/settings/', 'set_permissions', 'task_permissions_saved');
+	
+	}
+	
+	public function view($updated = false, $aux = false) {
 		$u = new User();		
 		 
 		$this->set('site_tracking_code', Config::get('SITE_TRACKING_CODE') );		
@@ -18,7 +52,7 @@ class DashboardSettingsController extends Controller {
 		
 		$txtEditorMode = Config::get('CONTENTS_TXT_EDITOR_MODE');
 		$this->set( 'txtEditorMode', $txtEditorMode ); 
-		
+		$this->set('rewriteRules', $this->getRewriteRules());
 		$textEditorWidth = Config::get('CONTENTS_TXT_EDITOR_WIDTH');
 		$this->set( 'textEditorWidth', $textEditorWidth );
 		$textEditorHeight = Config::get('CONTENTS_TXT_EDITOR_HEIGHT');
@@ -28,7 +62,12 @@ class DashboardSettingsController extends Controller {
 		if( !strlen($txtEditorCstmCode) || $txtEditorMode!='CUSTOM' )
 			$txtEditorCstmCode=$this->get_txt_editor_default();
 		$this->set('txtEditorCstmCode', $txtEditorCstmCode );
-				
+		
+		Loader::library('marketplace');
+		$mi = Marketplace::getInstance();
+		if ($mi->isConnected()) {
+			$this->set('marketplacePageURL', Marketplace::getSitePageURL());
+		}
 		if ($updated) {
 			switch($updated) {
 				case "tracking_code_saved";
@@ -72,7 +111,11 @@ class DashboardSettingsController extends Controller {
 					break;														
 				case "rewriting_saved":
 					if (URL_REWRITING) {
-						$this->set('message', t('URL rewriting enabled. Make sure you copy the lines below these URL Rewriting settings area and place them in your .htaccess or web server configuration file.'));
+						if ($aux == 0) {
+							$this->set('message', t('URL rewriting enabled. Make sure you copy the lines below these URL Rewriting settings area and place them in your .htaccess or web server configuration file.'));
+						} else {
+							$this->set('message', t('URL rewriting enabled. .htaccess file updated.'));
+						}
 					} else {
 						$this->set('message', t('URL rewriting disabled.'));
 					}
@@ -335,6 +378,7 @@ class DashboardSettingsController extends Controller {
 			if ($this->isPost()) {
 				$u = new User();
 				$eca = $this->post('ENABLE_CACHE') == 1 ? 1 : 0; 
+				Cache::flush();
 				Config::save('ENABLE_CACHE', $eca);
 				$this->redirect('/dashboard/settings', 'set_developer', 'cache_updated');
 			}
@@ -369,9 +413,35 @@ class DashboardSettingsController extends Controller {
 	}
 
 	public function update_rewriting() {
+		$this->set('rewriteRules', $this->getRewriteRules());
+		$start = '# -- concrete5 urls start --';
+		$end = '# -- concrete5 urls end --';
+		$rules = $start . "\n" . $this->getRewriteRules() . "\n" . $end;
+		$htu = 0;
 		if ($this->isPost()) {
 			Config::save('URL_REWRITING', $this->post('URL_REWRITING'));
-			$this->redirect('/dashboard/settings','rewriting_saved');
+			
+			if ($this->post('URL_REWRITING') == 1) { 
+				if (file_exists(DIR_BASE . '/.htaccess') && is_writable(DIR_BASE . '/.htaccess')) {		
+					if (file_put_contents(DIR_BASE . '/.htaccess', "\n" . $rules, FILE_APPEND)) {
+						$htu = 1;
+					}
+				} else if (!file_exists(DIR_BASE . '/.htaccess') && is_writable(DIR_BASE)) {		
+					if (file_put_contents(DIR_BASE . '/.htaccess', $rules)) {
+						$htu = 1;
+					}
+				}
+			} else {
+				if (file_exists(DIR_BASE . '/.htaccess') && is_writable(DIR_BASE . '/.htaccess')) {
+					$fh = Loader::helper('file');
+					$contents = $fh->getContents(DIR_BASE . '/.htaccess');
+					if (file_put_contents(DIR_BASE . '/.htaccess', str_replace($rules, '', $contents))) {
+						$htu = 1;
+					}
+				}
+			}
+			
+			$this->redirect('/dashboard/settings','rewriting_saved', $htu);
 		}
 	}	
 	
@@ -384,7 +454,52 @@ class DashboardSettingsController extends Controller {
 		}
 		$this->set('debug_level', $debug_level);		
 		$this->set('enable_log_emails', $enable_log_emails);		
-		$this->set('enable_log_errors', $enable_log_errors);		
+		$this->set('enable_log_errors', $enable_log_errors);	
+		
+		ob_start();
+		phpinfo();
+		$phpinfo = array('phpinfo' => array());
+		if(preg_match_all('#(?:<h2>(?:<a name=".*?">)?(.*?)(?:</a>)?</h2>)|(?:<tr(?: class=".*?")?><t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>(?:<t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>(?:<t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>)?)?</tr>)#s', ob_get_clean(), $matches, PREG_SET_ORDER))
+		foreach($matches as $match) {
+			if(strlen($match[1])) {
+				$phpinfo[$match[1]] = array();
+			} else if(isset($match[3])) {
+				$phpinfo[end(array_keys($phpinfo))][$match[2]] = isset($match[4]) ? array($match[3], $match[4]) : $match[3];
+			} else {
+				$phpinfo[end(array_keys($phpinfo))][] = $match[2];
+			}
+		}
+
+		$environmentMessage = '# ' . t('PHP Version') . "\n" . PHP_VERSION . "\n\n";
+		$environmentMessage .= '# ' . t('Server Software') . "\n" . $_SERVER['SERVER_SOFTWARE'] . "\n\n";
+		$environmentMessage .= '# ' . t('Server API') . "\n" . php_sapi_name() . "\n\n";
+		$environmentMessage .= '# ' . t('Loaded Extensions') . "\n";
+		if (function_exists('get_loaded_extensions')) {
+			$gle = @get_loaded_extensions();
+			natcasesort($gle);
+			$environmentMessage .= implode(', ', $gle);
+			$environmentMessage .= ".\n";
+		} else {
+			$environmentMessage .= t('Unable to determine.') . "\n";
+		}
+
+		$environmentMessage .= "\n# " . t('Limits') . "\n";
+
+		foreach($phpinfo as $name => $section) {
+			foreach($section as $key => $val) {
+				if (!preg_match('/.*limit.*/', $key) && !preg_match('/.*safe.*/', $key) && !preg_match('/.*max.*/', $key)) {
+					continue;
+				}
+				if(is_array($val)) {
+					$environmentMessage .= "$key - $val[0]\n";
+				} else if(is_string($key)) {
+					$environmentMessage .= "$key - $val\n";
+				} else {
+					$environmentMessage .= "$val\n";
+				}
+			}
+		}		
+		$this->set('environmentMessage', $environmentMessage);
 		if ($updated) {
 			switch($updated) {
 				case "debug_saved":
@@ -455,6 +570,7 @@ class DashboardSettingsController extends Controller {
 			case "refresh_database_schema":
 				$devSelected = true;
 				break;
+			case "access_task_permissions":
 			case "set_permissions":
 				$permsSelected = true;
 				break;
@@ -687,7 +803,7 @@ class DashboardSettingsController extends Controller {
 		?>
 theme : "concrete", 
 plugins: "inlinepopups,spellchecker,safari,advlink",
-editor_selector : "advancedEditor",
+editor_selector : "ccm-advanced-editor",
 spellchecker_languages : "+English=en",	
 theme_concrete_buttons1 : "bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,hr,|,styleselect,formatselect,fontsizeselect",
 theme_concrete_buttons2 : "bullist,numlist,|,outdent,indent,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,forecolor",
@@ -701,7 +817,7 @@ spellchecker_languages : "+English=en"
 /*
 // Use the advanced theme for more than two rows of content
 plugins: "inlinepopups,spellchecker,safari,advlink,table,advhr,xhtmlxtras,emotions,insertdatetime,paste,visualchars,nonbreaking,pagebreak,style",
-editor_selector : "advancedEditor",
+editor_selector : "ccm-advanced-editor",
 theme : "advanced",
 theme_advanced_buttons1 : "cut,copy,paste,pastetext,pasteword,|,undo,redo,|,styleselect,formatselect,fontsizeselect,fontselect",
 theme_advanced_buttons2 : "bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,bullist,numlist,|,outdent,indent,blockquote,|,link,unlink,anchor,|,forecolor,backcolor,|,image,charmap,emotions",

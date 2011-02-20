@@ -28,7 +28,7 @@ class UpgradeController extends Controller {
 	}
 	
 	public function view() {
-		if ($this->get('force') == 1) {
+		if ($this->get('force') == 1 || $this->get('source') == 'dashboard_update') {
 			$this->do_upgrade();
 		} else {	
 			$sav = $this->site_version;
@@ -118,6 +118,10 @@ class UpgradeController extends Controller {
 
 		if (version_compare($sav, '5.3.3.1', '<')) { 
 			$ugvs[] = "version_533";
+		}
+		if (version_compare($sav, '5.4.1', '<')) { 
+			$ugvs[] = "version_5331";
+			$ugvs[] = "version_540";
 		}
 
 		foreach($ugvs as $ugh) {

@@ -24,9 +24,13 @@ class DefaultAttributeTypeController extends AttributeTypeController  {
 		return $list;
 	}
 	
+	public function getDisplaySanitizedValue() {
+		return Loader::helper('text')->entities($this->getValue());
+	}
+	
 	public function search() {
 		$f = Loader::helper('form');
-		print $f->text($this->field('value'), $value);
+		print $f->text($this->field('value'), $this->request('value'));
 	}
 	
 	// run when we call setAttribute(), instead of saving through the UI

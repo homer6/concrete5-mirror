@@ -11,6 +11,7 @@ if (!$fp->canAddFiles()) {
 }
 
 $types = $fp->getAllowedFileExtensions();
+$searchInstance = $_REQUEST['searchInstance'];
 $types = $ch->serializeUploadFileExtensions($types);
 $valt = Loader::helper('validation/token');
 ?>
@@ -61,7 +62,7 @@ $(function() {
 
 		flash_url : "<?php echo ASSETS_URL_FLASH?>/swfupload/swfupload.swf",
 		upload_url : "<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/multiple",
-		post_params: {'ccm-session' : "<?php  echo session_id(); ?>",'ccm_token' : '<?php echo $valt->generate("upload")?>'},
+		post_params: {'ccm-session' : "<?php  echo session_id(); ?>",'searchInstance': '<?php echo $searchInstance?>', 'ccm_token' : '<?php echo $valt->generate("upload")?>'},
 		file_size_limit : "<?php echo $umf?>",
 		file_types : "<?php echo $types?>",
 		button_window_mode : SWFUpload.WINDOW_MODE.TRANSPARENT,
@@ -138,7 +139,7 @@ $(function() {
 		queue_complete_handler : function(file){
 			// queueComplete() from swfupload.handlers.js
 			queueComplete();		
-			ccm_filesUploadedDialog(); 
+			ccm_filesUploadedDialog('<?php echo $searchInstance?>'); 
 		}				
 	});
 
@@ -150,7 +151,7 @@ $(function() {
 
 </style>
 
-<form id="form1" action="index.php" method="post" enctype="multipart/form-data">
+<form id="form1" action="<?php echo DISPATCHER_FILENAME?>" method="post" enctype="multipart/form-data">
 		
 		<table border="0" width="100%" cellspacing="0" cellpadding="0" id="ccm-file-upload-multiple-list">
 		<tr>
@@ -207,6 +208,7 @@ $(function() {
 <h1><?php echo t('Add from Incoming Directory')?></h1>
 <?php  if(!empty($incoming_contents)) { ?>
 <form id="ccm-file-manager-multiple-incoming" method="post" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/incoming">
+	<input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
 		<table id="incoming_file_table" width="100%" cellpadding="0" cellspacing="0">
 			<tr>
 				<td width="10%" valign="middle" class="center theader"><input type="checkbox" id="check_all_imports" name="check_all_imports" onclick="ccm_alSelectMultipleIncomingFiles(this);" value="" /></td>
@@ -257,6 +259,7 @@ $(function() {
 <div id="ccm-file-add-remote-tab" style="display: none">
 <h1><?php echo t('Add From Remote URL')?></h1>
 <form method="POST" id="ccm-file-manager-multiple-remote" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/remote">
+	<input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
 	<h3><?php echo t('Enter URL to valid file(s)')?></h3>
 	<?php echo $valt->output('import_remote');?>
 

@@ -22,6 +22,7 @@ class AttributeKey extends Object {
 	 * Returns the ID for this attribute key
 	 */
 	public function getAttributeKeyID() {return $this->akID;}
+	public function getAttributeKeyCategoryID() {return $this->akCategoryID;}
 	
 	/** 
 	 * Returns whether the attribute key is searchable 
@@ -74,7 +75,7 @@ class AttributeKey extends Object {
 	/** 
 	 * Returns a list of all attributes of this category
 	 */
-	protected static function getList($akCategoryHandle, $filters = array()) {
+	public static function getList($akCategoryHandle, $filters = array()) {
 		$db = Loader::db();
 		$q = 'select akID from AttributeKeys inner join AttributeKeyCategories on AttributeKeys.akCategoryID = AttributeKeyCategories.akCategoryID where akCategoryHandle = ?';
 		foreach($filters as $key => $value) {
@@ -86,13 +87,48 @@ class AttributeKey extends Object {
 		$className = $txt->camelcase($akCategoryHandle);
 		while ($row = $r->FetchRow()) {
 			$c1 = $className . 'AttributeKey';
-			$c1a = new $c1();
-			$c1a->load($row['akID']);
-			$list[] = $c1a;
+			$c1a = call_user_func_array(array($c1, 'getByID'), array($row['akID']));
+			if (is_object($c1a)) {
+				$list[] = $c1a;
+			}
 		}
 		$r->Close();
 		return $list;
 	}
+
+	/** 
+	 * Note, this queries both the pkgID found on the AttributeKeys table AND any attribute keys of a special type
+	 * installed by that package, and any in categories by that package.
+	 * That's because a special type, if the package is uninstalled, is going to be unusable
+	 * by attribute keys that still remain.
+	 */
+	public static function getListByPackage($pkg) {
+		$db = Loader::db();
+		$list = array();
+		$tina[] = '-1';
+		$tinb = $db->GetCol('select atID from AttributeTypes where pkgID = ?', $pkg->getPackageID());
+		if (is_array($tinb)) {
+			$tina = array_merge($tina, $tinb);
+		}
+		$tinstr = implode(',', $tina);
+
+		$kina[] = '-1';
+		$kinb = $db->GetCol('select akCategoryID from AttributeKeyCategories where pkgID = ?', $pkg->getPackageID());
+		if (is_array($kinb)) {
+			$kina = array_merge($kina, $kinb);
+		}
+		$kinstr = implode(',', $kina);
+
+
+		$r = $db->Execute('select akID, akCategoryID from AttributeKeys where (pkgID = ? or atID in (' . $tinstr . ') or akCategoryID in (' . $kinstr . ')) order by akID asc', array($pkg->getPackageID()));
+		while ($row = $r->FetchRow()) {
+			$akc = AttributeKeyCategory::getByID($row['akCategoryID']);
+			$ak = $akc->getAttributeKeyByID($row['akID']);
+			$list[] = $ak;
+		}
+		$r->Close();
+		return $list;
+	}	
 	
 	/** 
 	 * Adds an attribute key. 
@@ -165,6 +201,10 @@ class AttributeKey extends Object {
 		}
 	}
 
+	public function refreshCache() {
+		Cache::delete('attribute_key', $this->getAttributeKeyID());
+	}
+	
 	/** 
 	 * Updates an attribute key. 
 	 */
@@ -197,6 +237,7 @@ class AttributeKey extends Object {
 				}
 				break;
 		}
+
 		
 		if ($r) {
 			$txt = Loader::helper('text');
@@ -207,9 +248,33 @@ class AttributeKey extends Object {
 			$cnt = $at->getController();
 			$cnt->setAttributeKey($ak);
 			$cnt->saveKey($args);
+			$this->refreshCache();
 			$ak->updateSearchIndex($prevHandle);
 			return $ak;
 		}
+	}
+	
+	/** 
+	 * Duplicates an attribute key 
+	 */
+	public function duplicate($args = array()) {
+		$ar = new ADODB_Active_Record('AttributeKeys');
+		$ar->Load('akID=?', array($this->akID));
+		
+		$ar2 = clone $ar;
+		$ar2->akID = null;
+		foreach($args as $key=>$value) {
+			$ar2->{$key} = $value;
+		}
+		$ar2->Insert();
+		$db = Loader::db();
+		$ak = new AttributeKey();
+		$ak->load($db->Insert_ID());
+		
+		// now we duplicate the specific category fields
+		$this->getController()->duplicateKey($ak);
+		
+		return $ak;
 	}
 	
 	public function inAttributeSet($as) {
@@ -244,7 +309,10 @@ class AttributeKey extends Object {
 			}
 		}
 		
-		$q = $db->db->GetInsertSQL($rs, $columnHeaders);
+		//this shouldn't be necessary, but i had a saying telling me that the static variable 'db' was protected, 
+		//even though it was declared as public 
+		$db_db=$db->getDatabaseObject();
+		$q = $db_db->GetInsertSQL($rs, $columnHeaders);
 		$r = $db->Execute($q);
 		$r->Close();
 		$rs->Close();
@@ -340,6 +408,8 @@ class AttributeKey extends Object {
 				}
 			}
 		}
+		$this->refreshCache();
+
 	}
 	
 	public function getAttributeValueIDList() {

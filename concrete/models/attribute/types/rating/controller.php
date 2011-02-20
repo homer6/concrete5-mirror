@@ -3,7 +3,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 
 class RatingAttributeTypeController extends AttributeTypeController  {
 
-	protected $searchIndexFieldDefinition = 'N 14.4 DEFAULT 0 NULL';
+	protected $searchIndexFieldDefinition = 'N 14.4 NULL';
 
 	public function getValue() {
 		$db = Loader::db();
@@ -34,6 +34,9 @@ class RatingAttributeTypeController extends AttributeTypeController  {
 	
 	// run when we call setAttribute(), instead of saving through the UI
 	public function saveValue($rating) {
+		if ($rating == '') {
+			$rating = 0;
+		}
 		$db = Loader::db();
 		$db->Replace('atNumber', array('avID' => $this->getAttributeValueID(), 'value' => $rating), 'avID', true);
 	}
@@ -52,7 +55,7 @@ class RatingAttributeTypeController extends AttributeTypeController  {
 	
 	public function search() {
 		$rt = Loader::helper('form/rating');
-		print $rt->rating($this->field('value'), $caValue, false);
+		print $rt->rating($this->field('value'), $this->request('value'), false);
 	}
 	
 	public function deleteValue() {

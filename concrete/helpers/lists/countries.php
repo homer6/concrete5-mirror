@@ -19,7 +19,7 @@
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class ListsCountriesHelper {
 
-	private $countries = array(
+	protected $countries = array(
 	'AD' => 'Andorra',
 	'AE' => 'United Arab Emirates',
 	'AF' => 'Afghanistan',
@@ -259,7 +259,6 @@ class ListsCountriesHelper {
 	'WS' => 'Samoa',
 	'YE' => 'Yemen',
 	'YT' => 'Mayotte',
-	'YU' => 'Yugoslavia',
 	'ZA' => 'South Africa',
 	'ZM' => 'Zambia',
 	'ZR' => 'Zaire',

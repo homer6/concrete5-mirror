@@ -41,6 +41,11 @@ ccm_menuObj<?php echo $id?>.height = <?php echo (!$isGlobal)?$btw->getBlockTypeI
 if ($p->canAdminBlock() && PERMISSIONS_MODEL != 'simple') { ?>
 ccm_menuObj<?php echo $id?>.canModifyGroups = true;
 <?php  }
+if ($p->canWrite() && ENABLE_CUSTOM_DESIGN == true && (!$c->isMasterCollection())) { ?>
+	ccm_menuObj<?php echo $id?>.canDesign = true;
+<?php  } else { ?>
+	ccm_menuObj<?php echo $id?>.canDesign = false;
+<?php  }
 if ($p->canAdminBlock()) { ?>
 ccm_menuObj<?php echo $id?>.canAdmin = true;
 <?php  }

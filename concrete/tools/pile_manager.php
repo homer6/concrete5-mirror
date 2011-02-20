@@ -234,13 +234,15 @@ if($_REQUEST['btask']=='add'){
 				alert("<?php echo t("Please choose a scrapbook.") ?>");
 				return false;
 			}
+			jQuery.fn.dialog.showLoader();
+			
 			$.ajax({
 			type: 'POST',
 			url: CCM_TOOLS_PATH+"/pile_manager.php",
 			data: 'cID=<?php echo intval($_REQUEST['cID'])?>&bID=<?php echo intval($_REQUEST['bID'])?>&arHandle=<?php echo urlencode($_REQUEST['arHandle'])?>&btask=add&scrapbookName='+scrapbook+'&blockAddMode='+blockAddMode,
 			success: function(resp) { 
-				ccmSaveToScrapbookDialogTarget.html(resp); 
-				window.location.reload(true); 
+				jQuery.fn.dialog.hideLoader();
+				jQuery.fn.dialog.closeTop();
 			}});		
 			return false;
 		}

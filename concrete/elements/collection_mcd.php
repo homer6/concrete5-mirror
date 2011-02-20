@@ -1,49 +1,44 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 <div class="ccm-pane-controls">
 <?php 
-$children = $c->getCollectionChildrenArray();
-$numChildren = count($children);
 $sh = Loader::helper('concrete/dashboard/sitemap');
-
+$numChildren = $c->getNumChildren();
 ?>
-<script type="text/javascript">
-	var childPages = new Array();
-	<?php  foreach($children as $cID) { ?>
-		childPages.push(<?php echo $cID?>);
-	<?php  } ?>
-</script>
 
 <style type="text/css">
 div#ccm-mc-page h1#ccm-sitemap-title {display: none}
 </style>
 
-<?php  if ($sh->canRead()) { ?>
-
 <h1><?php echo t('Move, Copy or Delete this Page')?></h1>
 
 <div class="ccm-form-area" id="ccm-mc-page">	
 	<h2><?php echo t('Move/Copy Page')?></h2>
-	<p><?php echo t("Click below to move or copy the current page to a particular spot in your site.")?></p>
-	
 
 	<?php  
+	if ($sh->canRead()) { ?>
 	
-	$args = array();
-	//$args['reveal'] = $c->getCollectionID();
-	$args['sitemap_mode'] = 'move_copy_delete';
-	$args['sitemap_disable_auto_open'] = true;
-	Loader::element('dashboard/sitemap', $args);
+	<p><?php echo t("Click below to move or copy the current page to a particular spot in your site.")?></p>
+
+	<?php 
+		$select_mode = 'move_copy_delete';
+		include(DIR_FILES_TOOLS_REQUIRED . '/sitemap_search_selector.php');
+	
+	} else {
+		?>
+		<p><?php 
+		print t('You do not have access to the sitemap. You must have access to move or copy this page.');
+		?></p>
+		
+		
+		<?php 
+	
+	}
 	
 	?>
-	
-	<script type="text/javascript">$(function() {
-		$('#ccm-launch-sitemap').dialog();
-	});
-	</script>
 
 	<div class="ccm-spacer">&nbsp;</div>
 </div>
-<?php  }
+<?php 
 
 if ($cp->canDeleteCollection()) { ?>
 
@@ -62,7 +57,7 @@ if ($cp->canDeleteCollection()) { ?>
 					
 					if ($puID == $c->getPendingActionUserID()) { ?>
 						<br><br>
-						<?php echo t('You marked this page for deletion on <strong>%s</strong>', $c->getPendingActionDateTime())?><br><br>
+						<?php echo t('You marked this page for deletion on <strong>%s</strong>', date(DATE_APP_PAGE_VERSIONS, strtotime($c->getPendingActionDateTime())))?><br><br>
 						<form method="get" id="ccmDeletePageForm" action="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>">
 							<a href="javascript:void(0)" onclick="$('#ccmDeletePageForm').get(0).submit()" class="ccm-button-left"><span><?php echo t('Cancel')?></span></a>
 							<input type="hidden" name="cID" value="<?php echo $c->getCollectionID()?>">

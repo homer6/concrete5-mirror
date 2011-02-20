@@ -1,6 +1,6 @@
 <?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 <div id="ccm-profile-wrapper">
-	<form method="get" action="<?php echo DIR_REL?>/index.php">
+	<form method="get" action="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>">
 			Search  		
 			<input type="hidden" name="cID" value="<?php echo $c->getCollectionID()?>" />
 			<input name="keywords" type="text" value="<?php echo $keywords?>" size="20" />		
@@ -32,7 +32,7 @@
 					<?php 
 					foreach($attribs as $ak) { ?>
 						<div>
-							<?php echo $user->getAttribute($ak, 'display'); ?>
+							<?php echo $user->getAttribute($ak, 'displaySanitized', 'display'); ?>
 						</div>
 					<?php  } ?>
 					</div>					
@@ -41,9 +41,12 @@
 			</div>	
 		
 		
+	
+	<?php  } ?>
+	
 		<?php echo $userList->displayPaging()?>
 	
-	<?php  }
+	<?php  
 	
 	} ?>
 </div>

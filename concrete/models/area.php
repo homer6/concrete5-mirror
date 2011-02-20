@@ -102,15 +102,15 @@ class Area extends Object {
 
 	function getMaximumBlocks() {return $this->maximumBlocks;}
 	
-	function getAreaUpdateAction($alternateHandler = null) {
+	function getAreaUpdateAction($task = 'update', $alternateHandler = null) {
 		$valt = Loader::helper('validation/token');
 		$token = '&' . $valt->getParameter();
 		$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
 		$c = $this->getAreaCollectionObject();
 		if ($alternateHandler) {
-			$str = $alternateHandler . "?atask=update&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step . $token;
+			$str = $alternateHandler . "?atask={$task}&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step . $token;
 		} else {
-			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?atask=update&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step . $token;
+			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?atask=" . $task . "&cID=" . $c->getCollectionID() . "&arHandle=" . $this->getAreaHandle() . $step . $token;
 		}
 		return $str;
 	}
@@ -199,6 +199,12 @@ class Area extends Object {
 		return $bt;
 	}
 	
+	public function getHandleList() {
+		$db = Loader::db();
+		$handles = $db->GetCol('select distinct arHandle from Areas order by arHandle asc');
+		return $handles;
+	}
+	
 	function revertToPagePermissions() {
 		// this function removes all permissions records for a particular area on this page
 		// and sets it to inherit from the page above
@@ -237,13 +243,18 @@ class Area extends Object {
 		// first, we obtain the inheritance of permissions for this particular collection
 		$areac = $this->getAreaCollectionObject();
 		if (is_a($areac, 'Page')) {
-			if ($areac->getCollectionInheritance() == 'PARENT') {
-				
-				// now we go up the tree
-				
+			if ($areac->getCollectionInheritance() == 'PARENT') {				
 				
 				$cIDToCheck = $areac->getCollectionParentID();
+				// first, we temporarily set the arInheritPermissionsFromAreaOnCID to whatever the arInheritPermissionsFromAreaOnCID is set to
+				// in the immediate parent collection
+				$arInheritPermissionsFromAreaOnCID = $db->getOne("select a.arInheritPermissionsFromAreaOnCID from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($cIDToCheck, $this->getAreaHandle()));
+				if ($arInheritPermissionsFromAreaOnCID > 0) {
+					$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($arInheritPermissionsFromAreaOnCID, $this->getAreaID()));
+				}
 				
+				// now we do the recursive rescan to see if any areas themselves override collection permissions
+
 				while ($cIDToCheck > 0) {
 					$row = $db->getRow("select c.cParentID, c.cID, a.arHandle, a.arOverrideCollectionPermissions, a.arID from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($cIDToCheck, $this->getAreaHandle()));
 					if ($row['arOverrideCollectionPermissions'] == 1) {
@@ -338,6 +349,20 @@ class Area extends Object {
 			$bv->renderElement('block_area_header', array('a' => $ourArea));	
 		}
 
+		$bv->renderElement('block_area_header_view', array('a' => $ourArea));	
+
+		//display layouts tied to this area 
+		//Might need to move this to a better position  
+		$areaLayouts = $this->getAreaLayouts($c);
+		if(is_array($areaLayouts) && count($areaLayouts)){ 
+			foreach($areaLayouts as $layout){
+				$layout->display($c,$this);  
+			}
+			if($c->isArrangeMode() || $c->isEditMode()) 
+				echo '<div class="ccm-layouts-block-arrange-placeholder ccm-block-arrange"></div>';
+		}	
+
+
 		foreach ($blocksToDisplay as $b) {
 			$bv = new BlockView();
 			$bv->setAreaObject($ourArea); 
@@ -347,7 +372,9 @@ class Area extends Object {
 			}
 
 			if ($p->canRead()) {
-				echo $this->enclosingStart;
+				if (!$c->isEditMode()) {
+					echo $this->enclosingStart;
+				}
 				if ($includeEditStrip) {
 					$bv->renderElement('block_controls', array(
 						'a' => $ourArea,
@@ -360,18 +387,68 @@ class Area extends Object {
 						'p' => $p
 					));
 				}
+
 				$bv->render($b);
 				if ($includeEditStrip) {
 					$bv->renderElement('block_footer');
 				}
-				echo $this->enclosingEnd;
+				if (!$c->isEditMode()) {
+					echo $this->enclosingEnd;
+				}
 			}
 		}
+
+		$bv->renderElement('block_area_footer_view', array('a' => $ourArea));	
 
 		if (($this->showControls) && ($c->isEditMode() && ($ap->canAddBlocks() || $u->isSuperUser()))) {
 			$bv->renderElement('block_area_footer', array('a' => $ourArea));	
 		}
 	}
+	
+	/** 
+	 * Load all layout grid objects for a collection 
+	 */	
+	function getAreaLayouts($c){ 
+		
+		if( !intval($c->cID) ){
+			//Invalid Collection
+			return false;
+		}
+		
+		$db = Loader::db();
+		$vals = array( intval($c->cID), $c->getVersionID(), $this->getAreaHandle() );
+		$sql = 'SELECT * FROM CollectionVersionAreaLayouts WHERE cID=? AND cvID=? AND arHandle=? ORDER BY position ASC, cvalID ASC';
+		$rows = $db->getArray($sql,$vals); 
+		
+		$layouts=array();
+		$i=0;
+		if(is_array($rows)) foreach($rows as $row){  
+			$layout = Layout::getById( intval($row['layoutID']) );
+			if( is_object($layout) ){  
+				
+				$i++; 
+			
+				//check position is correct, update if not 
+				if( $i != $row['position'] || $renumbering ){  
+					$renumbering=1;
+					$db->query( 'UPDATE CollectionVersionAreaLayouts SET position=? WHERE cvalID=?' , array($i, $row['cvalID']) ); 
+				}
+				$layout->position=$i; 
+				
+				$layout->cvalID = intval($row['cvalID']); 
+				
+				$layout->setAreaObj( $this );
+				
+				$layout->setAreaNameNumber( intval($row['areaNameNumber']) );
+				
+				$layouts[]=$layout; 
+			} 
+		}
+		
+		return $layouts; 
+	}
+	
+	
 
 	/** 
 	 * Specify HTML to automatically print before blocks contained within the area

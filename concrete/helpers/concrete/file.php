@@ -41,8 +41,12 @@
 			}
 			
 			$hi = Loader::helper('file');
-			$filename = $hi->replaceExtension($filename, 'jpg');
-			return $this->mapSystemPath($prefix, $filename, $createDirectories, $base);
+			$path = $this->mapSystemPath($prefix, $filename, $createDirectories, $base);
+			if (!file_exists($path)) {
+				$filename = $hi->replaceExtension($filename, 'jpg');
+				$path = $this->mapSystemPath($prefix, $filename, $createDirectories, $base);
+			}
+			return $path;
 		}
 
 		public function getRelativePath($prefix, $filename ) { 
@@ -57,19 +61,26 @@
 		public function getThumbnailRelativePath($prefix, $filename, $level) {
 			switch($level) {
 				case 2:
-					$base = REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2;
+					$rel = REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2;
+					$base = DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2;
 					break;
 				case 3:
-					$base = REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3;
+					$rel = REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3;
+					$base = DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3;
 					break;
 				default: // level 1
-					$base = REL_DIR_FILES_UPLOADED_THUMBNAILS;
+					$rel = REL_DIR_FILES_UPLOADED_THUMBNAILS;
+					$base = DIR_FILES_UPLOADED_THUMBNAILS;
 					break;
 			}
 			
 			$hi = Loader::helper('file');
-			$filename = $hi->replaceExtension($filename, 'jpg');
-			return $this->mapSystemPath($prefix, $filename, $createDirectories, $base);
+			$fullpath = $this->mapSystemPath($prefix, $filename, $createDirectories, $base);
+			if (!file_exists($fullpath)) {
+				$filename = $hi->replaceExtension($filename, 'jpg');
+			}
+			$path = $this->mapSystemPath($prefix, $filename, $createDirectories, $rel);
+			return $path;
 		}
 		
 		public function mapSystemPath($prefix, $filename, $createDirectories = false, $base = DIR_FILES_UPLOADED) {
@@ -105,8 +116,9 @@
 			        $cnt = 0;
 					
 					while (($file = readdir($incoming_file_handle)) !== false) {
-						if($file == '.' || $file == '..')
+						if (substr($file, 0, 1) == '.') {
 							continue;
+						}
 						
 						$current_file_stats = array();
 						$current_file_stats = stat(DIR_FILES_INCOMING .'/'. $file);

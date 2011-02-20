@@ -56,8 +56,9 @@ tinyMCE.init({
 		//theme_advanced_styles: "Note=ccm-note",		
 		theme_advanced_resizing : true				
 	<?php  }else{ //simple ?>
-		theme : "concrete", 
-		plugins: "inlinepopups,spellchecker,safari,advlink",
+		/*theme : "concrete", */
+		theme : "simple",  
+		plugins: "inlinepopups,spellchecker,paste,safari,advlink",
 		editor_selector : "ccm-advanced-editor",
 		spellchecker_languages : "+English=en"		
 	<?php  } ?>

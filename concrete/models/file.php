@@ -9,6 +9,11 @@ class File extends Object {
 	const F_ERROR_FILE_NOT_FOUND = 2;
 	
 	public function getByID($fID) {
+		$f = Cache::get('file_approved', $fID);
+		if (is_object($f)) {
+			return $f;
+		}
+		
 		Loader::model('file_set');
 		$db = Loader::db();
 		$f = new File();
@@ -17,6 +22,7 @@ class File extends Object {
 		WHERE Files.fID = ?", array($fID));
 		if ($row['fID'] == $fID) {
 			$f->setPropertiesFromArray($row);
+			Cache::set('file_approved', $fID, $f);
 		} else {
 			$f->error = File::F_ERROR_INVALID_FILE;
 		}
@@ -45,10 +51,17 @@ class File extends Object {
 	}
 	
 	public function refreshCache() {
+		$db = Loader::db();
 		Cache::delete('file_relative_path', $this->getFileID());
+		Cache::delete('file_approved', $this->getFileID());
+		$r = $db->GetCol('select fvID from FileVersions where fID = ?', array($this->getFileID()));
+		foreach($r as $fvID) {
+			Cache::delete('file_version_' . $this->getFileID(), $fvID);	
+		}
 	}
 	
 	public function reindex() {
+		Loader::model('attribute/categories/file');
 		$attribs = FileAttributeKey::getAttributes($this->getFileID(), $this->getFileVersionID(), 'getSearchIndexValue');
 		$db = Loader::db();
 
@@ -94,12 +107,14 @@ class File extends Object {
 			$db = Loader::db();
 			$db->Execute('update Files set fslID = ? where fID = ?', array($itemID, $this->fID));
 		}
+		$this->refreshCache();
 	}
 	
 	public function setPassword($pw) {
 		$db = Loader::db();
 		$db->Execute("update Files set fPassword = ? where fID = ?", array($pw, $this->getFileID()));
 		$this->fPassword = $pw;
+		$this->refreshCache();
 	}
 	
 	public function overrideFileSetPermissions() {
@@ -249,7 +264,7 @@ class File extends Object {
 		$f = File::getByID($fID);
 		
 		$fv = $f->addVersion($filename, $prefix, $data);
-		
+			
 		return $fv;
 	}
 	
@@ -277,8 +292,8 @@ class File extends Object {
 			$fvID = 1;
 		}
 		
-		$db->Execute('insert into FileVersions (fID, fvID, fvFilename, fvPrefix, fvDateAdded, fvIsApproved, fvApproverUID, fvAuthorUID, fvActivateDateTime, fvTitle, fvDescription, fvTags) 
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array(
+		$db->Execute('insert into FileVersions (fID, fvID, fvFilename, fvPrefix, fvDateAdded, fvIsApproved, fvApproverUID, fvAuthorUID, fvActivateDateTime, fvTitle, fvDescription, fvTags, fvExtension) 
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array(
 			$this->fID, 
 			$fvID,
 			$filename,
@@ -290,7 +305,8 @@ class File extends Object {
 			$date,
 			$fvTitle,
 			$fvDescription, 
-			$fvTags));
+			$fvTags,
+			''));;
 			
 		$fv = $this->getVersion($fvID);
 		return $fv;
@@ -348,7 +364,8 @@ class File extends Object {
 		$db->Execute("delete from FileVersions where fID = ?", array($this->fID));
 		$db->Execute("delete from FileAttributeValues where fID = ?", array($this->fID));
 		$db->Execute("delete from FileSetFiles where fID = ?", array($this->fID));
-		$db->Execute("delete from FileVersionLog where fID = ?", array($this->fID));			
+		$db->Execute("delete from FileVersionLog where fID = ?", array($this->fID));
+		$this->refreshCache();
 	}
 	
 
@@ -362,6 +379,12 @@ class File extends Object {
 		if ($fvID == null) {
 			$fvID = $this->fvID; // approved version
 		}
+		
+		$fv = Cache::get('file_version_' . $this->getFileID(), $fvID);
+		if (is_object($fv)) {
+			return $fv;
+		}
+		
 		$db = Loader::db();
 		$row = $db->GetRow("select * from FileVersions where fvID = ? and fID = ?", array($fvID, $this->fID));
 		$row['fvAuthorName'] = $db->GetOne("select uName from Users where uID = ?", array($row['fvAuthorUID']));
@@ -371,6 +394,7 @@ class File extends Object {
 		$fv->setPropertiesFromArray($row);
 		$fv->populateAttributes();
 		
+		Cache::set('file_version_' . $this->getFileID(), $fvID, $fv);		
 		return $fv;
 	}
 	

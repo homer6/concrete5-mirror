@@ -71,7 +71,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$cID = $this->getCollectionID();
 			$cvID = $vObj->getVersionID();
 			$q = "select bID, arHandle from CollectionVersionBlocks where cID = '$cID' and cvID = '$cvID' and cbIncludeAll=0 order by cbDisplayOrder asc";
-		//	echo $q;
 			$r = $db->query($q);
 			if ($r) {
 				while ($row = $r->fetchRow()) {
@@ -84,6 +83,32 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 				}
 			}
+			
+			// duplicate any area styles
+			$q = "select csrID, arHandle from CollectionVersionAreaStyles where cID = '$cID' and cvID = '$cvID'";
+			$r = $db->query($q);
+			while ($row = $r->FetchRow()) {
+				$db->Execute('insert into CollectionVersionAreaStyles (cID, cvID, arHandle, csrID) values (?, ?, ?, ?)', array(
+					$this->getCollectionID(),
+					$nvObj->getVersionID(),
+					$row['arHandle'],
+					$row['csrID']
+				));
+			}
+			
+			// duplicate any area layout joins
+			$q = "select * from CollectionVersionAreaLayouts where cID = '$cID' and cvID = '$cvID'";
+			$r = $db->query($q);
+			while ($row = $r->FetchRow()) {
+				$db->Execute('insert into CollectionVersionAreaLayouts (cID, cvID, arHandle, layoutID, areaNameNumber, position) values (?, ?, ?, ?, ?, ?)', array(
+					$this->getCollectionID(),
+					$nvObj->getVersionID(),
+					$row['arHandle'],
+					$row['layoutID'],
+					$row['areaNameNumber'],
+					$row['position']
+				));
+			}			
 
 			// now that we've duplicated all the blocks for the collection, we return the new
 			// collection
@@ -113,7 +138,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function clearCollectionAttributes($retainAKIDs = array()) {
 			$db = Loader::db();
 			if (count($retainAKIDs) > 0) {
-				$akIDStr = implode(',', $retainAKIDs);
+				$cleanAKIDs=array();
+				foreach($retainAKIDs as $akID) $cleanAKIDs[]=intval($akID);
+				$akIDStr = implode(',', $cleanAKIDs);
 				$v2 = array($this->getCollectionID(), $this->getVersionID());
 				$db->query("delete from CollectionAttributeValues where cID = ? and cvID = ? and akID not in ({$akIDStr})", $v2);
 			} else {
@@ -123,7 +150,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$this->reindex();
 		}
 		
-		public function reindex() {
+		public function reindex($index = false) {
 			if ($this->isAlias()) {
 				return false;
 			}
@@ -137,15 +164,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$rs = $db->Execute('select * from CollectionSearchIndexAttributes where cID = -1');
 			AttributeKey::reindex('CollectionSearchIndexAttributes', $searchableAttributes, $attribs, $rs);
 			
-			Loader::library('database_indexed_search');
-			$is = new IndexedSearch();
+			if ($index == false) {
+				Loader::library('database_indexed_search');
+				$index = new IndexedSearch();
+			}
 			$db->Replace('PageSearchIndex', array(
 				'cID' => $this->getCollectionID(), 
 				'cName' => $this->getCollectionName(), 
 				'cDescription' => $this->getCollectionDescription(), 
 				'cPath' => $this->getCollectionPath(),
 				'cDatePublic' => $this->getCollectionDatePublic(), 
-				'content' => $is->getBodyContentFromPage($this)
+				'content' => $index->getBodyContentFromPage($this)
 			), array('cID'), true);			
 		}
 		
@@ -179,11 +208,22 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		public function setAttribute($ak, $value) {
+			Loader::model('attribute/categories/collection');
 			if (!is_object($ak)) {
 				$ak = CollectionAttributeKey::getByHandle($ak);
 			}
 			$ak->setAttribute($this, $value);
 			unset($ak);
+			$this->refreshCache();
+			$this->reindex();
+		}
+
+		public function clearAttribute($ak) {
+			$db = Loader::db();
+			$cav = $this->getAttributeValueObject($ak);
+			if (is_object($cav)) {
+				$cav->delete();
+			}
 			$this->refreshCache();
 			$this->reindex();
 		}
@@ -314,8 +354,178 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 		}
 	}
+	
+	/** 
+	 * Retrieves all custom style rules that should be inserted into the header on a page, whether they are defined in areas
+	 * or blocks
+	 */
+	public function outputCustomStyleHeaderItems() {	
+		
+		$db = Loader::db();
+		$csrs = array();
+		$r1 = $db->GetCol('select csrID from CollectionVersionBlockStyles where cID = ? and cvID = ?', array($this->getCollectionID(), $this->getVersionID()));
+		$r2 = $db->GetCol('select csrID from CollectionVersionAreaStyles where cID = ? and cvID = ?', array($this->getCollectionID(), $this->getVersionID()));
+		foreach($r1 as $csrID) {
+			$obj = CustomStyleRule::getByID($csrID);
+			if (is_object($obj)) {
+				$obj->setCustomStyleNameSpace('blockStyle');
+				$csrs[] = $obj;
+			}
+		}
+		foreach($r2 as $csrID) {
+			$obj = CustomStyleRule::getByID($csrID);
+			if (is_object($obj)) {
+				$obj->setCustomStyleNameSpace('areaStyle');
+				$csrs[] = $obj;
+			}
+		}
+		//get the header style rules
+		$styleHeader = ''; 
+		foreach($csrs as $st) { 
+			if ($st->getCustomStyleRuleCSSID(true)) { 
+				$styleHeader .= '#'.$st->getCustomStyleRuleCSSID(1).' {'. $st->getCustomStyleRuleText(). "} \r\n";  
+			}
+		} 		
+		  
+		$r3 = $db->GetAll('select l.layoutID, l.spacing from CollectionVersionAreaLayouts cval LEFT JOIN Layouts AS l ON  cval.layoutID=l.layoutID WHERE cval.cID = ? and cval.cvID = ?', array($this->getCollectionID(), $this->getVersionID()));
+		foreach($r3 as $data){  
+			if(!intval($data['spacing'])) continue; 
+			$layoutStyleRules='#ccm-layout-'.intval($data['layoutID']).' .ccm-layout-col-spacing { margin:0px '.ceil(floatval($data['spacing'])/2).'px }';
+			$styleHeader .= $layoutStyleRules . " \r\n";  
+		}  
+		
+		$v = View::getInstance();
+		$v->addHeaderItem("<style type=\"text/css\"> \r\n".$styleHeader.'</style>', 'VIEW');
+	} 
 
-	function rescanDisplayOrder($areaName) {
+	public function getAreaCustomStyleRule($area) {
+		$db = Loader::db();
+		
+		$csrID = $this->vObj->customAreaStyles[$area->getAreaHandle()];
+		
+		if ($csrID > 0) {
+			Loader::model('custom_style');
+			$csr = CustomStyleRule::getByID($csrID);
+			if (is_object($csr)) {
+				$csr->setCustomStyleNameSpace('areaStyle');
+				return $csr;
+			}
+		}
+	}
+
+	public function resetAreaCustomStyle($area) {
+		$db = Loader::db();
+		$db->Execute('delete from CollectionVersionAreaStyles where cID = ? and cvID = ? and arHandle = ?', array(
+			$this->getCollectionID(),
+			$this->getVersionID(),
+			$area->getAreaHandle()
+		));
+		$this->refreshCache();
+	}
+	
+	public function setAreaCustomStyle($area, $csr) {
+		$db = Loader::db();
+		$db->Replace('CollectionVersionAreaStyles', 
+			array('cID' => $this->getCollectionID(), 'cvID' => $this->getVersionID(), 'arHandle' => $area->getAreaHandle(), 'csrID' => $csr->getCustomStyleRuleID()),
+			array('cID', 'cvID', 'arHandle'), true
+		);
+		$this->refreshCache();
+	}
+	
+	
+	public function addAreaLayout($area, $layout, $addToPosition='bottom' ) {  
+		$db = Loader::db();
+		
+		//get max layout name number, for fixed autonaming of layouts 
+		$vals = array( intval($this->cID), $this->getVersionID(), $area->getAreaHandle() );
+		$sql = 'SELECT MAX(areaNameNumber) FROM CollectionVersionAreaLayouts WHERE cID=? AND cvID=? AND arHandle=?';
+		$nextNumber = intval($db->getOne($sql,$vals))+1;  
+		
+		if($addToPosition=='top'){  
+			$position=-1; 
+		}else{ 
+		
+			//does the main area already have blocks in it? 
+			//$areaBlocks = $area->getAreaBlocksArray($this); 
+			$areaBlocks = $this->getBlocks( $area->getAreaHandle() );
+			
+			//then copy those blocks from that area into a newly created 1x1 layout, so it can be above out new layout 
+			if( count($areaBlocks) ){  
+			
+				//creat new 1x1 layout to hold existing parent area blocks
+				//Loader::model('layout'); 
+				$placeHolderLayout = new Layout( array('rows'=>1,'columns'=>1) );  
+				$placeHolderLayout->save( $this );  
+				$vals = array( $this->getCollectionID(), $this->getVersionID(), $area->getAreaHandle(), $placeHolderLayout->getLayoutID(), $nextNumber, 10000 );
+				$sql = 'INSERT INTO CollectionVersionAreaLayouts ( cID, cvID, arHandle, layoutID, areaNameNumber, position ) values (?, ?, ?, ?, ?, ?)';
+				$db->query($sql,$vals);	 
+				
+				//add parent area blocks to this new layout
+				$placeHolderLayout->setAreaObj($area);
+				$placeHolderLayout->setAreaNameNumber($nextNumber);   
+				$placeHolderLayoutAreaHandle = $placeHolderLayout->getCellAreaHandle(1);
+				//foreach($areaBlocks as $b){ 
+					//$newBlock=$b->duplicate($this); 
+					//$newBlock->move($this, $placeHolderLayoutArea); 
+					//$newBlock->refreshCacheAll(); 
+					//$b->delete();
+					//$b->move($this, $placeHolderLayoutArea); 
+					//$b->refreshCacheAll(); 
+					
+				//} 
+				$v = array( $placeHolderLayoutAreaHandle, $this->getCollectionID(), $this->getVersionID(), $area->getAreaHandle() );
+				$db->Execute('update CollectionVersionBlocks set arHandle=? WHERE cID=? AND cvID=? AND arHandle=?', $v);				
+				
+				$nextNumber++; 
+			}
+			
+			$position=10001; 
+		}
+		
+		
+		$vals = array( $this->getCollectionID(), $this->getVersionID(), $area->getAreaHandle(), $layout->getLayoutID(), $nextNumber, $position );
+		$sql = 'INSERT INTO CollectionVersionAreaLayouts ( cID, cvID, arHandle, layoutID, areaNameNumber, position ) values (?, ?, ?, ?, ?, ?)';
+		$db->query($sql,$vals);	
+		
+		$layout->setAreaNameNumber($nextNumber);
+		
+		$this->refreshCache();
+	}
+	
+	
+	public function updateAreaLayoutId( $cvalID=0, $newLayoutId=0){ 
+		$db = Loader::db();
+		//$vals = array( $newLayoutId, $oldLayoutId, $this->getCollectionID(), $this->getVersionID(), $area->getAreaHandle() );
+		//$sql = 'UPDATE CollectionVersionAreaLayouts SET layoutID=? WHERE layoutID=? AND cID=? AND  cvID=? AND arHandle=?'; 
+		$vals = array( $newLayoutId, $cvalID ); 
+		$sql = 'UPDATE CollectionVersionAreaLayouts SET layoutID=? WHERE cvalID=?'; 
+		$db->query($sql,$vals);	 
+		
+		$this->refreshCache();		
+	}	
+	
+	
+	public function deleteAreaLayout($area, $layout, $deleteBlocks=0){
+		$db = Loader::db();
+		$vals = array( $this->getCollectionID(), $this->getVersionID(), $area->getAreaHandle(), $layout->getLayoutID() );
+		$db->Execute('delete from CollectionVersionAreaLayouts WHERE cID = ? AND cvID = ? AND arHandle = ? AND layoutID = ? LIMIT 1', $vals ); 
+		
+		//also delete this layouts blocks
+		$layout->setAreaObj($area);
+		//we'll try to grab more areas than necessary, just incase the layout size had been reduced at some point. 
+		$maxCell = $layout->getMaxCellNumber()+20; 
+		for( $i=1; $i<=$maxCell; $i++ ){ 
+			if($deleteBlocks) $layout->deleteCellsBlocks($this,$i);  
+			else $layout->moveCellsBlocksToParent($this,$i);  
+		}
+		
+		Layout::cleanupOrphans();	 
+			 
+		$this->refreshCache();
+	} 
+	
+	
+	public function rescanDisplayOrder($areaName) {
 		// this collection function fixes the display order properties for all the blocks within the collection/area. We select all the items
 		// order by display order, and fix the sequence
 
@@ -390,6 +600,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$vo = $this->getVersionObject();
 			Cache::delete('page', $this->getCollectionID());
 			Cache::delete('page_path', $this->getCollectionID());
+			Cache::delete('page_id_from_path', $this->getCollectionPath());
+			Cache::delete('parent_id', $this->getCollectionID());
 			if (is_object($vo)) {
 				$vo->refreshCache();
 			}
@@ -555,9 +767,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						$q2 = "select gID, uID, cbgPermissions from CollectionVersionBlockPermissions where cID = '{$this->cID}' and bID = '{$row['bID']}' and cvID = '{$row['cvID']}'";
 						$r2 = $db->query($q2);
 						while ($row2 = $r2->fetchRow()) {
-							$v3 = array($newCID, $row['cvID'], $row['bID'], $row2['gID'], $row2['uID'], $row2['cbgPermissions']);
-							$q3 = "insert into CollectionVersionBlockPermissions (cID, cvID, bID, gID, uID, cbgPermissions) values (?, ?, ?, ?, ?, ?)";
-							$db->query($q3, $v3);
+							$db->Replace('CollectionVersionBlockPermissions', 
+								array('cID' => $newCID, 'cvID' => $row['cvID'], 'bID' => $row['bID'], 'gID' => $row2['gID'], 'uID' => $row2['uID'], 'cbgPermissions' => $row2['cbgPermissions']),
+								array('cID', 'cvID', 'bID', 'gID', 'uID'), true);
 						}
 					}
 				}

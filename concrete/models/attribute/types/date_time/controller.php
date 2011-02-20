@@ -36,10 +36,10 @@ class DateTimeAttributeTypeController extends AttributeTypeController  {
 		$v2 = date('H:i:s', strtotime($v));
 		$r = '';
 		if ($v2 != '00:00:00') {
-			$r .= date(t('g:i A'), strtotime($v));
+			$r .= date(DATE_APP_DATE_ATTRIBUTE_TYPE_T, strtotime($v));
 			$r .= t(' on ' );
 		}
-		$r .= date(t('m/d/Y'), strtotime($v));
+		$r .= date(DATE_APP_DATE_ATTRIBUTE_TYPE_MDY, strtotime($v));
 		return $r;
 	}
 	
@@ -87,9 +87,9 @@ class DateTimeAttributeTypeController extends AttributeTypeController  {
 
 	public function search() {
 		$dt = Loader::helper('form/date_time');
-		$html = $dt->date($this->field('from'), false, false);
+		$html = $dt->date($this->field('from'), $this->request('from'), false);
 		$html .= ' ' . t('to') . ' ';
-		$html .= $dt->date($this->field('to'), false, false);
+		$html .= $dt->date($this->field('to'), $this->request('to'), false);
 		print $html;
 	}
 	
@@ -102,6 +102,12 @@ class DateTimeAttributeTypeController extends AttributeTypeController  {
 		
 		$db = Loader::db();
 		$db->Replace('atDateTime', array('avID' => $this->getAttributeValueID(), 'value' => $value), 'avID', true);
+	}
+
+	public function duplicateKey($newAK) {
+		$this->load();
+		$db = Loader::db();
+		$db->Execute('insert into atDateTimeSettings (akID, akDateDisplayMode) values (?, ?)', array($newAK->getAttributeKeyID(), $this->akDateDisplayMode));	
 	}
 	
 	public function saveForm($data) {

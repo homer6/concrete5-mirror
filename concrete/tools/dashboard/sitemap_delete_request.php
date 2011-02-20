@@ -1,10 +1,9 @@
 <?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
-$ch = Page::getByPath("/dashboard/sitemap");
-$chp = new Permissions($ch);
-if (!$chp->canRead()) {
-	die(_("Access Denied."));
+$sh = Loader::helper('concrete/dashboard/sitemap');
+if (!$sh->canRead()) {
+	die(t('Access Denied'));
 }
 
 $valt = Loader::helper('validation/token');
@@ -14,11 +13,13 @@ $u = new User();
 $json = array();
 $json['error'] = false;
 $json['message'] = false;
+$json['cParentID'] = false;
 
 if ($valt->validate()) {
 	
 	if (isset($_REQUEST['cID'] ) && is_numeric($_REQUEST['cID'])) {
 		$c = Page::getByID($_REQUEST['cID']);
+		$json['cParentID'] = $c->getCollectionParentID();
 	} else {
 		$error = t('Invalid ID passed');
 	}
