@@ -89,6 +89,7 @@ if (DIR_FILES_UPLOADED != DIR_BASE . '/files') {
 if (!defined('ENABLE_OPENID_AUTHENTICATION')) { 
 	Config::getOrDefine('ENABLE_OPENID_AUTHENTICATION', false);
 }
+
 if (!defined('ENABLE_USER_PROFILES')) { 
 	Config::getOrDefine('ENABLE_USER_PROFILES', false);
 }
@@ -96,6 +97,11 @@ if (!defined('ENABLE_USER_PROFILES')) {
 # If user registration with email address is true we don't use username's - we just use uEmail and we populate uName with the email address
 if (!defined('USER_REGISTRATION_WITH_EMAIL_ADDRESS')) {
 	Config::getOrDefine('USER_REGISTRATION_WITH_EMAIL_ADDRESS', false);
+}
+
+// allow spaces in usernames
+if (!defined('USER_USERNAME_ALLOW_SPACES')) {
+	Config::getOrDefine('USER_USERNAME_ALLOW_SPACES', false);	
 }
 
 if (!defined('USER_VALIDATE_EMAIL')) {
@@ -118,10 +124,19 @@ if (!defined('ENABLE_REGISTRATION')) {
 	Config::getOrDefine('ENABLE_REGISTRATION', false);	
 }
 
+//these are the hashkey types for registration related authentication
+define('UVTYPE_REGISTER', 0);
+define('UVTYPE_CHANGE_PASSWORD', 1);
+
 
 if (!defined('UPLOAD_FILE_EXTENSIONS_ALLOWED')) {
 	Config::getOrDefine('UPLOAD_FILE_EXTENSIONS_ALLOWED','*.flv;*.jpg;*.gif;*.jpeg;*.ico;*.docx;*.xla;*.png;*.psd;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt;*.kml');
 }
+
+define('BLOCK_NOT_AVAILABLE_TEXT', t('This block is no longer available.'));
+define('GUEST_GROUP_NAME', t('Guest'));
+define('REGISTERED_GROUP_NAME', t('Registered Users'));
+define('ADMIN_GROUP_NAME', t('Admin'));
 
 # User & Registration Settings
 

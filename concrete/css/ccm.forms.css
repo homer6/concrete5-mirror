@@ -1,7 +1,7 @@
 
 div#ccm-edit-collection {width: 600px; margin: 0px auto 0px auto}
 div#ccm-edit-collection-design {width: 640px; margin: 0px auto 0px auto; -khtml-user-select: none; -moz-user-select: none}
-div.ccm-pane-controls a {color: #003C8A}
+div.ccm-pane-controls a {color: #003C8A; cursor:pointer}
 div.ccm-pane-controls *, div.ccm-dialog-window * {font-family: "Helvetica Neue", Arial, Helvetica, sans-serif}
 div.ccm-pane-controls {text-align: left; font-size: 12px}
 
@@ -56,7 +56,7 @@ a.ccm-button-left {float: left; }
 a.ccm-button {float: left; margin-right: 10px}
 a.ccm-button-right {float: right}
 
-div.ccm-button, a.ccm-button-right, a.ccm-button-left, a.ccm-button {display: block; text-decoration: none !important; height: 38px; background: transparent url(../images/button_l.png) no-repeat;}
+div.ccm-button, a.ccm-button-right, a.ccm-button-left, a.ccm-button {display: block; text-decoration: none !important; height: 38px !important; position: relative; background: transparent url(../images/button_l.png) no-repeat;}
 a.ccm-button-right:hover, a.ccm-button-left:hover, a.ccm-button:hover {background: transparent url(../images/button_l_active.png) no-repeat scroll;}
 
 div.ccm-button span,a.ccm-button-left span, a.ccm-button-right span, a.ccm-button span {white-space: nowrap; height: 12px; display: block; float: left; padding-top: 11px; padding-bottom: 15px; margin-left: 15px; padding-right: 16px; font-size: 11px; color: #535353; background: transparent url(../images/button_r.png) repeat-y scroll right top;}
@@ -175,8 +175,9 @@ div.ccm-scroller-inner ul li.ccm-item-selected img {margin: 0px; border: 2px sol
 div.ccm-scroller-inner ul li.ccm-item-selected img.ccm-preview {margin: 2px; border: 0px}
 
 /* editor */
-div.ccm-editor-controls {background: transparent url(../images/bg_editor_concrete_controls.png) no-repeat scroll; text-align: right; padding: 0px 18px 8px 40px}
-div.ccm-editor-controls ul {display: block; list-style-type: none; height: 24px; margin: 0px; padding: 0px}
+div.ccm-editor-controls {background: transparent url(../images/bg_editor_concrete_controls_long.png) no-repeat left scroll; text-align: right; padding:0px; }
+div.ccm-editor-controls div.ccm-editor-controls-right-cap { background:  transparent url(../images/bg_editor_concrete_controls_cap_right.png) no-repeat right; padding: 0px 18px 8px 40px }
+div.ccm-editor-controls ul {display: block; list-style-type: none; height: 24px; margin: 0px; padding: 0px;}
 div.ccm-editor-controls ul li {float: left; font-size: 10px; color: #333; margin: 0px 20px 0px 0px; padding: 0px}
 div.ccm-editor-controls ul li a {color: #333; text-decoration: none; display: block; padding: 10px 0px 10px 12px; background: transparent url(../images/bg_editor_concrete_caret.png) no-repeat scroll left 14px; }
 div.ccm-editor-controls ul li a:hover {text-decoration: underline}

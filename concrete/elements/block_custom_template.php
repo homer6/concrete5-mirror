@@ -6,7 +6,7 @@ $bt = BlockType::getByID($b->getBlockTypeID());
 $templates = $bt->getBlockTypeCustomTemplates();
 $txt = Loader::helper('text');
 ?>
-<form method="post" id="ccmCustomTemplateForm" action="<?php echo $b->getBlockUpdateInformationAction()?>">
+<form method="post" id="ccmCustomTemplateForm" action="<?php echo $b->getBlockUpdateInformationAction()?>&rcID=<?php echo intval($rcID) ?>">
 	
 	<strong><?php echo t('Custom Template')?></strong>:<br>
 	

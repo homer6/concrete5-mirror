@@ -384,24 +384,33 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if ((!URL_REWRITING_ALL) || !defined('URL_REWRITING_ALL')) {
 				$dispatcher = '/index.php';
 			}
-			if ($action == '/') {
+			
+			$action = trim($action, '/');
+			if ($action == '') {
 				return DIR_REL . '/';
 			}
-			$_action = DIR_REL . $dispatcher. $action;
-			// remove last / if it's on there
-			if (substr($_action, strlen($_action) - 1, 1) == '/') {
-				$_action = substr($_action, 0, strlen($_action) - 1);
+			
+			// if a query string appears in this variable, then we just pass it through as is
+			if (strpos($action, '?') > -1) {
+				return DIR_REL . $dispatcher. '/' . $action;
+			} else {
+				$_action = DIR_REL . $dispatcher. '/' . $action . '/';
 			}
 			
 			if ($task != null) {
-				$_action .= '/-/' . $task;
+				$_action .= '-/' . $task;
 				$args = func_get_args();
 				if (count($args) > 2) {
 					for ($i = 2; $i < count($args); $i++){
 						$_action .= '/' . $args[$i];
 					}
 				}
+				
+				if (strpos($_action, '?') === false) {
+					$_action .= '/';
+				}
 			}
+			
 			return $_action;
 		}
 		
@@ -418,27 +427,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $ret;
 		}
 
-		/**
-		 * Formats seconds in 8m23s format
-		 *
-		 * Multi Line Description
-		 * @author Alan Storm <alan.storm@alanstorm.com>
-		 * @package SkyVibe
-		 * @var type $varName
-		 * @param type $var_name
-		 * @return type $var_name
-		 */
-		public function formatTimestampAsMinutesSeconds($seconds){
-			if ($seconds == 0) {
-				return t('Never');
-			}
-			else{
-				$seconds = $seconds-time();
-				return floor($seconds / 60) . 'm' . $seconds % 60 . 's';
-			}
-			
-		}
-		
 		/**
 		 * render's a fata error using the built-in view. This is currently only
 		 * used when the database connection fails
@@ -732,6 +720,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 				
 				Events::fire('on_before_render', $this);
+				
+				if (defined('APP_CHARSET')) {
+					header("Content-Type: text/html; charset=" . APP_CHARSET);
+				}
 				
 				include($this->theme);
 				

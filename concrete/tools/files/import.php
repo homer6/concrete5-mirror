@@ -39,6 +39,11 @@ $("#ccm-file-import-tabs a").click(function() {
 <div id="ccm-file-upload-multiple-tab">
 <h1>Upload Multiple Files</h1>
 
+<?php 
+$umf = ini_get('upload_max_filesize');
+$umf = str_ireplace(array('M', 'K', 'G'), array(' MB', 'KB', ' GB'), $umf);
+?>
+
 <script type="text/javascript">
 
 var swfu;
@@ -52,14 +57,12 @@ $(function() {
 		$(this).attr('target', ccm_alProcessorTarget);		
 	});
 
-	$("div.ccm-file-manager-progress-bar").progressbar({value: '37'});
-
 	swfu = new SWFUpload({
 
 		flash_url : "<?php echo ASSETS_URL_FLASH?>/swfupload/swfupload.swf",
 		upload_url : "<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/multiple",
 		post_params: {'ccm-session' : "<?php  echo session_id(); ?>",'ccm_token' : '<?php echo $valt->generate("upload")?>'},
-		file_size_limit : "100 MB",
+		file_size_limit : "<?php echo $umf?>",
 		file_types : "<?php echo $types?>",
 		button_window_mode : SWFUpload.WINDOW_MODE.TRANSPARENT,
 		file_types_description : "All Files",
@@ -116,18 +119,27 @@ $(function() {
 			try {
 				eval('serverData = '+serverData);
 				var progress = new FileProgress(file, this.customSettings.progressTarget);
-				progress.setComplete();
+				if (serverData['error'] == true) {
+					progress.setError(serverData['message']);
+				} else {
+					progress.setComplete();
+				}
 				progress.toggleCancel(false);
 				if(serverData['id']){
 					if(!this.highlight){this.highlight = [];}
 					this.highlight.push(serverData['id']);
-				}
+					if(ccm_uploadedFiles && serverData['id']!='undefined') ccm_uploadedFiles.push(serverData['id']);
+				}   
 			} catch (ex) {
 				this.debug(ex);
 			}		
 		},
-		upload_complete_handler : uploadComplete,
-		queue_complete_handler : queueComplete	// Queue plugin event
+		upload_complete_handler : uploadComplete, 
+		queue_complete_handler : function(file){
+			// queueComplete() from swfupload.handlers.js
+			queueComplete();		
+			ccm_filesUploadedDialog(); 
+		}				
 	});
 
 	
@@ -173,6 +185,14 @@ $(function() {
 		</div>
 
 </form>
+
+<div class="ccm-spacer">&nbsp;</div>
+<br/>
+
+<div class="ccm-note">
+	<strong><?php echo t('Upload Max File Size: %s', ini_get('upload_max_filesize'))?></strong><br/>
+	<strong><?php echo t('Post Max Size: %s', ini_get('post_max_size'))?></strong><br/>
+</div>
 
 </div>
 

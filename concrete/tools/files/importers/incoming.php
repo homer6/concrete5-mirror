@@ -31,15 +31,7 @@ if ($valt->validate('import_incoming')) {
 					$resp = $fi->import(DIR_FILES_INCOMING .'/'. $name, $name, $fr);
 				}
 				if (!($resp instanceof FileVersion)) {
-					switch($resp) {
-						case FileImporter::E_FILE_INVALID_EXTENSION:
-							$error .= t('Invalid file extension.');
-							break;
-						case FileImporter::E_FILE_INVALID:
-							$error .= t('Invalid file.');
-							break;
-						
-					}
+					$error .= $name . ': ' . FileImporter::getErrorMessage($resp) . "\n";
 				} else {
 					$files[] = $resp;
 					if ($_POST['removeFilesAfterPost'] == 1) {
@@ -58,15 +50,17 @@ if ($valt->validate('import_incoming')) {
 <head>
 <script language="javascript">
 	<?php  if(strlen($error)) { ?>
-		alert('<?php echo $error?>');
+		window.parent.ccmAlert.notice("<?php echo t('Upload Error')?>", "<?php echo str_replace("\n", '', nl2br($error))?>");
 		window.parent.ccm_alResetSingle();
 	<?php  } else { ?>
 		highlight = new Array();
 		<?php  foreach($files as $resp) { ?>
 			highlight.push(<?php echo $resp->getFileID()?>);
+			window.parent.ccm_uploadedFiles.push(<?php echo intval($resp->getFileID())?>);
 		<?php  } ?>
 		window.parent.jQuery.fn.dialog.closeTop();
-		window.parent.ccm_alRefresh(highlight);
+		window.parent.ccm_filesUploadedDialog();		
+		window.parent.ccm_alRefresh(highlight);		
 	<?php  } ?>
 </script>
 </head>

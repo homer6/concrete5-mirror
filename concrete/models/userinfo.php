@@ -22,17 +22,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	class UserInfo extends Object { 
 	
 		/* magic method for user attributes. This is db expensive but pretty damn cool */
-		
+		// so if the attrib handle is "my_attribute", then get the attribute with $ui->getUserMyAttribute(), or "uFirstName" become $ui->getUserUfirstname();
 		public function __call($nm, $a) {
 			if (substr($nm, 0, 7) == 'getUser') {
 				$nm = preg_replace('/(?!^)[[:upper:]]/','_\0', $nm);
 				$nm = strtolower($nm);
 				$nm = str_replace('get_user_', '', $nm);
 				
-				$db = Loader::db();
-				$v = array($this->uID, $nm);
-				$r = $db->getOne("select value from UserAttributeValues inner join UserAttributeKeys on UserAttributeValues.ukID = UserAttributeKeys.ukID where uID = ? and UserAttributeKeys.ukHandle = ?", $v);
-				return $r;
+				return $this->getAttribute($nm);
 			}			
 		}
 		
@@ -233,9 +230,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			Loader::model('user_attributes');
 			if (is_array($keyArray)) {
 				$db = Loader::db();
-				$keys = UserAttributeKey::getList();
+				$keys = UserAttributeKey::getList();   
 				foreach($keys as $v) {
-					if (in_array($v->getKeyID(), $keyArray)) {
+					if (in_array($v->getKeyID(), $keyArray) || in_array($v->getKeyHandle(), $keyArray)) {
 						$db->query("delete from UserAttributeValues where uID = {$this->uID} and ukID = " . $v->getKeyID());
 		
 						if ($data['uak_' . $v->getKeyID()]) {
@@ -260,6 +257,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 		}
 		
+		/** 
+		 * Gets the value of the attribute for the user
+		 */
+		public function getAttribute($attributeHandle) {
+			$db = Loader::db();
+			$v = array($this->uID, $attributeHandle);
+			$r = $db->getOne("select value from UserAttributeValues inner join UserAttributeKeys on UserAttributeValues.ukID = UserAttributeKeys.ukID where uID = ? and UserAttributeKeys.ukHandle = ?", $v);
+			return $r;
+		}
+		
 		public function update($data) {
 			$db = Loader::db();
 			if ($this->uID) {
@@ -276,11 +283,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$uHasAvatar = $data['uHasAvatar'];
 				}
 				
+				$testChange = false;
+				
 				if ($data['uPassword'] != null) {
 					if (User::encryptPassword($data['uPassword']) == User::encryptPassword($data['uPasswordConfirm'])) {
 						$v = array($uName, $uEmail, User::encryptPassword($data['uPassword']), $uHasAvatar, $this->uID);
 						$r = $db->prepare("update Users set uName = ?, uEmail = ?, uPassword = ?, uHasAvatar = ? where uID = ?");
 						$res = $db->execute($r, $v);
+						
+						$testChange = true;
+
 					} else {
 						$updateGroups = false;
 					}
@@ -296,8 +308,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 
 				// run any internal event we have for user update
-				Events::fire('on_user_update', $this);
+				$ui = UserInfo::getByID($this->uID);
+				Events::fire('on_user_update', $ui);
 				
+				if ($testChange) {
+					Events::fire('on_user_change_password', $ui, $data['uPassword']);
+				}				
 				return $res;
 			}
 		}
@@ -371,13 +387,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return true;
 		}
 		
-		function changePassword($newPassword) {
+		function changePassword($newPassword) { 
 			$db = Loader::db();
 			if ($this->uID) {
 				$v = array(User::encryptPassword($newPassword), $this->uID);
 				$q = "update Users set uPassword = ? where uID = ?";
 				$r = $db->prepare($q);
 				$res = $db->execute($r, $v);
+
+				Events::fire('on_user_change_password', $this, $newPassword);
+
 				return $res;
 			}
 		}

@@ -36,3 +36,17 @@ if ($controller->getFileOnstateID() > 0) {
 <h2><?php echo t('Alt Text/Caption')?></h2>
 <?php echo  $form->text('altText', $altText, array('style' => 'width: 250px')); ?>
 </div>
+
+<div class="ccm-block-field-group">
+<h2><?php echo t('Maximum Dimensions')?></h2>
+<table border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td><?php echo t('Width')?>&nbsp;</td>
+<td><?php echo  $form->text('maxWidth', $maxWidth, array('style' => 'width: 60px')); ?></td>
+<td>&nbsp;&nbsp;</td>
+<td><?php echo t('Height')?>&nbsp;</td>
+<td><?php echo  $form->text('maxHeight', $maxHeight, array('style' => 'width: 60px')); ?></td>
+</tr>
+</table>
+
+</div>

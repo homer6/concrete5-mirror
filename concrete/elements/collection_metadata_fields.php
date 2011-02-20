@@ -34,7 +34,7 @@ var ccmAttributeValuesHelper={
 		newRow.className='newAttrValueRow';
 		newRow.innerHTML='<input name="akID_'+akID+'[]" type="text" value="" /> ';
 		newRow.innerHTML+='<a onclick="ccmAttributeValuesHelper.remove(this)">[X]</a>';
-		$('#newAttrValueRows').append(newRow);				
+		$('#newAttrValueRows'+akID).append(newRow);				
 	},
 	remove:function(a){
 		$(a.parentNode).remove();			
@@ -138,6 +138,7 @@ var ccmPathHelper={
 				case "SELECT":
 					$options = explode("\n", $ak->getCollectionAttributeKeyValues()); 
 					$caValues=explode("\n",$caValue); 
+					if( $ak->getAllowOtherValues()==1 ) asort($options); 
 					?>
 					<select style="width: 150px" name="akID_<?php echo $ak->getCollectionAttributeKeyID()?>">
 						<option value="">** <?php echo t('None')?></option>
@@ -164,6 +165,7 @@ var ccmPathHelper={
 				case "SELECT_MULTIPLE":					
 					$options = explode("\n", $ak->getCollectionAttributeKeyValues()); 
 					$caValues=explode("\n",$caValue); 
+					if( $ak->getAllowOtherValues()==1 ) asort($options);
 					?>
 					
 					<div> 
@@ -176,7 +178,7 @@ var ccmPathHelper={
 					</div>
 					 
 					<?php  if( $ak->getAllowOtherValues()==1 ){ ?>
-						<div id="newAttrValueRows">
+						<div id="newAttrValueRows<?php echo $ak->getCollectionAttributeKeyID()?>" class="newAttrValueRows">
 						</div>
 						<div><a onclick="ccmAttributeValuesHelper.add(<?php echo intval($ak->getCollectionAttributeKeyID())?>)">
 							<?php echo t('Add Another Option')?> +</a>

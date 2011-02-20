@@ -65,8 +65,8 @@ var CCM_REL = "<?php echo DIR_REL?>";
 <?php 
 $html = Loader::helper('html');
 $this->addHeaderItem($html->css('ccm.base.css'), 'CORE');
-$this->addHeaderItem($html->javascript('jquery.js', 'CORE'));
-$this->addHeaderItem($html->javascript('ccm.base.js', 'CORE'));
+$this->addHeaderItem($html->javascript('jquery.js'), 'CORE');
+$this->addHeaderItem($html->javascript('ccm.base.js'), 'CORE');
 
 $favIconFID=intval(Config::get('FAVICON_FID'));
 
@@ -78,7 +78,7 @@ if($favIconFID) {
 <?php  } ?>
 
 <?php   
-if (is_object($cp)) {
+if (is_object($cp)) { 
 
 	if ($this->editingEnabled()) {
 		Loader::element('page_controls_header', array('cp' => $cp, 'c' => $c));
@@ -91,3 +91,7 @@ if (is_object($cp)) {
 }
 
 print $this->controller->outputHeaderItems();
+
+echo $c->getCollectionAttributeValue('header_extra_content'); 
+
+

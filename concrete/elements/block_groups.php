@@ -115,7 +115,7 @@
 	
 <?php  global $c;?>
 <h1><?php echo t('Block Permissions')?></h1>
-<form method="post" name="permissionForm" action="<?php echo $gl->getGroupUpdateAction($b)?>">
+<form method="post" name="permissionForm" action="<?php echo $gl->getGroupUpdateAction($b)?>&rcID=<?php echo intval($rcID)?>">
 	<span class="ccm-important">
 	<?php  if (!$b->overrideAreaPermissions()) { ?>
 		<?php echo t('Permissions for this block are currently dependent on the area containing this block. If you override those permissions here, they will not match those of the area.')?><br/><br/>

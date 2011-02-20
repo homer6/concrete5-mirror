@@ -118,95 +118,76 @@ $("#ccm-area-tabs a").click(function() {
 	$("#" + ccm_areaActiveTab + "-tab").show();
 });
 
-$(function() {
-
+ccmPrepareScrapbookItemsDelete=function(){
 	$("a.ccm-scrapbook-delete").click(function() {
-
-		var pcID = $(this).attr('id').substring(2);
+		var id=$(this).attr('id');
+		var arHandle=$(this).attr('arHandle');
+		var qStr='&ptask=delete_content&arHandle='+encodeURIComponent(arHandle)+'<?php echo $token?>'; 
+		
+		if( id.indexOf('bID')>-1 ){
+			if(!confirm('<?php echo t('Are you sure you want to delete this block?').'\n'.t('(All page instances will also be removed)') ?>'))
+				return false;
+			var bID = id.substring(13);
+			qStr='bID=' + bID + qStr;
+		}else{
+			var pcID = id.substring(2);
+			qStr='pcID=' + pcID + qStr;
+		}  
 		$.ajax({
 			type: 'POST',
 			url: CCM_DISPATCHER_FILENAME,
-			data: 'pcID=' + pcID + '&ptask=delete_content<?php echo $token?>',
+			data: qStr,
 			success: function(msg) {
-				$("#ccm-pc-" + pcID).fadeOut();
+				if(pcID) $("#ccm-pc-" + pcID).fadeOut();
+				if(bID)  $("#ccm-scrapbook-list-item-" + bID).fadeOut(); 
 			}
-		});
-		
+		}); 
 	});
+}
 
-});
+$(function(){ ccmPrepareScrapbookItemsDelete(); });
+	
+ccmChangeDisplayedScrapbook = function(sel){  
+	var scrapbook=$(sel).val(); 
+	if(!scrapbook) return false;
+	$('#ccm-scrapbookListsWrap').html("<div style='padding:16px;'><?php echo t('Loading...')?></div>");
+	$.ajax({
+	type: 'POST',
+	url: CCM_TOOLS_PATH+"/edit_area_scrapbook_refresh.php",
+	data: 'cID=<?php echo intval($_REQUEST['cID'])?>&arHandle=<?php echo urlencode($_REQUEST['arHandle'])?>&scrapbookName='+scrapbook+'&<?php echo $token?>',
+	success: function(resp) { 
+		$('#ccm-scrapbookListsWrap').html(resp);
+		ccmPrepareScrapbookItemsDelete(); 
+	}});		
+	return false;
+}
 </script>
 
 <div id="ccm-add-existing-tab" style="display:none">
-	<h1><?php echo t('Add From Scrapbook')?></h1>
-	<div id="ccm-scrapbook-list">
-	<?php 
-	Loader::model('pile');
-	$sp = Pile::getDefault();
-	$contents = $sp->getPileContentObjects('date_desc');
-	if (count($contents) == 0) { 
-		print t('You have no items in your scrapbook.');
-	}
-	foreach($contents as $obj) { 
-		$item = $obj->getObject();
-		if (is_object($item)) {
-			$bt = $item->getBlockTypeObject();
-			$btIcon = $ci->getBlockTypeIconURL($bt);
-			?>			
-			<div class="ccm-scrapbook-list-item" id="ccm-pc-<?php echo $obj->getPileContentID()?>">
-				<div class="ccm-block-type">
-					<a class="ccm-scrapbook-delete" title="Remove from Scrapbook" href="javascript:void(0)" id="sb<?php echo $obj->getPileContentID()?>"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/delete_small.png" width="16" height="16" /></a>
-					<a class="ccm-block-type-inner" style="background-image: url(<?php echo $btIcon?>)" href="<?php echo DIR_REL?>/index.php?pcID[]=<?php echo $obj->getPileContentID()?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>"><?php echo $bt->getBlockTypeName()?></a>
-					<div class="ccm-scrapbook-list-item-detail">	
-						<?php 	
-						try {
-							$bv = new BlockView();
-							$bv->render($item, 'scrapbook');
-						} catch(Exception $e) {
-							print BLOCK_NOT_AVAILABLE_TEXT;
-						}	
-						?>
-					</div>
-				</div>
-			</div>	
-			<?php 
-			$i++;
-		} 
-	}	?> 
-	</div>
-	
+
 	<?php  
-	$globalScrapbookArea = new Area('Global Scrapbook'); 
-	$globalScrapbookC = Page::getByPath('/dashboard/scrapbook/global');
-	$globalScrapbookBlocks = $globalScrapbookArea->getAreaBlocksArray( $globalScrapbookC ); 
-	if( count($globalScrapbookBlocks) ){ ?>
-		<h1><?php echo t('Add From Global Scrapbook') ?></h1>
-		<div id="ccm-scrapbook-list">
-		<?php  foreach($globalScrapbookBlocks as $b){ 
-			$bt = BlockType::getByID( $b->getBlockTypeID() ); 
-			$btIcon = $ci->getBlockTypeIconURL($bt);
-			?>
-			<div class="ccm-scrapbook-list-item" id=""> 
-				<div class="ccm-block-type">
-					<a class="ccm-block-type-inner" style="background-image: url(<?php echo $btIcon?>)" 
-					   href="<?php echo DIR_REL?>/index.php?globalBlock=1&bID=<?php echo $b->bID ?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>">
-					   		<?php echo $bt->getBlockTypeName()?>: "<?php echo $b->getBlockName() ?>"
-					</a>
-					<div class="ccm-scrapbook-list-item-detail">	
-						<?php 	
-						try {
-							$bv = new BlockView();
-							$bv->render( $b, 'scrapbook');
-						} catch(Exception $e) {
-							print BLOCK_NOT_AVAILABLE_TEXT;
-						}	
-						?>
-					</div>
-				</div> 
-			</div> 
-		<?php  } ?> 
-		</div> 
-	<?php  } ?>
+	$u = new User();
+	$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
+	$scrapBookAreasData = $scrapbookHelper->getAvailableScrapbooks(); 
+	$scrapbookName=$_SESSION['ccmLastViewedScrapbook']; 
+	?>	
+	<select name="scrapbookName" onchange="ccmChangeDisplayedScrapbook(this)" style=" float:right; margin-top:6px;"> 
+		<option value="userScrapbook">
+			<?php echo ucfirst($u->getUserName()) ?><?php echo t("'s Scrapbook") ?> 
+		</option>
+		<?php  foreach($scrapBookAreasData as $scrapBookAreaData){ ?>
+			<option value="<?php echo addslashes($scrapBookAreaData['arHandle'])?>" <?php echo ($scrapbookName==$scrapBookAreaData['arHandle'])?'selected':''?>>
+				<?php echo $scrapBookAreaData['arHandle'] ?>
+			</option>
+		<?php  } ?>
+	</select> 	
+
+	<h1><?php echo t('Add From Scrapbook')?></h1>		
+		
+	<div id="ccm-scrapbookListsWrap">
+	<?php  Loader::element('scrapbook_lists', array( 'c'=>$c, 'a'=>$a, 'scrapbookName'=>$scrapbookName, 'token'=>$token ) );  ?>
+	</div>
+
 </div>
 
 

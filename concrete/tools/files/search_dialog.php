@@ -22,10 +22,10 @@ $pagination = $fileList->getPagination();
 				<?php  Loader::element('files/search_form_advanced', array('fileSelector' => true)); ?>
 			</td>		
 			<?php  /* <div id="ccm-file-search-advanced-fields-gutter">&nbsp;</div> */ ?>		
-			<td>	
+			<td valign="top">	
 				<div id="ccm-file-search-advanced-results-wrapper">
 				
-					<?php  Loader::element('files/upload_single'); ?>
+					<?php  Loader::element('files/upload_single', array('fileSelector' => true)); ?>
 					
 					<div id="ccm-file-search-results">
 					

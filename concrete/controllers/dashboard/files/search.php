@@ -23,6 +23,7 @@ class DashboardFilesSearchController extends Controller {
 		$fileList = new FileList();
 		$keywords = htmlentities($_GET['fKeywords'], ENT_QUOTES, APP_CHARSET);
 		$fileList->sortBy('fvDateAdded', 'desc');
+		Loader::model('file_set');
 		
 		if ($keywords != '') {
 			$fileList->filterByKeywords($keywords);
@@ -31,17 +32,28 @@ class DashboardFilesSearchController extends Controller {
 		if ($_REQUEST['fNumResults']) {
 			$fileList->setItemsPerPage($_REQUEST['fNumResults']);
 		}
-		if (isset($_GET['fSet']) && $_GET['fSet'] != '' && $_GET['fSet'] > 0) {
-			Loader::model('file_set');
-			$set = $_REQUEST['fSet'];
-			$fs = FileSet::getByID($set);
-			$fileList->filterBySet($fs);
+		
+		if (isset($_GET['fsIDNone']) && $_GET['fsIDNone'] == 1) { 
+			$fileList->filterBySet(false);
+		} else {
+			if (is_array($_GET['fsID'])) {
+				foreach($_GET['fsID'] as $fsID) {
+					$fs = FileSet::getByID($fsID);
+					$fileList->filterBySet($fs);
+				}
+			} else if (isset($_GET['fsID']) && $_GET['fsID'] != '' && $_GET['fsID'] > 0) {
+				$set = $_REQUEST['fsID'];
+				$fs = FileSet::getByID($set);
+				$fileList->filterBySet($fs);
+			}
 		}
-
+		
 		if (isset($_GET['fType']) && $_GET['fType'] != '') {
 			$type = $_REQUEST['fType'];
 			$fileList->filterByType($type);
 		}
+		
+		$selectedSets = array();
 		
 		if (is_array($_REQUEST['fvSelectedField'])) {
 			foreach($_REQUEST['fvSelectedField'] as $i => $item) {
@@ -51,12 +63,6 @@ class DashboardFilesSearchController extends Controller {
 						case "extension":
 							$extension = $_REQUEST['extension'];
 							$fileList->filterByExtension($extension);
-							break;
-						case "file_set":
-							Loader::model('file_set');
-							$set = $_REQUEST['file_set'];
-							$fs = FileSet::getByID($set);
-							$fileList->filterBySet($fs);
 							break;
 						case "type":
 							$type = $_REQUEST['type'];
@@ -114,8 +120,8 @@ class DashboardFilesSearchController extends Controller {
 									$fileList->filterByFileAttribute($fak->getAttributeKeyHandle(), 1);
 									break;
 								case 'TEXT':
-									$value = $_REQUEST['fakID_' . $akID];
-									$fileList->filterByFileAttribute($fak->getAttributeKeyHandle(), $value);
+									$value = '%' . $_REQUEST['fakID_' . $akID] . '%';
+									$fileList->filterByFileAttribute($fak->getAttributeKeyHandle(), $value, 'like');
 									break;
 								case 'SELECT':
 									$value = $_REQUEST['fakID_' . $akID];

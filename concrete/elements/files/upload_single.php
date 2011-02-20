@@ -16,6 +16,7 @@
 
 <?php  } else { 
 
+$form = Loader::helper("form");
 $fp = FilePermissions::getGlobal();
 if ($fp->canAddFiles()) {
 

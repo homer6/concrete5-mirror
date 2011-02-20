@@ -129,9 +129,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public static function getByName($globalBlockName) {
 			if(!$globalBlockName) return;
 			$db = Loader::db();
+			$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
+			$globalScrapbookPage=$scrapbookHelper->getGlobalScrapbookPage();
 			$bID = $db->getOne( 'SELECT b.bID FROM Blocks AS b, CollectionVersionBlocks AS cvb '.
-							  'WHERE b.bName=? AND b.bID=cvb.bID AND cvb.arHandle="Global Scrapbook" ', 
-							   array($globalBlockName) ); 
+							  'WHERE b.bName=? AND b.bID=cvb.bID AND cvb.cID=?', 
+							   array($globalBlockName, intval($globalScrapbookPage->getCollectionId()) ) ); 
 			if ($bID > 0) {
 				return Block::getByID( intval($bID) );
 			} else {
@@ -167,8 +169,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		public function isGlobal(){
 			$db = Loader::db();
+			
+			$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
+			$globalScrapbookC = $scrapbookHelper->getGlobalScrapbookPage(); 
 			$q = "SELECT b.bID FROM Blocks AS b, CollectionVersionBlocks AS cvb ".
-				 "WHERE b.bID = '{$this->bID}' AND cvb.bID=b.bID and cvb.arHandle='Global Scrapbook' LIMIT 1";
+				 "WHERE b.bID = '{$this->bID}' AND cvb.bID=b.bID AND cvb.cID=".intval($globalScrapbookC->getCollectionId())." LIMIT 1";
+				 
 			$r = $db->query($q);
 			if ($r) {
 				return ($r->numRows() > 0)?1:0;
@@ -375,13 +381,32 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 			}
 		}
+		
+		/** 
+		 * Moves a block onto a new page and into a new area. Does not change any data about the block otherwise
+		 */
+		function move($nc, $area) {
+			$db = Loader::db();
+			$cID = $this->getBlockCollectionID();
 
+			$newBlockDisplayOrder = $nc->getCollectionAreaDisplayOrder($area->getAreaHandle());
+			
+			$v = array($nc->getCollectionID(), $nc->getVersionID(), $area->getAreaHandle(), $newBlockDisplayOrder, $cID, $this->arHandle);
+			$db->Execute('update CollectionVersionBlocks set cID = ?, cvID = ?, arHandle = ?, cbDisplayOrder = ? where cID = ? and arHandle = ? and isOriginal = 1', $v);
+		}
+		
 		function duplicate($nc) {
 			// duplicate takes a new collection as its argument, and duplicates the existing block
 			// to that collection
 
 			$db = Loader::db();
 			$dh = Loader::helper('date');
+			
+			$bt = BlockType::getByID($this->getBlockTypeID());
+			$blockTypeClass = $bt->getBlockTypeClass();
+			$bc = new $blockTypeClass($this);
+			if(!$bc) return false;
+						
 			$bDate = $dh->getLocalDateTime();
 			$v = array($this->bName, $bDate, $bDate, $this->bFilename, $this->btID, $this->uID);
 			$q = "insert into Blocks (bName, bDateAdded, bDateModified, bFilename, btID, uID) values (?, ?, ?, ?, ?, ?)";
@@ -390,7 +415,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$newBID = $db->Insert_ID(); // this is the latest inserted block ID
 
 			// now, we duplicate the block-specific permissions
-
 			$oc = $this->getBlockCollectionObject();
 			$ocID = $oc->getCollectionID();
 			$ovID = $oc->getVersionID();
@@ -408,11 +432,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$r->free();
 			}
 
-			// we duplicate block-specific sub-content
-			$bt = BlockType::getByID($this->getBlockTypeID());
-			$class = $bt->getBlockTypeClass();
-
-			$bc = new $class($this);
+			// we duplicate block-specific sub-content 
 			$bc->duplicate($newBID);
 
 			// finally, we insert into the CollectionVersionBlocks table
@@ -587,16 +607,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	
 				$v = array($this->bID);
 
-				// so, first we delete the block's sub content
-				
+				// so, first we delete the block's sub content				
 				$bt = BlockType::getByID($this->getBlockTypeID());
-				$class = $bt->getBlockTypeClass();
-				
-				$bc = new $class($this);
-				$bc->delete();
+				if( $bt && method_exists($bt,'getBlockTypeClass') ){
+					$class = $bt->getBlockTypeClass();
+					
+					$bc = new $class($this);
+					$bc->delete();
+				}
 
 				// now that the block's subcontent delete() method has been run, we delete the block from the Blocks table
-
 				$q = "delete from Blocks where bID = ?";
 				$r = $db->query($q, $v);
 
@@ -847,6 +867,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$a = $this->getBlockAreaObject();
 			if (is_object($c) && is_object($a)) {
 				Cache::delete('block', $this->getBlockID() . ':' . $c->getCollectionID() . ':' . $c->getVersionID() . ':' . $a->getAreaHandle());
+			}
+		}
+		
+		public function refreshCacheAll(){
+			$db = Loader::db();
+			$rows=$db->getAll( 'SELECT cID, cvID, arHandle FROM CollectionVersionBlocks WHERE bID='.intval($this->getBlockID()) ); 
+			foreach($rows as $row){
+				Cache::delete('block', $this->getBlockID() . ':' . intval($row['cID']) . ':' . intval($row['cvID']) . ':' . $row['arHandle'] );
 			}
 		}
 		

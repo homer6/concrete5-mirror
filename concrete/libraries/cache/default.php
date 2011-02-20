@@ -4,7 +4,7 @@
 $GLOBALS['ccmRuntimeCacheEnabled'] = true;
 $GLOBALS['ccmRuntimeLocalCacheEnabled'] = true;
 
-class Cache extends CacheTemplate {
+class Cache extends CacheTemplate { 
 
 	protected static $filePrefix='object_';
 	
@@ -12,6 +12,8 @@ class Cache extends CacheTemplate {
 		if (!is_dir(DIR_FILES_CACHE_CORE) || !is_writable(DIR_FILES_CACHE_CORE)) {
 			if (!@mkdir(DIR_FILES_CACHE_CORE)) {
 				define("ENABLE_CACHE", false);
+			} else {
+				@chmod(DIR_FILES_CACHE_CORE, 0777);
 			}
 		}	
 	}

@@ -2,7 +2,42 @@
 
 <h1><?php echo t('Sign in to %s', SITE)?></h1>
 
-<?php  if ($validated) { ?>
+<?php  if( $passwordChanged ){ ?>
+
+	<div style="margin-bottom:16px; font-weight:bold"><?php echo t('Password changed.  Please login to continue. ') ?></div>
+
+<?php  } ?> 
+
+<?php  if($changePasswordForm){ ?>
+
+	<div style="margin-bottom:16px; font-weight:bold"><?php echo t('Enter your new password below.') ?></div>
+
+	<?php  if (isset($errorMsg)) { ?>
+		<div class="ccm-error" style="margin-bottom:16px;"><?php echo $errorMsg?></div>
+	<?php  } ?>
+
+	<div class="ccm-form">	
+
+	<form method="post" action="<?php echo $this->url( '/login', 'change_password', $uHash )?>"> 
+
+		<div>
+		<label for="uPassword"><?php echo t('New Password')?></label><br/>
+		<input type="password" name="uPassword" id="uPassword" class="ccm-input-text">
+		</div>
+		&nbsp;<br>
+		<div>
+		<label for="uPasswordConfirm"><?php echo t('Confirm Password')?></label><br/>
+		<input type="password" name="uPasswordConfirm" id="uPasswordConfirm" class="ccm-input-text">
+		</div>
+
+		<div class="ccm-button">
+		<?php echo $form->submit('submit', t('Sign In') . ' &gt;')?>
+		</div>
+	</form>
+	
+	</div>
+
+<?php  }elseif($validated) { ?>
 
 <h2><?php echo t('Email Address Verified')?></h2>
 

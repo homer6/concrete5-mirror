@@ -206,7 +206,7 @@ if ($editMode) { ?>
 	<?php 
 	foreach($attribs as $ak) { ?>
 	<div class="uat" id="item_<?php echo $ak->getKeyID()?>" style="font-size: 12px">
-	<img src="<?php echo ASSETS_URL_IMAGES?>/dashboard/uat-<?php echo $ak->getKeyType()?>.gif" width="21" height="21" class="handle" id="handle<?php echo $ak->getKeyID()?>" /><a href="<?php echo $this->url('/dashboard/users/attributes?ukID=' . $ak->getKeyID() . '&task=edit')?>"><?php echo $ak->getKeyName()?></a> (<?php echo $ak->getNumEntries()?>)
+		<img src="<?php echo ASSETS_URL_IMAGES?>/dashboard/uat-<?php echo $ak->getKeyType()?>.gif" width="21" height="21" class="handle" id="handle<?php echo $ak->getKeyID()?>" /><a href="<?php echo $this->url('/dashboard/users/attributes?ukID=' . $ak->getKeyID() . '&task=edit')?>"><?php echo $ak->getKeyName()?></a> (<?php echo $ak->getNumEntries()?>)
 	</div>
 	
 	<?php  } ?>

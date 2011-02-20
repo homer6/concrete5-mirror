@@ -19,7 +19,7 @@ Loader::element('files/upload_single', array('mode' => 'replace', 'fID' => $f->g
 <hr />
 
 <h3><?php echo t('Add from Incoming Directory')?></h3>
-
+<div>
 <?php 
 $contents = array();
 $con1 = $ch->getIncomingDirectoryContents();

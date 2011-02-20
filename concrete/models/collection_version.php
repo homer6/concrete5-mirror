@@ -35,8 +35,17 @@
 				if ($cv != false) {
 					return $cv;
 				}
+				
+				// first, we make sure that the cID is for an actual page. If we're pointing to another page (an alias)
+				// we need to use THAT cID
 				$db = Loader::db();
-				$v = array($cID);
+				$_cID = $cID;
+				$cPointerID = $db->GetOne("select cPointerID from Pages where cID = ?", array($cID));
+				if ($cPointerID > 0) {
+					$_cID = $cPointerID;
+				}
+				
+				$v = array($_cID);
 				switch($cvID) {
 					case 'RECENT':
 						$cvIDa = $db->GetOne("select cvID from CollectionVersions where cID = ? order by cvID desc", $v);
@@ -94,11 +103,11 @@
 			
 			if ($cv->cvAuthorUID > 0) {
 				$uAuthor = UserInfo::getByID($cv->cvAuthorUID);
-				$cv->cvAuthorUname = $uAuthor->getUserName();
+				if(is_object($uAuthor)) $cv->cvAuthorUname = $uAuthor->getUserName();
 			}
 			if ($cv->cvApproverUID > 0) {
 				$uApprover = UserInfo::getByID($cv->cvApproverUID);
-				$cv->cvApproverUname = $uApprover->getUserName();
+				if(is_object($uApprover)) $cv->cvApproverUname = $uApprover->getUserName();
 			}
 			
 			// load the attributes for a particular version object
@@ -284,7 +293,9 @@
 				while ($row = $r->fetchRow()) {
 					if ($row['bID']) {
 						$b = Block::getByID($row['bID'], $c, $row['arHandle']);
-						$b->deleteBlock();
+						if (is_object($b)) {
+							$b->deleteBlock();
+						}
 					}
 					unset($b);
 				}

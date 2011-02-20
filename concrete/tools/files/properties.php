@@ -38,17 +38,17 @@ if ($_POST['task'] == 'update_core' && $fp->canWrite() && (!$previewMode)) {
 
 	switch($_POST['attributeField']) {
 		case 'fvTitle':
-			$text = htmlentities($_POST['fvTitle'], ENT_QUOTES, APP_CHARSET);
+			$text = $_POST['fvTitle'];
 			$fv->updateTitle($text);
 			print $text;
 			break;
 		case 'fvDescription':
-			$text = htmlentities($_POST['fvDescription'], ENT_QUOTES, APP_CHARSET);
+			$text = $_POST['fvDescription'];
 			$fv->updateDescription($text);
 			print $text;
 			break;
 		case 'fvTags':
-			$text = htmlentities($_POST['fvTags'], ENT_QUOTES, APP_CHARSET);
+			$text = $_POST['fvTags'];
 			$fv->updateTags($text);
 			print $text;
 			break;
@@ -68,10 +68,10 @@ if ($_POST['task'] == 'update_extended_attribute' && $fp->canWrite() && (!$previ
 		$value = $dt->translate('fakID_' . $fakID);
 	} else if (is_array($_REQUEST['fakID_' . $fakID])) {
 		foreach($_REQUEST['fakID_' . $fakID] as $val) {
-			$value .= htmlentities($val, ENT_QUOTES, APP_CHARSET) . "\n";
+			$value .= $val  . "\n";
 		}
 	} else {
-		$value = htmlentities($_REQUEST['fakID_' . $fakID], ENT_QUOTES, APP_CHARSET);
+		$value = $_REQUEST['fakID_' . $fakID] ;
 	}
 	$fv->setAttribute($ak, $value);
 	$fv->populateAttributes();	
@@ -83,8 +83,8 @@ function printCorePropertyRow($title, $field, $value, $formText) {
 	global $previewMode, $f, $fp;
 	if ($value == '') {
 		$text = '<div class="ccm-file-manager-field-none">' . t('None') . '</div>';
-	} else {
-		$text = $value;
+	} else { 
+		$text = htmlentities( $value, ENT_QUOTES, APP_CHARSET);
 	}
 
 	if ($fp->canWrite() && (!$previewMode)) {
@@ -323,9 +323,17 @@ foreach($attribs as $at) {
 		$versions = $f->getVersionList();
 		foreach($versions as $fvv) { ?>
 			<tr fID="<?php echo $f->getFileID()?>" fvID="<?php echo $fvv->getFileVersionID()?>" <?php  if ($fvv->getFileVersionID() == $fv->getFileVersionID()) { ?> class="ccm-file-versions-grid-active" <?php  } ?>>
-				<td style="text-align: center"><?php echo $form->radio('vlfvID', $fvv->getFileVersionID(), $fvv->getFileVersionID() == $fv->getFileVersionID())?></td>
-				<td><a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/properties?fID=<?php echo $f->getFileID()?>&fvID=<?php echo $fvv->getFileVersionID()?>&task=preview_version" dialog-modal="false" dialog-width="630" dialog-height="450" dialog-title="<?php echo t('Preview File')?>" class="dialog-launch"><?php echo $fvv->getFilename()?></a></td>
-				<td><?php echo $fvv->getTitle()?></td>
+				<td style="text-align: center">
+					<?php echo $form->radio('vlfvID', $fvv->getFileVersionID(), $fvv->getFileVersionID() == $fv->getFileVersionID())?>
+				</td>
+				<td>
+					<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/properties?fID=<?php echo $f->getFileID()?>&fvID=<?php echo $fvv->getFileVersionID()?>&task=preview_version" dialog-modal="false" dialog-width="630" dialog-height="450" dialog-title="<?php echo t('Preview File')?>" class="dialog-launch">
+						<?php echo wordwrap($fvv->getFilename(),20,"\n",true) ?>
+					</a>
+				</td>
+				<td> 
+					<?php echo wordwrap($fvv->getTitle(),20,"\n",true) ?>
+				</td>
 				<td><?php 
 					$comments = $fvv->getVersionLogComments();
 					if (count($comments) > 0) {

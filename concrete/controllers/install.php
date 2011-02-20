@@ -261,22 +261,26 @@ class InstallController extends Controller {
 						$cab1 = CollectionAttributeKey::add('meta_title', t('Meta Title'), true, null, 'TEXT');
 						$cab2 = CollectionAttributeKey::add('meta_description', t('Meta Description'), true, null, 'TEXT');
 						$cab3 = CollectionAttributeKey::add('meta_keywords', t('Meta Keywords'), true, null, 'TEXT');
-						$cab4 = CollectionAttributeKey::add('exclude_nav', t('Exclude from Nav'), true, null, 'BOOLEAN');
+						$cab4 = CollectionAttributeKey::add('exclude_nav', t('Exclude From Nav'), true, null, 'BOOLEAN');
+						
+						$cab5 = CollectionAttributeKey::add('header_extra_content', t('Header Extra Content'), true, null, 'TEXT');
+						$cab6 = CollectionAttributeKey::add('exclude_search_index', t('Exclude From Search Index'), true, null, 'BOOLEAN');
+						$cab7 = CollectionAttributeKey::add('exclude_sitemapxml', t('Exclude From sitemap.xml'), true, null, 'BOOLEAN');
 						
 						$dt->assignCollectionAttribute($cab1);
 						$dt->assignCollectionAttribute($cab2);
 						$dt->assignCollectionAttribute($cab3);
-						$dt->assignCollectionAttribute($cab4);
+						$dt->assignCollectionAttribute($cab4); 
 
 						$rst->assignCollectionAttribute($cab1);
 						$rst->assignCollectionAttribute($cab2);
 						$rst->assignCollectionAttribute($cab3);
-						$rst->assignCollectionAttribute($cab4);
+						$rst->assignCollectionAttribute($cab4); 
 
 						$nst->assignCollectionAttribute($cab1);
 						$nst->assignCollectionAttribute($cab2);
 						$nst->assignCollectionAttribute($cab3);
-						$nst->assignCollectionAttribute($cab4);
+						$nst->assignCollectionAttribute($cab4); 
 						
 						// Add default user attributes
 						UserAttributeKey::add('date_of_birth', t('Date of Birth'), 0, 1, 1, 0, null, "TEXT");
@@ -287,6 +291,8 @@ class InstallController extends Controller {
 						SinglePage::add('/profile');
 						SinglePage::add('/profile/edit');
 						SinglePage::add('/profile/avatar');
+						SinglePage::add('/page_not_found');
+						SinglePage::add('/page_forbidden');
 				
 						// Install our blocks
 						BlockType::installBlockType('content');
@@ -335,8 +341,6 @@ class InstallController extends Controller {
 						$d4d = SinglePage::add('/dashboard/users/attributes');
 						$d4e = SinglePage::add('/dashboard/users/registration');
 						$d5 = SinglePage::add('/dashboard/scrapbook');
-						$d5a = SinglePage::add('/dashboard/scrapbook/user');
-						$d5b = SinglePage::add('/dashboard/scrapbook/global');
 						
 						$d7 = SinglePage::add('/dashboard/pages');
 						$d71 = SinglePage::add('/dashboard/pages/themes');
@@ -358,6 +362,10 @@ class InstallController extends Controller {
 						
 						$d1->update(array('cName'=>t('Sitemap'), 'cDescription'=>t('Whole world at a glance.')));
 						$d2->update(array('cName'=>t('File Manager'), 'cDescription'=>t('All documents and images.')));
+						$d2a->update(array('cName'=>t('Search')));
+						$d2b->update(array('cName'=>t('Attributes')));
+						$d2c->update(array('cName'=>t('Sets')));
+						$d2d->update(array('cName'=>t('Access')));						
 						$d3->update(array('cName'=>t('Reports'), 'cDescription'=>t('Get data from forms and logs.')));
 						$d3a->update(array('cName'=>t('Form Results'), 'cDescription'=>t('Get submission data.')));
 						$d3b->update(array('cName'=>t('Surveys')));

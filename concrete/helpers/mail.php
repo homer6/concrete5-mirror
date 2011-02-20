@@ -19,13 +19,13 @@
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class MailHelper {
 
-	private $headers = array();
-	private $to = array();
-	private $from = array();
-	private $data = array();
-	private $subject = '';
+	protected $headers = array();
+	protected $to = array();
+	protected $from = array();
+	protected $data = array();
+	protected $subject = '';
 	public $body = '';
-	private $template;
+	protected $template; 
 	
 	/** 
 	 * Adds a parameter to a mail template
@@ -75,7 +75,7 @@ class MailHelper {
 		$this->subject = $subject;
 	}	
 	
-	private function generateEmailStrings($arr) {
+	protected function generateEmailStrings($arr) {
 		$str = '';
 		for ($i = 0; $i < count($arr); $i++) {
 			$v = $arr[$i];
@@ -119,16 +119,18 @@ class MailHelper {
 		$from = $this->generateEmailStrings($this->from);
 		$to = $this->generateEmailStrings($this->to);
 		if (ENABLE_EMAILS) {
-			$header  = "MIME-Version: 1.0\r\n";
-			$header .= "Content-type: text/plain; charset=" . APP_CHARSET . "\r\n";
+			$header  = "MIME-Version: 1.0\n";
+			$header .= "Content-type: text/plain; charset=" . APP_CHARSET . "\n";
 			if ($from == '') {
-				$from = 'concrete5@' . str_replace(array('http://', 'https://'), '', BASE_URL);
+				$from = 'concrete5@' . str_replace(array('http://www.', 'https://www.', 'http://', 'https://'), '', BASE_URL);
 			}
-			$header .= "From: {$from}";
+			$header .= "From: {$from}\n";
 			$subject = $this->subject;
-			if (function_exists('mb_encode_mimeheade')) {
+			/*
+			if (function_exists('mb_encode_mimeheader')) {
 				$subject = mb_encode_mimeheader($subject, APP_CHARSET);
 			}
+			*/
 			if (function_exists('mb_send_mail')) {
 				mb_send_mail($to, $subject, $this->body, $header); 
 			} else {

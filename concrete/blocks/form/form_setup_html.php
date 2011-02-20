@@ -61,6 +61,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 </div> 
 
 <input type="hidden" id="qsID" name="qsID" type="text" value="<?php  echo intval($miniSurveyInfo['questionSetId'])?>" />
+<input type="hidden" id="oldQsID" name="oldQsID" type="text" value="<?php  echo intval($miniSurveyInfo['questionSetId'])?>" />
 <input type="hidden" id="bID" name="bID" type="text" value="<?php  echo intval($miniSurveyInfo['bID'])?>" />
 <input type="hidden" id="msqID" name="msqID" type="text" value="<?php  echo intval($msqID)?>" />
 
@@ -215,7 +216,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 function initFormBlockWhenReady(){
 	if(miniSurvey && typeof(miniSurvey.init)=='function'){
 		miniSurvey.cID=parseInt(<?php  echo $c->getCollectionID()?>);
-		miniSurvey.arHandle="<?php  echo $_REQUEST['arHandle']?>";
+		miniSurvey.arHandle="<?php  echo $a->getAreaHandle()?>";
 		miniSurvey.bID=thisbID;
 		miniSurvey.btID=thisbtID;
 		miniSurvey.qsID=parseInt(<?php  echo $miniSurveyInfo['questionSetId']?>);	

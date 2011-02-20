@@ -25,3 +25,16 @@ $al = Loader::helper('concrete/asset_library');
 <h2><?php echo t('Alt Text/Caption')?></h2>
 <?php echo  $form->text('altText', array('style' => 'width: 250px')); ?>
 </div>
+
+<div class="ccm-block-field-group">
+<h2><?php echo t('Maximum Dimensions')?></h2>
+<table border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td><?php echo t('Width')?>&nbsp;</td>
+<td><?php echo  $form->text('maxWidth', array('style' => 'width: 60px')); ?></td>
+<td><?php echo t('Height')?>&nbsp;</td>
+<td><?php echo  $form->text('maxHeight', array('style' => 'width: 60px')); ?></td>
+</tr>
+</table>
+
+</div>

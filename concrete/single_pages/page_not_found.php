@@ -3,8 +3,9 @@
 <h1 class="error"><?php echo t('Page Not Found')?></h1>
 
 <?php echo t('No page could be found at this address.')?>
+<br/>
+<br/>
 
-<br/>
-<br/>
+<?php  $a = new Area("Main"); $a->display($c); ?>
 
 <a href="<?php echo DIR_REL?>/"><?php echo t('Back to Home')?></a>.

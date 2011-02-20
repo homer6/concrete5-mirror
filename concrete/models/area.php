@@ -34,6 +34,9 @@ class Area extends Object {
 	var $ratingThreshold = 0; // if set higher, any blocks that aren't rated high enough aren't seen (unless you have sufficient privs)
 	var $showControls = true;
 	var $attributes = array();
+
+	var $enclosingStart = '';
+	var $enclosingEnd = '';
 	
 	/* run-time variables */
 
@@ -181,9 +184,8 @@ class Area extends Object {
 		foreach($blocks as $ab) {
 			$ab->setBlockAreaObject($this);
 			$this->areaBlocksArray[] = $ab;
-			$this->totalBlocks++;			
+			$this->totalBlocks++;
 		}
-
 		return $this->areaBlocksArray;
 	}
 
@@ -332,13 +334,14 @@ class Area extends Object {
 
 		foreach ($blocksToDisplay as $b) {
 			$bv = new BlockView();
-			$bv->setAreaObject($ourArea);
+			$bv->setAreaObject($ourArea); 
 			$p = new Permissions($b);
 			if (($p->canWrite() || $p->canDeleteBlock()) && $c->isEditMode()) {
 				$includeEditStrip = true;
 			}
 
 			if ($p->canRead()) {
+				echo $this->enclosingStart;
 				if ($includeEditStrip) {
 					$bv->renderElement('block_controls', array(
 						'a' => $ourArea,
@@ -355,12 +358,27 @@ class Area extends Object {
 				if ($includeEditStrip) {
 					$bv->renderElement('block_footer');
 				}
+				echo $this->enclosingEnd;
 			}
 		}
 
 		if (($this->showControls) && ($c->isEditMode() && ($ap->canAddBlocks() || $u->isSuperUser()))) {
 			$bv->renderElement('block_area_footer', array('a' => $ourArea));	
 		}
+	}
+
+	/** 
+	 * Specify HTML to automatically print before blocks contained within the area
+	 */
+	function setBlockWrapperStart($html) {
+		$this->enclosingStart = $html;
+	}
+	
+	/** 
+	 * Set HTML that automatically prints after any blocks contained within the area
+	 */
+	function setBlockWrapperEnd($html) {
+		$this->enclosingEnd = $html;
 	}
 
 	function update($aKeys, $aValues) {
@@ -498,5 +516,3 @@ class Area extends Object {
 
 	}
 }
-
-?>

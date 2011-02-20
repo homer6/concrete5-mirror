@@ -29,6 +29,7 @@ function toggleQuestions(qsID,trigger){
 <?php  } else { ?>
 
 <div style="margin:0px; padding:0px; width:100%; height:auto" >
+
 <table class="entry-form" >
 	<tr>
 		<td class="header"><?php echo t('Form')?></td>
@@ -103,6 +104,12 @@ function toggleQuestions(qsID,trigger){
 				$questionNumber=0;
 				$numQuestionsToShow=2;
 				foreach($questions as $questionId=>$question){ 
+				
+					//if this row doesn't have an answer, don't show it.
+					if(!strlen(trim($answerSet['answers'][$questionId]['answerLong'])) && 
+					   !strlen(trim($answerSet['answers'][$questionId]['answer'])))
+					   		continue;
+					   
 					$questionNumber++; 
 					?>
 					<tr class="<?php echo ($questionNumber>$numQuestionsToShow)?'extra':''?>QuestionRow<?php echo $answerSetId?> <?php echo ($questionNumber>$numQuestionsToShow)?'noDisplay':'' ?>">

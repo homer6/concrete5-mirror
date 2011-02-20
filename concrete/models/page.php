@@ -17,9 +17,9 @@ class Page extends Collection {
 		return Page::getByID($cID, $version);
 	}
 	
-	public static function getByID($cID, $version = 'RECENT') {
-		if ($version) {
-			$version = CollectionVersion::getNumericalVersionID($cID, $version);
+	public static function getByID($cID, $versionOrig = 'RECENT') {
+		if ($versionOrig) {
+			$version = CollectionVersion::getNumericalVersionID($cID, $versionOrig);
 		}
 		$ca = new Cache();
 		$c = ($version > 0) ? $ca->get('page', $cID . ':' . $version) : $ca->get('page', $cID);
@@ -31,12 +31,12 @@ class Page extends Collection {
 		$where = "where Pages.cID = ?";
 		$c = new Page;
 		$c->populatePage($cID, $where, $version);
-		if ($c->cPointerID < 1) {
-			if ($version > 0) {
-				$ca->set('page', $c->getCollectionID() . ':' . $version, $c);
-			} else {
-				$ca->set('page', $c->getCollectionID(), $c);
-			}
+ 
+		// must use cID instead of c->getCollectionID() because cID may be the pointer to another page		
+		if ($version > 0) {
+			$ca->set('page', $cID . ':' . $version, $c);
+		} else {
+			$ca->set('page', $cID, $c);
 		}
 		return $c;
 	}
@@ -72,6 +72,7 @@ $ppWhere = '';
 			$cParentIDOverride = $row['cParentID'];
 			$cPathOverride = $row['cPath'];
 			$cPointerID = $row['cPointerID'];
+			$cDisplayOrderOverride = $row['cDisplayOrder'];
 		} else {
 			$q1 = $q0 . $where . $ppWhere;
 		}
@@ -536,6 +537,8 @@ $ppWhere = '';
 		
 		$db = Loader::db();
 		$path = $db->GetOne("select cPath from PagePaths inner join CollectionVersions on (PagePaths.cID = CollectionVersions.cID and CollectionVersions.cvIsApproved = 1) where PagePaths.cID = ?", array($cID));
+		
+		$path .= '/';
 		
 		Cache::set('page_path', $cID, $path);
 		return $path;
@@ -1341,9 +1344,11 @@ $ppWhere = '';
 		}
 	}
 	
-	function updateDisplayOrder($do) {
+	function updateDisplayOrder($do,$cID=0) {
+		//this line was added to allow changing the display order of aliases
+		if(!intval($cID)) $cID=$this->getCollectionID();
 		$db = Loader::db();
-		$db->query("update Pages set cDisplayOrder = ? where cID = ?", array($do, $this->getCollectionID()));
+		$db->query("update Pages set cDisplayOrder = ? where cID = ?", array($do, $cID));
 		$this->refreshCache();
 	}
 	

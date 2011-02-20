@@ -36,7 +36,7 @@ ccm_menuObj<?php echo $id?>.isGlobal = <?php echo intval($isGlobal)?>;
 <?php  if ($b->isEditable() && $p->canWrite()) { ?>
 ccm_menuObj<?php echo $id?>.canWrite =true;
 ccm_menuObj<?php echo $id?>.width = <?php echo $btw->getBlockTypeInterfaceWidth()?>;
-ccm_menuObj<?php echo $id?>.height = <?php echo (!$isGlobal)?$btw->getBlockTypeInterfaceHeight():100 ?>;
+ccm_menuObj<?php echo $id?>.height = <?php echo (!$isGlobal)?$btw->getBlockTypeInterfaceHeight():$btw->getBlockTypeInterfaceHeight()+20 ?>;
 <?php  }
 if ($p->canAdminBlock() && PERMISSIONS_MODEL != 'simple') { ?>
 ccm_menuObj<?php echo $id?>.canModifyGroups = true;

@@ -27,6 +27,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	
 		var $btArray = array();
 		
+		public static function getByPackage($pkg) {
+			$db = Loader::db();
+			$r = $db->Execute("select btID from BlockTypes where pkgID = ?", $pkg->getPackageID());
+			$blockTypes = array();
+			while ($row = $r->FetchRow()) {
+				$blockTypes[] = BlockType::getByID($row['btID']);
+			}
+			return $blockTypes;
+		}
+		
 		function BlockTypeList($allowedBlocks = null) {
 			$db = Loader::db();
 			$this->btArray = array();
@@ -211,7 +221,24 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 		}
 		
+		/** 
+		 * @access private
+		 */
 		function isBlockTypeInternal() {return $this->btIsInternal;}
+		
+		/** 
+		 * Returns true if the block type is internal (and therefore cannot be removed)
+		 */
+		public function isInternalBlockType() {
+			return $this->btIsInternal;
+		}
+		
+		/** 
+		 * Returns true if the block type ships with concrete5
+		 */
+		public function isCoreBlockType() {
+			return is_dir(DIR_FILES_BLOCK_TYPES_CORE . '/' . $this->getBlockTypeHandle());
+		}
 		
 		function getBlockTypeInterfaceWidth() {return $this->btInterfaceWidth;}
 		function getBlockTypeInterfaceHeight() {return $this->btInterfaceHeight;}
@@ -632,10 +659,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 		}
 		
-		// getBlockAddAction vs. getBlockTypeAddAction() - The difference is very simple. We call getBlockTypeAddAction() to grab the
-		// action properties for the form that presents the drop-down select menu for selecting which type of block to add. We call the other
-		// function when we've already chosen a type to add, and we're interested in actually adding the block - content completed - to the database
-		
 		function getBlockTypeID() {
 			return $this->btID;
 		}
@@ -644,6 +667,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $this->btHandle;
 		}
 		
+		// getBlockAddAction vs. getBlockTypeAddAction() - The difference is very simple. We call getBlockTypeAddAction() to grab the
+		// action properties for the form that presents the drop-down select menu for selecting which type of block to add. We call the other
+		// function when we've already chosen a type to add, and we're interested in actually adding the block - content completed - to the database
+				
 		function getBlockAddAction(&$a, $alternateHandler = null) {
 			// Note: This is fugly, since we're just grabbing query string variables, but oh well. Not _everything_ can be object oriented
 			$btID = $this->btID;

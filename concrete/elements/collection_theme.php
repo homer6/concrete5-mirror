@@ -112,8 +112,7 @@ $(document).ready(function(){
 								?>		
 								<?php  $class = ($ct->getCollectionTypeID() == $ctID) ? 'ccm-item-selected' : ''; ?>
 						
-								<li class="<?php echo $class?>"><a href="javascript:void(0)" ccm-page-type-id="<?php echo $ct->getCollectionTypeID()?>"><img src="<?php echo REL_DIR_FILES_COLLECTION_TYPE_ICONS?>/<?php echo $ct->getCollectionTypeIcon()?>" /></a>
-								<span><?php echo $ct->getCollectionTypeName()?></span>
+								<li class="<?php echo $class?>"><a href="javascript:void(0)" ccm-page-type-id="<?php echo $ct->getCollectionTypeID()?>"><?php echo $ct->getCollectionTypeIconImage();?></a><span><?php echo $ct->getCollectionTypeName()?></span>
 								</li>
 							<?php  } 
 							

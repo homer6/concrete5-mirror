@@ -171,7 +171,43 @@ class Package extends Object {
 		return $result;
 	
 	}
+	
+	/** 
+	 * Returns an array of package items (e.g. blocks, themes)
+	 */
+	public function getPackageItems() {
+		$items = array();
+		Loader::model('single_page');
+		$items = array_merge(BlockTypeList::getByPackage($this), $items);
+		$items = array_merge(PageTheme::getListByPackage($this), $items);
+		$items = array_merge(SinglePage::getListByPackage($this), $items);
+		
+		return $items;
+	}
 
+	/** 
+	 * Uninstalls the package. Removes any blocks, themes, or pages associated with the package.
+	 */
+	public function uninstall() {
+		$db = Loader::db();		
+		
+		$items = $this->getPackageItems();
+
+		foreach($items as $item) {
+			switch(get_class($item)) {
+				case 'BlockType':
+					$item->delete();	
+					break;
+				case 'PageTheme':
+					$item->uninstall();	
+					break;
+				case 'SinglePage':
+					@$item->delete(); // we suppress errors because sometimes the wrapper pages can delete first.
+					break;
+			}
+		}
+		$db->Execute("delete from Packages where pkgID = ?", array($this->pkgID));
+	}
 	
 	public function testForInstall($package) {
 		// this is the pre-test routine that packages run through before they are installed. Any errors that come here
@@ -212,10 +248,10 @@ class Package extends Object {
 		$errorText[Package::E_PACKAGE_INSTALLED] = t("You've already installed that package.");
 		$errorText[Package::E_PACKAGE_NOT_FOUND] = t("Invalid Package.");
 		$errorText[Package::E_PACKAGE_VERSION] = t("This package requires Concrete version %s or greater.");
-		$errorText[Package::E_PACKAGE_DOWNLOAD] = t("An error occured while downloading the package.");
+		$errorText[Package::E_PACKAGE_DOWNLOAD] = t("An error occurred while downloading the package.");
 		$errorText[Package::E_PACKAGE_SAVE] = t("Concrete was not able to save the package after download.");
-		$errorText[Package::E_PACKAGE_UNZIP] = t('An error while trying to unzip the package.');
-		$errorText[Package::E_PACKAGE_INSTALL] = t('An error while trying to install the package.');
+		$errorText[Package::E_PACKAGE_UNZIP] = t('An error occurred while trying to unzip the package.');
+		$errorText[Package::E_PACKAGE_INSTALL] = t('An error occurred while trying to install the package.');
 
 		$testResultsText = array();
 		foreach($testResults as $result) {
@@ -249,7 +285,7 @@ class Package extends Object {
 		$db = Loader::db();
 		$row = $db->GetRow("select * from Packages where pkgID = ?", array($pkgID));
 		if ($row) {
-			$pkg = new Package;
+			$pkg = Loader::package($row['pkgHandle']);
 			$pkg->setPropertiesFromArray($row);
 			return $pkg;
 		}

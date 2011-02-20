@@ -90,11 +90,14 @@ class IndexedSearch {
 		 	$blarray = array_merge( $blarray, $c->getBlocks($searchableAreaName) );
 		}
 		$text = '';
-		foreach($blarray as $b) {
-			if ($b->getBlockTypeHandle() == 'content') {
-				$bi = $b->getInstance();
-				$text .= strip_tags($bi->content);
-			}
+		$tagsToSpaces=array('<br>','<br/>','<br />','<p>','</p>','</ p>','<div>','</div>','</ div>');
+		foreach($blarray as $b) { 
+			$bi = $b->getInstance();
+			if(method_exists($bi,'getSearchableContent')){
+				$searchableContent = $bi->getSearchableContent();  
+				if(strlen(trim($searchableContent))) 					
+					$text .= strip_tags(str_ireplace($tagsToSpaces,' ',$searchableContent)).' ';
+			}			
 		}
 		unset($blarray);
 		return $text;
@@ -103,13 +106,13 @@ class IndexedSearch {
 	/** 
 	 * Reindexes the search engine.
 	 */
-	public function reindex() {
+	public function reindex($search_index_group_id=0) {
 		Cache::disableLocalCache();
 
 		$db = Loader::db();
 		$collection_attributes = Loader::model('collection_attributes');
 		$r = $db->query("select cID from Pages order by cID asc");
-		$g = Group::getByID(GUEST_GROUP_ID);
+		$g = Group::getByID($search_index_group_id);
 		$nh = Loader::helper('navigation');
 		
 		$db->Execute("truncate table PageSearchIndex");
@@ -118,6 +121,17 @@ class IndexedSearch {
 		$num = 0;
 		while ($row = $r->fetchRow()) {
 			$c = Page::getByID($row['cID'], 'ACTIVE');
+			
+			if ($c->isSystemPage() || $c->getCollectionAttributeValue('exclude_search_index')) {
+				continue;
+			}
+			
+			// make sure something is approved
+			$cv = $c->getVersionObject();
+			if(!$cv->cvIsApproved) { 
+				continue;
+			}		
+			
 			$themeObject = $c->getCollectionThemeObject();
 			$g->setPermissionsForObject($c);
 			if ($g->canRead()) {

@@ -1,11 +1,20 @@
+<?php 
+$textEditorWidth=intval(Config::get('CONTENTS_TXT_EDITOR_WIDTH'));
+$textEditorHeight=intval(Config::get('CONTENTS_TXT_EDITOR_HEIGHT'));
+if($textEditorWidth<580)   $textEditorWidth=580;
+//else $textEditorWidth=  $textEditorWidth;
+if($textEditorHeight<100)  $textEditorHeight=380;
+else $textEditorHeight= $textEditorHeight-70;
+?> 
 <script language="javascript">
 tinyMCE.init({
 	mode : "textareas",
-	width: "580px",
-	height: "380px",	
+	width: "100%", 
+	height: "<?php echo $textEditorHeight?>px", 	
 	inlinepopups_skin : "concreteMCE",
 	theme_concrete_buttons2_add : "spellchecker",
 	relative_urls : false,
+	document_base_url: '<?php echo BASE_URL . DIR_REL?>/',
 	convert_urls: false,
 	content_css : "<?php echo $theme->getThemeEditorCSS()?>",
 	<?php 

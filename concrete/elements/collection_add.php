@@ -74,7 +74,7 @@ for ($i = 0; $i < count($ctArray); $i++) {
 							
 							<?php  $class = ($ct->getCollectionTypeID() == $ctID) ? 'ccm-item-selected' : ''; ?>
 					
-							<li class="<?php echo $class?>"><a href="javascript:void(0)" ccm-page-type-id="<?php echo $ct->getCollectionTypeID()?>"><img src="<?php echo REL_DIR_FILES_COLLECTION_TYPE_ICONS?>/<?php echo $ct->getCollectionTypeIcon()?>" /></a>
+							<li class="<?php echo $class?>"><a href="javascript:void(0)" ccm-page-type-id="<?php echo $ct->getCollectionTypeID()?>"><?php echo  $ct->getCollectionTypeIconImage(); ?></a>
 							<span id="pgTypeName<?php echo $ct->getCollectionTypeID()?>"><?php echo $ct->getCollectionTypeName()?></span>
 							<input id="shownAttributeKeys<?php echo $ct->getCollectionTypeID()?>" name="shownAttributeKeys<?php echo $ct->getCollectionTypeID()?>" type="hidden" value="<?php echo join(',',$usedKeysCombined)?>" />
 							<input id="requiredAttributeKeys<?php echo $ct->getCollectionTypeID()?>" name="requiredAttributeKeys<?php echo $ct->getCollectionTypeID()?>" type="hidden" value="<?php echo join(',',$requiredKeys)?>" />

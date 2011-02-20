@@ -8,13 +8,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 * @package Files
 *
 */
-class FileList extends DatabaseItemList {
+class FileList extends DatabaseItemList { 
 
 	private $fileAttributeFilters = array();
-	protected $autoSortColumns = array('fvFilename', 'fvAuthorName','fvTitle', 'fvDateAdded', 'fvSize');
+	protected $autoSortColumns = array('fvFilename', 'fvAuthorName','fvTitle', 'fDateAdded', 'fvDateAdded', 'fvSize');
 	protected $itemsPerPage = 10;
+	
 	/* magic method for filtering by page attributes. */
-
 	public function __call($nm, $a) {
 		if (substr($nm, 0, 8) == 'filterBy') {
 			$txt = Loader::helper('text');
@@ -54,11 +54,28 @@ class FileList extends DatabaseItemList {
 	}
 	
 	/** 
-	 * Filters by files found in a certain set */
+	 * Filters by files found in a certain set. If "false" is provided, we display files not found in any set. */
 	public function filterBySet($fs) {
-		$this->addToQuery("left join FileSetFiles fsf on fsf.fID = f.fID");
-		$this->filter('fsf.fsID', $fs->getFileSetID(), '=');
+		if ($fs != false) {
+			$tableAliasName='fsf'.intval($fs->getFileSetID());
+			$this->addToQuery("left join FileSetFiles {$tableAliasName} on {$tableAliasName}.fID = f.fID");
+			$this->filter("{$tableAliasName}.fsID", $fs->getFileSetID(), '=');
+		} else {
+			$s1 = FileSet::getMySets();
+			$sets = array();
+			foreach($s1 as $fs) {
+				$sets[] = $fs->getFileSetID();
+			}
+			if (count($sets) == 0) {
+				return false;
+			}
+			$db = Loader::db();
+			$setStr = implode(',', $sets);
+			$this->addToQuery("left join FileSetFiles fsfex on fsfex.fID = f.fID");
+			$this->filter(false, '(fsfex.fID is null or (select count(fID) from FileSetFiles where fID = fsfex.fID and fsID in (' . $setStr . ')) = 0)');
+		}
 	}
+	
 	/** 
 	 * Filters the file list by file size (in kilobytes)
 	 */
@@ -74,6 +91,16 @@ class FileList extends DatabaseItemList {
 	public function filterByDateAdded($date, $comparison = '=') {
 		$this->filter('f.fDateAdded', $date, $comparison);
 	}
+	
+
+	/** 
+	 * Filters by tag
+	 * @param string $tag
+	 */
+	public function filterByTag($tag='') { 
+		$db=Loader::db();  
+		$this->filter(false, "( fv.fvTags like ".$db->qstr("%\n".$tag."\n%")."  )");
+	}	
 	
 	/** 
 	 * Filters the list by collection attribute
@@ -94,7 +121,7 @@ class FileList extends DatabaseItemList {
 	}
 	
 	protected function setBaseQuery() {
-		$this->setQuery('SELECT f.fID, u.uName as fvAuthorName
+		$this->setQuery('SELECT DISTINCT f.fID, u.uName as fvAuthorName
 		FROM Files f INNER JOIN FileVersions fv ON f.fID = fv.fID 
 		LEFT JOIN Users u on u.uID = fv.fvAuthorUID
 		');
@@ -183,6 +210,7 @@ class FileList extends DatabaseItemList {
 				case 'SELECT_MULTIPLE':
 					$multiString = '(';
 					$i = 0;
+					if(!is_array($caf[1])) $caf[1]=array($caf[1]); 
 					foreach($caf[1] as $val) {
 						$val = $db->quote('%' . $val . '||%');
 						$multiString .= 'REPLACE(' . $tbl . '.value, "\n", "||") like ' . $val . ' ';
@@ -195,8 +223,8 @@ class FileList extends DatabaseItemList {
 					$this->filter(false, $multiString);
 					break;
 				case 'TEXT':
-					$val = $db->quote('%' . $caf[1] . '%');
-					$this->filter(false, $tbl . '.value like ' . $val);
+					$val = $db->quote($caf[1]);
+					$this->filter(false, $tbl . '.value ' . $caf[2] . ' ' . $val);
 					break;
 				default:
 					$this->filter($tbl . '.value', $caf[1], $caf[2]);
@@ -212,11 +240,7 @@ class FileList extends DatabaseItemList {
 	public function get($itemsToGet = 0, $offset = 0) {
 		$files = array();
 		Loader::model('file');
-		$this->setBaseQuery();
-		$this->filter('fvIsApproved', 1);
-
-		$this->setupFileAttributeFilters();
-		$this->setupFilePermissions();
+		$this->createQuery();
 		$r = parent::get($itemsToGet, $offset);
 		foreach($r as $row) {
 			$f = File::getByID($row['fID']);			
@@ -224,6 +248,38 @@ class FileList extends DatabaseItemList {
 		}
 		return $files;
 	}
+	
+	public function getTotal(){
+		$files = array();
+		Loader::model('file');
+		$this->createQuery();
+		return parent::getTotal();
+	}
+	
+	//this was added because calling both getTotal() and get() was duplicating some of the query components
+	protected function createQuery(){
+		if(!$this->queryCreated){
+			$this->setBaseQuery();
+			$this->filter('fvIsApproved', 1);
+			$this->setupFileAttributeFilters();
+			$this->setupFilePermissions();
+			$this->queryCreated=1;
+		}
+	}
+	
+	//$key can be handle or fak id
+	public function sortByAttributeKey($key,$order='asc'){
+		if(!is_int($key) && intval($key)!=0){
+			$fak = FileAttributeKey::getByHandle($key);
+			if(!$fak)
+				throw new Exception('File list sorting attribute key not found - '.$key );
+			$sortFileAttrKeyId=$fak->getAttributeKeyID();
+		}else{
+			$sortFileAttrKeyId=intval($key);	
+		} 
+		$this->addToQuery(' left join FileAttributeValues sortAttr on (sortAttr.fID = fv.fID and fv.fvID = sortAttr.fvID and sortAttr.fakID = '.$sortFileAttrKeyId.') ');
+		$this->sortBy('sortAttr.value ', $order);	
+	} 
 	
 	public static function getExtensionList() {
 		$db = Loader::db();

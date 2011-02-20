@@ -13,6 +13,7 @@ var ccmi18n = {
 	setBlockPermissions: '<?php echo t('Set Permissions')?>',
 	setBlockAlias: '<?php echo t('Setup on Child Pages')?>',	
 	helpPopup: '<?php echo t('Help')?>',
+	noIE6: '<?php echo t('Concrete5 does not support Internet Explorer 6 in edit mode.')?>',
 	helpPopupLoginMsg: '<?php echo t('Get more help on your question by posting it to the concrete5 help center on concrete5.org')?>',
 	marketplaceErrorMsg: '<?php echo t('<p>You package could not be installed.  An unknown error occured.</p>')?>',
 	marketplaceInstallMsg: '<?php echo t('<p>Your package will now be downloaded and installed.</p>')?>',

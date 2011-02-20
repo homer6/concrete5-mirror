@@ -10,7 +10,7 @@ global $c; ?>
 if ($url != '') { ?>
 	<script type="text/javascript" src="<?php echo $url?>"></script>
 <?php  } ?>
-<form method="post" id="ccm-block-form" class="validate" action="<?php echo $b->getBlockEditAction()?>" enctype="multipart/form-data">
+<form method="post" id="ccm-block-form" class="validate" action="<?php echo $b->getBlockEditAction()?>&rcID=<?php echo intval($rcID)?>" enctype="multipart/form-data">
 
 <?php  foreach($this->controller->getJavaScriptStrings() as $key => $val) { ?>
 	<input type="hidden" name="ccm-string-<?php echo $key?>" value="<?php echo $val?>" />

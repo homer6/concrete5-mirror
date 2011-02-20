@@ -19,11 +19,9 @@
 			<th><input id="ccm-file-list-cb-all" type="checkbox" /></td>
 			<th><select id="ccm-file-list-multiple-operations" disabled>
 				<option value="">**</option>
-				<?php  if ($fileSelector || $_REQUEST['fileSelector'] == 1) { ?>
-					<option value="choose"><?php echo t('Choose')?></option>
-				<?php  } ?>
 				<option value="download"><?php echo t('Download')?></option>
 				<option value="sets"><?php echo t('Sets')?></option>
+				<option value="properties"><?php echo t('Properties')?></option>
 				<option value="rescan"><?php echo t('Rescan')?></option>
 				<option value="delete"><?php echo t('Delete')?></option>
 			</select>
@@ -32,7 +30,8 @@
 
 			<th class="ccm-file-list-starred">&nbsp;</th>			
 			<th class="ccm-file-list-filename <?php echo $fileList->getSearchResultsClass('fvTitle')?>"><a href="<?php echo $fileList->getSortByURL('fvTitle', 'asc', $bu)?>"><?php echo t('Title')?></a></th>
-			<th class="<?php echo $fileList->getSearchResultsClass('fvDateAdded')?>"><a href="<?php echo $fileList->getSortByURL('fvDateAdded', 'asc', $bu)?>"><?php echo t('Added')?></a></th>
+			<th class="<?php echo $fileList->getSearchResultsClass('fDateAdded')?>"><a href="<?php echo $fileList->getSortByURL('fDateAdded', 'asc', $bu)?>"><?php echo t('Added')?></a></th>
+			<th class="<?php echo $fileList->getSearchResultsClass('fvDateAdded')?>"><a href="<?php echo $fileList->getSortByURL('fvDateAdded', 'asc', $bu)?>"><?php echo t('Active Version')?></a></th>
 			<th class="<?php echo $fileList->getSearchResultsClass('fvSize')?>"><a href="<?php echo $fileList->getSortByURL('fvSize', 'asc', $bu)?>"><?php echo t('Size')?></a></th>
 		</tr>
 		
@@ -67,6 +66,7 @@
 			<td><?php echo $fv->getType()?></td>
 			<td class="ccm-file-list-starred"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/<?php echo $star_icon?>" height="16" width="16" border="0" class="ccm-star" /></td>			
 			<td class="ccm-file-list-filename"><?php echo $txt->highlightSearch(wordwrap($fv->getTitle(), 15, "\n", true), $keywords)?></td>
+			<td><?php echo date('M d, Y g:ia', strtotime($f->getDateAdded()))?></td>
 			<td><?php echo date('M d, Y g:ia', strtotime($fv->getDateAdded()))?></td>
 			<td><?php echo $fv->getSize()?></td>
 						

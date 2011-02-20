@@ -49,7 +49,7 @@ if($success) {
 	<?php echo $form->password('uPassword')?>
 	</div>
 	<br/>
-	
+
 	<div>
 	<?php echo $form->label('uPasswordConfirm', t('Confirm Password') )?>
 	<?php echo $form->password('uPasswordConfirm')?>
@@ -71,7 +71,20 @@ if($success) {
 			
 		<?php  } ?>
 	<?php  } ?>
-
+	
+	<div>
+	<?php 
+	print $form->label('captcha', t('Please type the letters and numbers shown in the image.'));
+	print '<br/>';
+	$captcha = Loader::helper('validation/captcha');				
+	$captcha->display();
+	?>
+	</div>
+	
+	<div><?php  $captcha->showInput();?> </div>
+	
+	<br/>
+	
 	<div class="ccm-button">
 		<?php echo $form->submit('register', t('Register'))?>
 		<?php echo $form->hidden('rcID', $rcID); ?>

@@ -29,6 +29,7 @@ class RegisterController extends Controller {
 	
 		$registerData['success']=0;
 		
+		$userHelper = Loader::helper('concrete/user');
 		$e = Loader::helper('validation/error');
 		$ip = Loader::helper('validation/ip');		
 		$txt = Loader::helper('text');
@@ -43,10 +44,20 @@ class RegisterController extends Controller {
 		$password = $_POST['uPassword'];
 		$passwordConfirm = $_POST['uPasswordConfirm'];
 		
+		// clean the username
+		$username = trim($username);
+		$username = ereg_replace(" +", " ", $username);
+		
+		
 		if (!$ip->check()) {
 			$e->add($ip->getErrorMessage());
 		}		
 		
+		$captcha = Loader::helper('validation/captcha');
+	   if (!$captcha->check()) {
+	      $e->add(t("Incorrect image validation code. Please check the image and re-enter the letters or numbers as necessary."));
+	     }
+	
 		if (!$vals->email($_POST['uEmail'])) {
 			$e->add(t('Invalid email address provided.'));
 		} else if (!$valc->isUniqueEmail($_POST['uEmail'])) {
@@ -54,6 +65,7 @@ class RegisterController extends Controller {
 		}
 		
 		if (USER_REGISTRATION_WITH_EMAIL_ADDRESS == false) {
+			
 			if (strlen($username) < USER_USERNAME_MINIMUM) {
 				$e->add(t('A username must be between at least %s characters long.', USER_USERNAME_MINIMUM));
 			}
@@ -62,8 +74,14 @@ class RegisterController extends Controller {
 				$e->add(t('A username cannot be more than %s characters long.', USER_USERNAME_MAXIMUM));
 			}
 	
-			if (strlen($username) >= USER_USERNAME_MINIMUM && !$vals->alphanum($username)) {
-				$e->add(t('A username may only contain letters or numbers.'));
+	
+			if (strlen($username) >= USER_USERNAME_MINIMUM && !$valc->username($username)) {
+				if(USER_USERNAME_ALLOW_SPACES) {
+					$e->add(t('A username may only contain letters, numbers and spaces.'));
+				} else {
+					$e->add(t('A username may only contain letters or numbers.'));
+				}
+				
 			}
 			if (!$valc->isUniqueUsername($username)) {
 				$e->add(t("The username %s already exists. Please choose another", $username));
@@ -74,6 +92,7 @@ class RegisterController extends Controller {
 			$e->add(t('Invalid Username'));
 		}
 		
+		/*
 		if ((strlen($password) < USER_PASSWORD_MINIMUM) || (strlen($password) > USER_PASSWORD_MAXIMUM)) {
 			$e->add(t('A password must be between %s and %s characters', USER_PASSWORD_MINIMUM, USER_PASSWORD_MAXIMUM));
 		}
@@ -81,6 +100,9 @@ class RegisterController extends Controller {
 		if (strlen($password) >= USER_PASSWORD_MINIMUM && !$valc->password($password)) {
 			$e->add(t('A password may not contain ", \', >, <, or any spaces.'));
 		}
+		*/
+		
+		$userHelper->validNewPassword($password,$e);
 
 		if ($password) {
 			if ($password != $passwordConfirm) {

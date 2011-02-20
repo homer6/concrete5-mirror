@@ -1,6 +1,9 @@
 <?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 define('DISPATCHER_FILENAME', 'index.php');
+if (!defined('C5_ENVIRONMENT_ONLY')) {
+	define('C5_ENVIRONMENT_ONLY', false);
+}
 
 # These items should be set by site.php in config/ but if they're not that means we're installing and we need something there
 if (!defined('BASE_URL')) {
@@ -108,7 +111,9 @@ if (!defined("MENU_HELP_URL")) {
 define('DIR_BASE_CORE', dirname(__FILE__) . '/..');
 
 # Path to the base directory of THIS install
-define('DIR_BASE', dirname($_SERVER['SCRIPT_FILENAME']));
+if (!defined('DIR_BASE')) {
+	define('DIR_BASE', dirname($_SERVER['SCRIPT_FILENAME']));
+}
 
 # The core concrete directory. Either one per install or one per server
 define('DIRNAME_APP', 'concrete');
@@ -215,6 +220,8 @@ define('FILENAME_PACKAGE_DB', 'db.xml');
 //define('DIR_FILES_COLLECTION_TYPES', DIR_BASE . '/views/page_types');
 define('DIR_FILES_COLLECTION_TYPE_ICONS', DIR_BASE_CORE . '/images/icons/page_types');
 define('REL_DIR_FILES_COLLECTION_TYPE_ICONS', ASSETS_URL_IMAGES . '/icons/page_types');
+define('COLLECTION_TYPE_ICON_WIDTH', 120);
+define('COLLECTION_TYPE_ICON_HEIGHT', 90);
 define('DIR_FILES_CONTENT', DIR_BASE . '/single_pages');
 define('DIR_FILES_CONTENT_REQUIRED', DIR_BASE_CORE . '/single_pages');
 define("FILENAME_LOCAL_DB", 'site_db.xml');
@@ -274,6 +281,11 @@ define('REL_DIR_FILES_CACHE', REL_DIR_FILES_UPLOADED . '/cache');
 
 #Cache
 define('DIR_FILES_CACHE', DIR_BASE . '/files/cache');
+if (!is_dir(DIR_FILES_CACHE)) {
+	@mkdir(DIR_FILES_CACHE);
+	@chmod(DIR_FILES_CACHE, 0777);
+}
+
 define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
 define('DIR_FILES_CACHE_CORE', DIR_BASE . '/files/cache_objects');
 define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
@@ -319,12 +331,10 @@ define('USER_PASSWORD_MAXIMUM', 64);
 define('USER_SUPER', 'admin');
 define('USER_SUPER_ID', 1);
 define('GUEST_GROUP_ID', '1');
-define('GUEST_GROUP_NAME', 'Guest');
 define('REGISTERED_GROUP_ID', '2');
-define('REGISTERED_GROUP_NAME', 'Registered Users');
 define('ADMIN_GROUP_ID', '3');
-define('ADMIN_GROUP_NAME', 'Admin');
 define('SESSION_MAX_LIFETIME', 7200); // 2 hours
+define('USER_CHANGE_PASSWORD_URL_LIFETIME',  7200);
 
 # Default search size
 define('SEARCH_CHUNK_SIZE','20'); /* number of entries retrieved per page */
@@ -365,7 +375,6 @@ define('USER_NON_VALIDATED', 22);
 define('COLLECTION_MASTER_UNAUTH', 30);
 define('COLLECTION_PRIVATE', 40);
 define('BLOCK_NOT_AVAILABLE', 50);
-define('BLOCK_NOT_AVAILABLE_TEXT', 'This block is no longer available.');
 
 # Debug and Logging
 define('DEBUG_DISPLAY_PRODUCTION', 0);
@@ -376,7 +385,9 @@ define('LOG_TYPE_EMAILS', 'sent_emails');
 define('LOG_TYPE_EXCEPTIONS', 'exceptions');
 
 # The name of the session cookie used.
-define('SESSION', 'CONCRETE5');
+if (!defined('SESSION')) {
+	define('SESSION', 'CONCRETE5');
+}
 
 # Variables/constants necessary for ADODB
 define('DB_TYPE', 'mysql');
@@ -391,7 +402,7 @@ if (!defined("API_KEY_PICNIK")) {
 $ADODB_ASSOC_CASE =  2;
 $ADODB_ACTIVE_CACHESECS = 300;
 $ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
-define('APP_VERSION', '5.3.1.1');
+define('APP_VERSION', '5.3.2');
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)
 define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number');
 define('APP_VERSION_LATEST_DOWNLOAD', 'http://www.concrete5.org/download/');

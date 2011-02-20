@@ -51,20 +51,35 @@ class FormBlockController extends BlockController {
 		return t("Thanks!");
 	}
 	
-	//form add or edit submit
-	function save( $data=array() ) {
-		if( !$data || count($data)==0 ) $data=$_POST;
+	//form add or edit submit 
+	//(run after the duplicate method on first block edit of new page version)
+	function save( $data=array() ) { 
+		if( !$data || count($data)==0 ) $data=$_POST;  
+		
+		$b=$this->getBlockObject(); 
+		$c=$b->getBlockCollectionObject();
+		
 		$db = Loader::db();
 		if(intval($this->bID)>0){	 
 			$q = "select count(*) as total from {$this->btTable} where bID = ".intval($this->bID);
 			$total = $db->getOne($q);
-		}else $total = 0;
-		$v = array( $data['qsID'], $data['surveyName'], intval($data['notifyMeOnSubmission']), $data['recipientEmail'], $data['thankyouMsg'], intval($data['displayCaptcha']), intval($this->bID) );
+		}else $total = 0; 
+			
+		if($_POST['qsID']) $data['qsID']=$_POST['qsID'];
+		if( !$data['qsID'] ) $data['qsID']=time(); 	
+		if(!$data['oldQsID']) $data['oldQsID']=$data['qsID']; 
+		$data['bID']=intval($this->bID); 
 		
-		$q = ($total > 0) ? "update {$this->btTable} set questionSetId = ?, surveyName=?, notifyMeOnSubmission=?, recipientEmail=?, thankyouMsg=?, displayCaptcha=? where bID = ?"
-			: "insert into {$this->btTable} (questionSetId, surveyName, notifyMeOnSubmission, recipientEmail, thankyouMsg, displayCaptcha, bID) values (?, ?, ?, ?, ?, ?, ?)";		
-
-		$rs = $db->query($q,$v); 
+		$v = array( $data['qsID'], $data['surveyName'], intval($data['notifyMeOnSubmission']), $data['recipientEmail'], $data['thankyouMsg'], intval($data['displayCaptcha']), intval($this->bID) );
+ 		
+		//is it new? 
+		if( intval($total)==0 ){ 
+			$q = "insert into {$this->btTable} (questionSetId, surveyName, notifyMeOnSubmission, recipientEmail, thankyouMsg, displayCaptcha, bID) values (?, ?, ?, ?, ?, ?, ?)";		
+		}else{
+			$q = "update {$this->btTable} set questionSetId = ?, surveyName=?, notifyMeOnSubmission=?, recipientEmail=?, thankyouMsg=?, displayCaptcha=? where bID = ? AND questionSetId=".$data['qsID'];
+		}		
+		
+		$rs = $db->query($q,$v);  
 		
 		//Add Questions (for programmatically creating forms, such as during the site install)
 		if( count($data['questions'])>0 ){
@@ -85,47 +100,25 @@ class FormBlockController extends BlockController {
 		$oldBID = intval($data['bID']);
 		
 		//if this block is being edited a second time, remove edited questions with the current bID that are pending replacement
-		if( intval($oldBID) == intval($this->bID) ){  
-			$vals=array( intval($data['qsID']) );  
-			$pendingQuestions=$db->getAll('SELECT msqID FROM btFormQuestions WHERE bID=0 && questionSetId=?',$vals);
-			foreach($pendingQuestions as $pendingQuestion){ 
+		//if( intval($oldBID) == intval($this->bID) ){  
+			$vals=array( intval($data['oldQsID']) );  
+			$pendingQuestions=$db->getAll('SELECT msqID FROM btFormQuestions WHERE bID=0 && questionSetId=?',$vals); 
+			foreach($pendingQuestions as $pendingQuestion){  
 				$vals=array( intval($this->bID), intval($pendingQuestion['msqID']) );  
 				$db->query('DELETE FROM btFormQuestions WHERE bID=? AND msqID=?',$vals);
 			}
-		}
+		//} 
 	
 		//assign any new questions the new block id 
-		$vals=array( intval($this->bID), intval($data['qsID']) );  
-		$rs=$db->query('UPDATE btFormQuestions SET bID=? WHERE bID=0 && questionSetId=?',$vals);
+		$vals=array( intval($data['bID']), intval($data['qsID']), intval($data['oldQsID']) );  
+		$rs=$db->query('UPDATE btFormQuestions SET bID=?, questionSetId=? WHERE bID=0 && questionSetId=?',$vals);
  
  		//These are deleted or edited questions.  (edited questions have already been created with the new bID).
  		$ignoreQuestionIDsDirty=explode( ',', $data['ignoreQuestionIDs'] );
 		$ignoreQuestionIDs=array(0);
 		foreach($ignoreQuestionIDsDirty as $msqID)
 			$ignoreQuestionIDs[]=intval($msqID);	
-		$ignoreQuestionIDstr=join(',',$ignoreQuestionIDs);
-		
-		//Retrieve all unchanged questions for duplication with new bID - skip this step is the new block is being edit for a second time		
-		if( intval($oldBID) != intval($this->bID) ){			
-			$vals=array( $oldBID, intval($data['qsID']) );  
-			$unchangedQuestions=$db->getAll('SELECT * FROM btFormQuestions WHERE bID=? AND questionSetId=? AND msqID NOT IN ('.$ignoreQuestionIDstr.')',$vals);
-			
-			//Copy each question to a new db row, with its new bID
-			foreach($unchangedQuestions AS $unchangedQuestion){			
-				$sqlCols=array();
-				$sqlVals=array();
-				$sqlValPlaceHolders=array();
-				foreach($unchangedQuestion as $key=>$val){
-					if( is_int($key) || intval($key)>0 ) continue;
-					if( strtolower($key)=='qid' ) continue;
-					$sqlCols[]=$key;
-					$sqlValPlaceHolders[]='?';
-					if(strtolower($key)=='bid') $sqlVals[]=intval($this->bID);
-					else $sqlVals[]=$val;
-				}
-				$rs=$db->query("INSERT INTO btFormQuestions (".join(', ',$sqlCols).") VALUES (".join(', ',$sqlValPlaceHolders).")",$sqlVals);
-			}
-		}
+		$ignoreQuestionIDstr=join(',',$ignoreQuestionIDs); 
 		
 		//remove any questions that are pending deletion, that already have this current bID 
  		$pendingDeleteQIDsDirty=explode( ',', $data['pendingDeleteIDs'] );
@@ -134,36 +127,58 @@ class FormBlockController extends BlockController {
 			$pendingDeleteQIDs[]=intval($msqID);		
 		$vals=array( $this->bID, intval($data['qsID']), join(',',$pendingDeleteQIDs) );  
 		$unchangedQuestions=$db->query('DELETE FROM btFormQuestions WHERE bID=? AND questionSetId=? AND msqID IN (?)',$vals);			
-	}
+	} 
 	
-	function duplicate($newBID) {
+	//Duplicate will run when copying a page with a block, or editing a block for the first time within a page version (before the save).
+	function duplicate($newBID) { 
+	
+		$b=$this->getBlockObject(); 
+		$c=$b->getBlockCollectionObject();	 
+		 
 		$db = Loader::db();
 		$v = array($this->bID);
 		$q = "select * from {$this->btTable} where bID = ? LIMIT 1";
 		$r = $db->query($q, $v);
 		$row = $r->fetchRow();
-		if(count($row)>0){
-			$oldQuestionSetId=$row['questionSetId'];
-			$newQuestionSetId=time();
-			//duplicate survey block record  
+		
+		//if the same block exists in multiple collections with the same questionSetID
+		if(count($row)>0){ 
+			$oldQuestionSetId=$row['questionSetId']; 
+			
+			//It should only generate a new question set id if the block is copied to a new page,
+			//otherwise it will loose all of its answer sets (from all the people who've used the form on this page)
+			$questionSetCIDs=$db->getCol("SELECT distinct cID FROM {$this->btTable} AS f, CollectionVersionBlocks AS cvb ".
+						"WHERE f.bID=cvb.bID AND questionSetId=".intval($row['questionSetId']) );
+			
+			//this question set id is used on other pages, so make a new one for this page block 
+			if( count( $questionSetCIDs ) >1 || !in_array( $c->cID, $questionSetCIDs ) ){ 
+				$newQuestionSetId=time(); 
+				$_POST['qsID']=$newQuestionSetId; 
+			}else{
+				//otherwise the question set id stays the same
+				$newQuestionSetId=$row['questionSetId']; 
+			}
+			
+			//duplicate survey block record 
+			//with a new Block ID and a new Question 
 			$v = array($newQuestionSetId,$row['surveyName'],$newBID,$row['thankyouMsg'],intval($row['notifyMeOnSubmission']),$row['recipientEmail'],$row['displayCaptcha']);
 			$q = "insert into {$this->btTable} ( questionSetId, surveyName, bID,thankyouMsg,notifyMeOnSubmission,recipientEmail,displayCaptcha) values (?, ?, ?, ?, ?, ?, ?)";
+			$result=$db->Execute($q, $v); 
 			
-			/*
-			//done in the save routine
-			//duplicate questions records
 			$rs=$db->query("SELECT * FROM {$this->btQuestionsTablename} WHERE questionSetId=$oldQuestionSetId AND bID=".intval($this->bID) );
 			while( $row=$rs->fetchRow() ){
 				$v=array($newQuestionSetId,intval($row['msqID']), intval($newBID), $row['question'],$row['inputType'],$row['options'],$row['position'],$row['width'],$row['height'],$row['required']);
-				$sql='INSERT INTO {$this->btQuestionsTablename} (questionSetId,msqID,bID,question,inputType,options,position,width,height,required) VALUES (!,!,!,?,?,?,!,?,?,?)';
+				$sql= "INSERT INTO {$this->btQuestionsTablename} (questionSetId,msqID,bID,question,inputType,options,position,width,height,required) VALUES (?,?,?,?,?,?,?,?,?,?)";
+				$db->Execute($sql, $v);
 			}
-			*/
+			
 			return $newQuestionSetId;
-		}		
+		}
+		return 0;	
 	}
 	
-	//users submits the completed survey
 
+	//users submits the completed survey
 	function action_submit_form() { 
 	
 		$ip = Loader::helper('validation/ip');
@@ -291,24 +306,25 @@ class FormBlockController extends BlockController {
 				$db->query($q,$v);
 			}
 			$refer_uri=$_POST['pURI'];
-			if(!strstr($refer_uri,'?')) $refer_uri.='?';
+			if(!strstr($refer_uri,'?')) $refer_uri.='?';			
 			
-			if(intval($this->notifyMeOnSubmission)>0){
-				$adminUser=User::getByUserID(1);
-				if( $adminUser && $adminUser->isSuperUser() ){
-					$adminUserInfo=UserInfo::getByID( $adminUser->getUserID() );
-					if($adminUserInfo) 
-						$adminEmail = $adminUserInfo->getUserEmail(); 
-				}
-			
+			if(intval($this->notifyMeOnSubmission)>0){	
+				
+				if( strlen(FORM_BLOCK_SENDER_EMAIL)>1 && strstr(FORM_BLOCK_SENDER_EMAIL,'@') ){
+					$formFormEmailAddress = FORM_BLOCK_SENDER_EMAIL;  
+				}else{ 
+					$adminUserInfo=UserInfo::getByID(USER_SUPER_ID);
+					$formFormEmailAddress = $adminUserInfo->getUserEmail(); 
+				}  
+				
 				$mh = Loader::helper('mail');
 				$mh->to( $this->recipientEmail ); 
-				$mh->from( $adminEmail ); 
+				$mh->from( $formFormEmailAddress ); 
 				$mh->addParameter('formName', $this->surveyName);
 				$mh->addParameter('questionSetId', $this->questionSetId);
 				$mh->addParameter('questionAnswerPairs', $questionAnswerPairs); 
 				$mh->load('block_form_submission');
-				$mh->setSubject($this->surveyName.' '.t('Form Submission') ); 
+				$mh->setSubject(t('%s Form Submission', $this->surveyName));
 				//echo $mh->body.'<br>';
 				@$mh->sendMail(); 
 			} 
@@ -445,7 +461,7 @@ class MiniSurvey{
 		public $lastSavedMsqID=0;
 		public $lastSavedqID=0;
 
-		function MiniSurvey(){
+		function __construct(){
 			$db = Loader::db();
 			$this->db=$db;
 		}
@@ -547,6 +563,7 @@ class MiniSurvey{
 			//loading questions	
 			$questionsRS=$this->loadQuestions( $qsID, $bID, $showPending);
 		
+		
 			if(!$showEdit){
 				echo '<table class="formBlockSurveyTable">';					
 				while( $questionRow=$questionsRS->fetchRow() ){	
@@ -564,9 +581,9 @@ class MiniSurvey{
 						        </td>
 						      </tr>';
 					} else { */
-						$requiredSymbol=($questionRow['required'])?'<span class="required">*</span>':'';
+						$requiredSymbol=($questionRow['required'])?'&nbsp;<span class="required">*</span>':'';
 						echo '<tr>
-						        <td valign="top" class="question">'.$questionRow['question'].' '.$requiredSymbol.'</td>
+						        <td valign="top" class="question">'.$questionRow['question'].''.$requiredSymbol.'</td>
 						        <td valign="top">'.$this->loadInputType($questionRow,showEdit).'</td>
 						      </tr>';
 					//}
@@ -592,8 +609,11 @@ class MiniSurvey{
 				echo '</table>';
 				
 			}else{
+			
+			
 				echo '<div id="miniSurveyTableWrap"><div id="miniSurveyPreviewTable" class="miniSurveyTable">';					
 				while( $questionRow=$questionsRS->fetchRow() ){	 
+				
 					if( in_array($questionRow['qID'], $hideQIDs) ) continue;
 				
 					$requiredSymbol=($questionRow['required'])?'<span class="required">*</span>':'';				

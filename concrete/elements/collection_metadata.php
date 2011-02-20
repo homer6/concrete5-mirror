@@ -57,7 +57,7 @@ if ($cp->canAdminPage()) {
 	<div id="ccm-properties-standard-tab">
 	
 	<div class="ccm-field-one">
-	<label><?php echo t('Name')?></label> <input type="text" name="cName" value="<?php echo $c->getCollectionName()?>" class="ccm-input-text">
+	<label><?php echo t('Name')?></label> <input type="text" name="cName" value="<?php echo htmlentities( $c->getCollectionName(), ENT_QUOTES, APP_CHARSET) ?>" class="ccm-input-text">
 	</div>
 	
 	<div class="ccm-field-one">
@@ -120,13 +120,13 @@ if ($cp->canAdminPage()) {
 						$cPath = $path['cPath'];
 						echo '<span class="ccm-meta_path">' .
 			     			'<input type="text" name="ppURL-' . $ppID . '" class="ccm-input-text" value="' . $cPath . '" id="ppID-'. $ppID . '"> ' .
-			     			'<a href="javascript:void(0)" class="ccm-meta-path-del">Remove Path</a></span>'."\n";
+			     			'<a href="javascript:void(0)" class="ccm-meta-path-del">' . t('Remove Path') . '</a></span>'."\n";
 					}
 				}
 			?>
 		    <span class="ccm-meta-path">
 	     		<input type="text" name="ppURL-add-0" class="ccm-input-text" value="" id="ppID-add-0">
-		 		<a href="javascript:void(0)" class="ccm-meta-path-add">Add Path</a>
+		 		<a href="javascript:void(0)" class="ccm-meta-path-add"><?php echo t('Add Path')?></a>
 			</span>
 			</div>
 		<?php  } ?>

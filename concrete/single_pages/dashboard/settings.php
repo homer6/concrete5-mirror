@@ -20,6 +20,9 @@ $h = Loader::helper('concrete/interface'); ?>
 
 <?php  } else if ($this->controller->getTask() == 'set_developer' || $this->controller->getTask() == 'refresh_database_schema') { ?>
 
+<div id="ccm-module-wrapper">
+<div style="width: 778px">
+
 <div id="ccm-module-row1">
 <div class="ccm-module">
 
@@ -98,7 +101,8 @@ $h = Loader::helper('concrete/interface'); ?>
 	<div class="ccm-dashboard-radio"><?php echo $form->checkbox('ENABLE_LOG_ERRORS', 1, $enable_log_errors)?> <?php echo t('Log Application Exceptions')?></div>
 	<div class="ccm-dashboard-description"><?php echo t('Saves application exceptions to logs.')?></div>
 	<div class="ccm-dashboard-radio"><?php echo $form->checkbox('ENABLE_LOG_DATABASE_QUERIES', 1, $enable_log_database_queries)?> <?php echo t('Log Database Activity')?></div>
-	<div class="ccm-dashboard-description"><?php echo t('Logs SQL queries for application profiling.')?></div>
+	<div class="ccm-dashboard-description"><?php echo t('Logs SQL queries for application profiling.')?><br />
+		<?php echo t('Warning: this may make your database huge!');?></div>
 	<div class="ccm-dashboard-radio"><?php echo $form->checkbox('ENABLE_LOG_EMAILS', 1, $enable_log_emails)?> <?php echo t('Log Emails Sent')?></div>
 	<div class="ccm-dashboard-description">
 		<?php echo t('Enables saving records of emails being sent out. This will save records even if actual email delivery is disabled on your site.')?>
@@ -157,6 +161,8 @@ $h = Loader::helper('concrete/interface'); ?>
 
 <?php  } ?>
 
+</div>
+</div>
 </div>
 </div>
 
@@ -266,7 +272,7 @@ saveMaintenanceMode = function() {
 		<table border="0" cellspacing="0" cellpadding="0" class="ccm-dashboard-inner-columns">
 		<tr>
 		<td valign="top" class="ccm-dashboard-inner-leftcol">	
-			<h2>Smart IP Banning</h2>
+			<h2><?php echo t('Smart IP Banning')?></h2>
 			<div class="ccm-dashboard-radio">
 				<?php echo $form->checkbox('ip_ban_lock_ip_enable', 1, $ip_ban_enable_lock_ip_after)?> <?php echo t('Lock IP after')?>
 				
@@ -307,7 +313,7 @@ saveMaintenanceMode = function() {
 						<tr>
 							<td><?php echo $form->checkbox('ip_ban_changes[]',$user_banned_ip->getUniqueID(),false)?> <?php echo $user_banned_ip->getIPRangeForDisplay()?></td>
 							<td><?php echo $user_banned_ip->getReason()?></td>
-							<td><?php echo ($this->formatTimestampAsMinutesSeconds($user_banned_ip->expires))?></td>			
+							<td><?php echo ($this->controller->formatTimestampAsMinutesSeconds($user_banned_ip->expires))?></td>			
 							<td>&nbsp;</td>
 						</tr>		
 					<?php  } ?>
@@ -580,9 +586,16 @@ $(document).ready(function(){
 <form method="post" id="txt-editor-form" action="<?php echo $this->url('/dashboard/settings', 'txt_editor_config')?>">
 	<?php echo $this->controller->token->output('txt_editor_config')?>
 	
-	<h1><span><?php echo t("Content Toolbars")?></span></h1>
+	<h1><span><?php echo t("Rich Text Editor")?></span></h1>
 	
 	<div class="ccm-dashboard-inner"> 
+		
+		
+		<table border="0" cellspacing="0" cellpadding="0">
+		<tr>
+		<td valign="top">
+
+		<h2>Toolbar Set</h2>
 		
 		<div class="ccm-dashboard-radio"><input type="radio" name="CONTENTS_TXT_EDITOR_MODE" value="SIMPLE" style="vertical-align: middle" <?php echo ( $txtEditorMode=='SIMPLE' || !strlen($txtEditorMode) )?'checked':''?> /> <?php echo t('Simple')?></div>
 		
@@ -596,6 +609,27 @@ $(document).ready(function(){
 			<textarea wrap="off" name="CONTENTS_TXT_EDITOR_CUSTOM_CODE" cols="25" rows="20" style="width: 97%; height: 250px;"><?php echo $txtEditorCstmCode?></textarea>
 			<div class="ccm-note"><a target="_blank" href="http://tinymce.moxiecode.com/"><?php echo t('TinyMCE Reference')?></a></div>
 		</div>
+
+		</td>
+		<td><div style="width: 50px">&nbsp;</div></td>
+		<td valign="top">
+		
+		<h2>Editor Dimensions</h2>
+		
+		<table cellspacing="0" cellpadding="0">
+		<tr>
+		<td><?php echo t('Width')?></td><td><input type="text" name="CONTENTS_TXT_EDITOR_WIDTH" size="3" value="<?php echo ($textEditorWidth<580) ? 580 : intval($textEditorWidth) ?>"/></td><td>&nbsp;px</td>
+		</tr>
+		<tr>
+		<td><?php echo t('Height')?></td><td><input type="text" name="CONTENTS_TXT_EDITOR_HEIGHT" size="3" value="<?php echo ($textEditorHeight<100) ? 380 : intval($textEditorHeight) ?>"/></td><td>&nbsp;px</td>
+		</tr>
+		</table>
+		
+		<div class="ccm-note"><?php echo t('The minimum width is 580px.')?></div>
+		
+		</td>
+		</tr>
+		</table>
 		
 		<?php 
 		$b1 = $h->submit(t('Save'), 'txt-editor-form');
