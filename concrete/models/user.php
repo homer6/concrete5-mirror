@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -46,6 +46,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$_SESSION['uBlockTypesSet'] = false;
 					$_SESSION['uGroups'] = $nu->uGroups;
 					$_SESSION['uLastOnline'] = $row['uLastOnline'];
+					$nu->recordLogin();
 				}
 			}
 			return $nu;
@@ -86,9 +87,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$username = $args[0];
 				$password = $args[1];
 				if (!$args[2]) {
-					$_SESSION = array();
+					$_SESSION['uGroups'] = false;
 				}
-				
 				$password = User::encryptPassword($password, PASSWORD_SALT);
 				$v = array($username, $password);
 				$q = "select uID, uName, uIsActive, uIsValidated from Users where uName = ? and uPassword = ?";
@@ -151,7 +151,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$uID = ($this->uID > 0) ? $this->uID : 0;
 			$cID = $c->getCollectionID();
 			$v = array($cID, $uID);
-			$db->query("insert into PageStatistics (cID, uID) values (?, ?)", $v);
+			$db->query("insert into PageStatistics (cID, uID, date) values (?, ?, NOW())", $v);
+			
+			// record a view, arguments are
+			// 1. page being viewed
+			// 2. user viewing page
+			Events::fire('on_page_view', $c, $this);
 		}
 		
 		public function encryptPassword($uPassword, $salt = PASSWORD_SALT) {

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -31,10 +31,11 @@ class Job extends Object {
 
 	//you must override this method
 	function run(){
-		throw new Exception('the Job::run() method must be overridden by your child Job class.');
+		throw new Exception(t('Error: The Job::run() method must be overridden by your child Job class.'));
 	}	
 	
-	
+	public function getJobName() {return $this->jName;}
+	public function getJobDescription() {return $this->jDescription;}	
 	
 	//==========================================================
 	// JOB MANAGEMENT - do not override anything below this line 
@@ -167,21 +168,21 @@ class Job extends Object {
 							$jobObjs[$jHandle]=new $className();
 							$jobObjs[$jHandle]->jHandle=$jHandle;
 							if(!$jobObjs[$jHandle] instanceof Job){
-								$jobObjs[$jHandle]->jDescription='Error: the job class "'.$className.'" must be a child class of Job'; 
+								$jobObjs[$jHandle]->jDescription= t('Error: The Job class must be a child class of Job.');
 								$jobObjs[$jHandle]->invalid=1;
 							}
 						  }else{	
 						  	$invalidJob = new Job();
 							$invalidJob->jName = $className;
 							$invalidJob->jHandle=$jHandle;
-							$invalidJob->jDescription = 'Error: invalid job file. The class '.$className.' was not found in '.$path; 
+							$invalidJob->jDescription = t('Error: Invalid Job file. The class %s was not found in %s .', $className, $path); 
 							$invalidJob->invalid=1;
 							$jobObjs[$jHandle] = $invalidJob;
 						}					
 					}
 					closedir($dh);
 				}
-			}else throw new Exception( 'Invalid Jobs Directory: '.$jobClassLocation );
+			}else throw new Exception( t('Error: Invalid Jobs Directory %s', $jobClassLocation) );
 		}
 		
 		return $jobObjs;
@@ -210,7 +211,7 @@ class Job extends Object {
 		try{ 
 			$resultMsg=$this->run();
 			if(strlen($resultMsg)==0) 
-				$resultMsg='Job Run Successfully';
+				$resultMsg= t('The Job was run successfully.');
 		}catch(Exception $e){
 			$resultMsg=$e->getMessage();
 			$this->loadError(2);
@@ -220,7 +221,7 @@ class Job extends Object {
 		else $jStatus='DISABLED_ERROR';
 		$rs = $db->query( "UPDATE Jobs SET jStatus=?, jLastStatusText=? WHERE jHandle=?", array( $jStatus, $resultMsg, $this->jHandle ) );
 		
-		$timestamp=date('Y-m-d H:i:s A');
+		$timestamp=date('Y-m-d H:i:s');
 		$rs = $db->query( "INSERT INTO JobsLog (jID, jlMessage, jlTimestamp, jlError) VALUES(?,?,?,?)", array( $this->jID, $resultMsg, $timestamp, $this->getError() ) );
 		
 		
@@ -245,7 +246,7 @@ class Job extends Object {
 	final public function install(){
 		$db = Loader::db();
 		$jobExists=$db->getOne( 'SELECT count(*) FROM Jobs WHERE jHandle=?', array($this->jHandle) );
-		$vals=array($this->jName,$this->jDescription,  date('Y-m-d H:i:s A'), $this->jNotUninstallable, $this->jHandle);
+		$vals=array($this->getJobName(),$this->getJobDescription(),  date('Y-m-d H:i:s'), $this->jNotUninstallable, $this->jHandle);
 		if($jobExists){
 			$db->query('UPDATE Jobs SET jName=?, jDescription=?, jDateInstalled=?, jNotUninstallable=? WHERE jHandle=?',$vals);
 		}else{

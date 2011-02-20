@@ -1,6 +1,5 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
-require(dirname(__FILE__) . '/../controller.php');
 
 $miniSurvey= new Minisurvey();
 
@@ -21,7 +20,7 @@ if($_GET['cID'] && $_GET['arHandle']){
 	}
 }else $badPermissions=true;
 if($badPermissions){
-	echo 'Invalid Permissions';
+	echo t('Invalid Permissions');
 	die;
 } 
 

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 Loader::library('search');
 Loader::model('search/collection');
@@ -17,15 +17,15 @@ if (isset($_REQUEST['reveal'])) {
 
 ?>
 
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm_sitemap.css";</style>
+<style type="text/css">@import "<?php  echo ASSETS_URL_CSS?>/ccm_sitemap.css";</style>
 
 
 <script type="text/javascript">
 	var CCM_SITEMAP_MODE = 'full';
 </script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.sitemap.js"></script>
+<script type="text/javascript" src="<?php  echo ASSETS_URL_JAVASCRIPT?>/ccm.sitemap.js"></script>
 
-<h1><span>Sitemap</span></h1>
+<h1><span><?php  echo t('Sitemap')?></span></h1>
 
 <div class="ccm-dashboard-inner" >
 
@@ -38,17 +38,16 @@ if (isset($_REQUEST['reveal'])) {
 		</ul>
 	</div>
 
-	<?php  Loader::element('dashboard/sitemap_search_results') ?>
-	
+	<?php   Loader::element('dashboard/sitemap_search_results') ?>	
 
 	</td>
 	<td valign="top">
 	
-	<?php  Loader::element('dashboard/sitemap_search') ?>
+	<?php   Loader::element('dashboard/sitemap_search') ?>
 	
 	<div id="ccm-show-all-pages">
-	<input type="checkbox" id="ccm-show-all-pages-cb" <?php  if ($_SESSION['dsbSitemapShowSystem'] == 1) { ?> checked <?php  } ?> />
-	<label for="ccm-show-all-pages-cb">Show System Pages</label>
+	<input type="checkbox" id="ccm-show-all-pages-cb" <?php   if ($_SESSION['dsbSitemapShowSystem'] == 1) { ?> checked <?php   } ?> />
+	<label for="ccm-show-all-pages-cb"><?php  echo t('Show System Pages')?></label>
 	</div>
 	
 	</td>

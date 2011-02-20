@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Helpers
  * @subpackage Validation
@@ -49,6 +49,18 @@
 			return (count($this->error) > 0);
 		}
 
+		/** 
+		 * Outputs the HTML of an error list, with the correct style attributes/classes. This is a convenience method.
+		 */
+		public function output() {
+			if ($this->has()) {
+				print '<ul class="ccm-error">';
+				foreach($this->getList() as $error) {
+					print '<li>' . $error . '</li>';
+				}
+				print '</ul>';
+			}
+		}
 	}
 	
 ?>

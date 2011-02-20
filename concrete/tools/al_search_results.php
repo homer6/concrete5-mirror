@@ -1,11 +1,11 @@
-<?php  
+<?php   
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 $c = Page::getByPath('/dashboard/mediabrowser');
 $cp = new Permissions($c);
 if (!$cp->canRead()) {
-	die(_("Access Denied"));
+	die(_("Access Denied."));
 }
 
 Loader::block('library_file');
@@ -29,23 +29,23 @@ $pOptions = $s->paging($_REQUEST['start'], $_REQUEST['order'], $_REQUEST['view']
 
 ?>
 
-<h2>View Files </h2>
+<h2><?php  echo t('View Files')?> </h2>
 <div class="ccm-al-actions">
-<?php  if ($pOptions['needPaging']) {
+<?php   if ($pOptions['needPaging']) {
 	include(DIR_FILES_ELEMENTS_CORE . '/search_results_paging.php');
 }?>
 </div>
 
-<?php  include(DIR_FILES_ELEMENTS_CORE . '/search_results_top.php'); ?>
+<?php   include(DIR_FILES_ELEMENTS_CORE . '/search_results_top.php'); ?>
 
 <div class="ccm-al-gallery">
 <div class="ccm-spacer">&nbsp;</div>
 
-<?php 
+<?php  
 if ($s->getTotal() > 0) { ?>
 	<div class="ccm-al-gallery">
 	<div class="ccm-spacer">&nbsp;</div>
-	<?php 
+	<?php  
 
 	while ($row = $res->fetchRow()) {
 
@@ -65,26 +65,26 @@ if ($s->getTotal() > 0) { ?>
 		?>
 
 
-		<div class="ccm-al-image" id="ccm-ali<?php echo $row['bID']?>" al-origfilename="<?php echo $row['origfilename']?>" al-filename="<?php echo $row['filename']?>" al-width="<?php echo $w?>" al-height="<?php echo $h?>" al-type="<?php echo $row['type']?>" al-filepath="<?php echo BASE_URL . REL_DIR_FILES_UPLOADED . '/' . $row['filename']?>" al-thumb-path="<?php echo $thumbPath?>">
-		<div class="ccm-al-inner"><?php  if ($thumbPath != '') { ?>
-		<img src="<?php echo $thumbPath?>" />
-		<?php  } else { 
+		<div class="ccm-al-image" id="ccm-ali<?php  echo $row['bID']?>" al-origfilename="<?php  echo $row['origfilename']?>" al-filename="<?php  echo $row['filename']?>" al-width="<?php  echo $w?>" al-height="<?php  echo $h?>" al-type="<?php  echo $row['type']?>" al-filepath="<?php  echo BASE_URL . REL_DIR_FILES_UPLOADED . '/' . $row['filename']?>" al-thumb-path="<?php  echo $thumbPath?>">
+		<div class="ccm-al-inner"><?php   if ($thumbPath != '') { ?>
+		<img src="<?php  echo $thumbPath?>" />
+		<?php   } else { 
 			$img = ASSETS_URL_IMAGES . '/icons/filetypes/generic_' . $row['generictype'] . '.png';
 		?>
-			<?php echo LibraryFileBlockController::getIcon($row['type'], $row['generictype']); ?>		
-		<?php  } ?>
+			<?php  echo LibraryFileBlockController::getIcon($row['type'], $row['generictype']); ?>		
+		<?php   } ?>
 		</div>
-		<div class="ccm-al-title"><?php echo LibraryFileBlockController::sanitizeTitle($row['filename'], 12)?></div>
+		<div class="ccm-al-title"><?php  echo LibraryFileBlockController::sanitizeTitle($row['filename'], 12)?></div>
 
 		</div>
 
-	<?php  } ?>
+	<?php   } ?>
 
 	<div class="ccm-spacer">&nbsp;</div>
 	</div>
-	<?php 
+	<?php  
 } else {
-	echo('<strong>No files found.</strong><br/><br/>');
+	echo('<strong>' . t('No files found.') . '</strong><br/><br/>');
 }
 ?>
 

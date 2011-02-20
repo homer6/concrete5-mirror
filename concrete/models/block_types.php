@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -76,7 +76,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 							
 							require_once($fdir . '/' . FILENAME_BLOCK_CONTROLLER);
 							if (!class_exists($class)) {
-								throw new Exception($class . ' not found. Please check to ensure the block\'s controller.php file contains the correct class name.');
+								throw new Exception(t("%s not found. Please check that the block controller file contains the correct class name.", $class));
 							}
 							$bta = new $class;
 							$bt->btName = $bta->getBlockTypeName();
@@ -182,6 +182,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		var $addBTUArray = array();
 		var $addBTGArray = array();
+		public $controller;
 		
 		public static function getByHandle($handle) {
 			$where = 'btHandle = ?';
@@ -203,8 +204,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$row = $r->fetchRow();
 				$bt = new BlockType;
 				$bt->setPropertiesFromArray($row);
+				$bt->controller = Loader::controller($bt);
 				return $bt;
-			}			
+			}
+			
 		}
 		
 		function isBlockTypeInternal() {return $this->btIsInternal;}
@@ -367,7 +370,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$bt->pkgHandle = null;
 			$bt->pkgID = 0;
 			return BlockType::doInstallBlockType($btHandle, $bt, $dir, $btID);
-		}	
+		}
+		
+		/** 
+		 * Renders a particular view of a block type, using the public $controller variable as the block type's controller
+		 */
+		public function render($view) {
+			$bv = new BlockView();
+			$bv->setController($this->controller);
+			$bv->render($this, $view);
+		}			
 		
 		private function doInstallBlockType($btHandle, $bt, $dir, $btID = 0) {
 			$db = Loader::db();
@@ -379,6 +391,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				if (!class_exists($class)) {
 					require_once($dir . '/' . $btHandle . '/' . FILENAME_BLOCK_CONTROLLER);
 				}
+				
+				Localization::setDomain($dir . '/' . $btHandle);
+
 				$bta = new $class;
 				
 				// first run the subclass methods. If they work then we install the block
@@ -410,7 +425,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					return $db->ErrorMsg();
 				}
 			} else {
-				return "No block found by that name in the core blocks directory.";
+				return t("No block found by that name in the core blocks directory.");
 			}
 		}
 		

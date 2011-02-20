@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php   defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 <script language="javascript">
 tinyMCE.init({
 	mode : "textareas",
@@ -11,13 +11,14 @@ tinyMCE.init({
 	theme_concrete_buttons2_add : "spellchecker",
 	spellchecker_languages : "+English=en",
 	relative_urls : false,
-	content_css : "<?php echo $th->getThemeEditorCSS()?>"
+	convert_urls: false,
+	content_css : "<?php  echo $th->getThemeEditorCSS()?>"
 });
 </script>
 
 <script type="text/javascript">
 var ccm_editorCurrentAuxTool = '';
-var editor_id = 'ccm-content-<?php echo $a->getAreaID()?>';
+var editor_id = 'ccm-content-<?php  echo $a->getAreaID()?>';
 
 // store the selection/position for ie..
 var bm; 
@@ -27,7 +28,7 @@ setBookMark = function () {
 
 ccm_selectSitemapNode = function(cID, cName) {
 	var mceEd = tinyMCE.activeEditor;	
-	var url = '<?php echo BASE_URL . DIR_REL?>/index.php?cID=' + cID;
+	var url = '<?php  echo BASE_URL . DIR_REL?>/index.php?cID=' + cID;
 	
 	mceEd.selection.moveToBookmark(bm);
 	var selectedText = mceEd.selection.getContent();
@@ -40,7 +41,7 @@ ccm_selectSitemapNode = function(cID, cName) {
 			'class' : null
 		});
 	} else {
-		var selectedText = '<a href="<?php echo BASE_URL . DIR_REL?>/index.php?cID=' + cID + '" title="' + cName + '">' + cName + '<\/a>';
+		var selectedText = '<a href="<?php  echo BASE_URL . DIR_REL?>/index.php?cID=' + cID + '" title="' + cName + '">' + cName + '<\/a>';
 		tinyMCE.execCommand('mceInsertRawHTML', false, selectedText, true); 
 	}
 	
@@ -86,4 +87,4 @@ ccm_chooseAsset = function(obj) {
 }
 </script>
 
-<?php  Loader::element('editor_controls'); ?>
+<?php   Loader::element('editor_controls'); ?>

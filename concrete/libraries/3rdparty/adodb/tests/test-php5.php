@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /*
   V4.81 3 May 2006  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
@@ -46,8 +46,8 @@ case 'mysqli':
 
 $db->debug=1;
 
-$cnt = $db->GetOne("select count(*) from adoxyz where ?<id and id<?php ",array(10,20));
-$stmt = $db->Prepare("select * from adoxyz where ?<id and id<?php ");
+$cnt = $db->GetOne("select count(*) from adoxyz where ?<id and id<?php  ",array(10,20));
+$stmt = $db->Prepare("select * from adoxyz where ?<id and id<?php  ");
 if (!$stmt) echo $db->ErrorMsg(),"\n";
 $rs = $db->Execute($stmt,array(10,20));
 

@@ -1,6 +1,7 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
-require(dirname(__FILE__) . '/../controller.php');
+
+Loader::block('page_list');
 
 $previewMode = true;
 $nh = Loader::helper('navigation');

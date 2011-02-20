@@ -1,14 +1,14 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 foreach($posts as $item) { ?>
 	
 	<div class="post">
-	<h4><a href="<?php  echo $item->get_permalink(); ?>"><?php  echo $item->get_title(); ?></a></h4>
-	<h5><?php  echo $item->get_date('F jS'); ?></h5>
-	<?php  echo $item->get_description(); ?>
+	<h4><a href="<?php   echo $item->get_permalink(); ?>"><?php   echo $item->get_title(); ?></a></h4>
+	<h5><?php   echo $item->get_date('F jS'); ?></h5>
+	<?php   echo $item->get_description(); ?>
 	</div>
-<?php  } ?>
+<?php   } ?>
 
-<h2>Read More</h2>
+<h2><?php  echo t('Read More')?></h2>
 
-<p>Read more C5 news <a href="<?php echo $feed_read_more?>">at the official C5 developer blog</a>.</p>
+<p><?php  echo t('Read more C5 news <a href="%s">at the C5 Developer Center</a>', $feed_read_more)?>.</p>

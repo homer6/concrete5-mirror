@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -159,6 +159,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (isset($this->c)) {
 				$c = $this->c;
 			}
+			extract($this->controller->getSets());
+			extract($this->controller->getHelperObjects());
 			include($this->themeDir . '/' . $file);
 		}
 
@@ -233,7 +235,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		*/	
 		public function url($action, $task = null) {
 			$dispatcher = '';
-			if (!URL_REWRITING) {
+			if ((!URL_REWRITING_ALL) || !defined('URL_REWRITING_ALL')) {
 				$dispatcher = '/index.php';
 			}
 			if ($action == '/') {
@@ -279,7 +281,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @param string $error
 		 * @return void
 		*/	
-		public function renderError($title, $error) {
+		public function renderError($title, $error, $errorObj = null) {
 			$innerContent = $error;
 			$titleContent = $title; 
 			if (!$this->theme) {
@@ -310,11 +312,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @access public
 		 * @param PageTheme object $pl
 		 * @param string $filename
-		 * @param boolean $singlePage
+		 * @param boolean $wrapTemplateInTheme
 		 * @return void
 		*/	
-		private function setThemeForView($pl, $filename, $singlePage = false) {
-			// singlePage gets set to true if we're passing the filename of a single page through 
+		private function setThemeForView($pl, $filename, $wrapTemplateInTheme = false) {
+			// wrapTemplateInTheme gets set to true if we're passing the filename of a single page or page type file through 
 			$pkgID = 0;
 			if ($pl instanceof PageTheme) {
 				if ($pl->getPackageID() > 0) {
@@ -327,7 +329,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 					$theme = $dirp . '/' . $pl->getPackageHandle() . '/' . DIRNAME_THEMES . '/' . $pl->getThemeHandle() . '/' . $filename;
 					if (!file_exists($theme)) {
-						if ($singlePage) {
+						if ($wrapTemplateInTheme) {
 							$theme = $dirp . '/' . $pl->getPackageHandle() . '/' . DIRNAME_THEMES . '/' . $pl->getThemeHandle() . '/' . FILENAME_THEMES_VIEW;
 						} else {
 							$theme = $dirp . '/' . $pl->getPackageHandle() . '/' . DIRNAME_THEMES . '/' . $pl->getThemeHandle() . '/' . FILENAME_THEMES_DEFAULT;
@@ -346,7 +348,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 					$theme = $dir . '/' . $pl->getThemeHandle() . '/' . $filename;
 					if (!file_exists($theme)) {
-						if ($singlePage) {
+						if ($wrapTemplateInTheme) {
 							$theme = $dir . '/' . $pl->getThemeHandle() . '/' . FILENAME_THEMES_VIEW;
 						} else {
 							$theme = $dir . '/' . $pl->getThemeHandle() . '/' . FILENAME_THEMES_DEFAULT;
@@ -408,17 +410,20 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 				}
 				
-				$singlePage = false;
+				$wrapTemplateInTheme = false;
 				
 				// Extract controller information from the view, and put it in the current context
 				if (!isset($this->controller)) {
 					$this->controller = Loader::controller($view);
 					$this->controller->setupAndRun();
 				}
+				
 				extract($this->controller->getSets());
 				extract($this->controller->getHelperObjects());
 				
 				// Determine which inner item to load, load it, and stick it in $innerContent
+				$content = false;
+				
 				ob_start();			
 				if ($view instanceof Page) {
 					
@@ -433,53 +438,63 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					
 					// $view is a page. It can either be a SinglePage or just a Page, but we're not sure at this point, unfortunately
 					if ($view->getCollectionTypeID() == 0 && $cFilename) {
-						$singlePage = true;
+						$wrapTemplateInTheme = true;
 						if (file_exists(DIR_FILES_CONTENT. "{$cFilename}")) {
-							include(DIR_FILES_CONTENT. "{$cFilename}");
+							$content = DIR_FILES_CONTENT. "{$cFilename}";
 						} else if ($view->getPackageID() > 0) {
 							$file1 = DIR_PACKAGES . '/' . $view->getPackageHandle() . '/'. DIRNAME_PAGES . $cFilename;
 							$file2 = DIR_PACKAGES_CORE . '/' . $view->getPackageHandle() . '/'. DIRNAME_PAGES . $cFilename;
 							if (file_exists($file1)) {
-								include($file1);
+								$content = $file1;
 							} else if (file_exists($file2)) {
-								include($file2);
+								$content = $file2;
 							}
 						} else if (file_exists(DIR_FILES_CONTENT_REQUIRED . "{$cFilename}")) {
-							include(DIR_FILES_CONTENT_REQUIRED. "{$cFilename}");
+							$content = DIR_FILES_CONTENT_REQUIRED. "{$cFilename}";
 						}
 						
 						$themeFilename = $c->getCollectionHandle() . '.php';
 						
 					} else {
-	
+
+						if (file_exists(DIR_BASE . '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php')) {
+							$content = DIR_BASE . '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php';
+							$wrapTemplateInTheme = true;
+						} else if (file_exists(DIR_BASE_CORE. '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php')) {
+							$content = DIR_BASE_CORE . '/' . DIRNAME_PAGE_TYPES . '/' . $ctHandle . '.php';
+							$wrapTemplateInTheme = true;
+						}					
+						
 						$themeFilename = $ctHandle . '.php';
 					}
 					
 					
 				} else if (is_string($view)) {
+					
+					// if we're passing a view but our render override is not null, that means that we're passing 
+					// a new view from within a controller. If that's the case, then we DON'T override the viewPath, we want to keep it
+					
 					$viewPath = $view;
-					$this->viewPath = $viewPath;
+					if ($this->controller->getRenderOverride() != '' && $this->getCollectionObject() != null) {
+						// we are INSIDE a collection renderring a view. Which means we want to keep the viewPath that of the collection
+						$this->viewPath = $this->getCollectionObject()->getCollectionPath();
+					}
+					
 					// we're just passing something like "/login" or whatever. This will typically just be 
 					// internal Concrete stuff, but we also prepare for potentially having something in DIR_FILES_CONTENT (ie: the webroot)
 					if (file_exists(DIR_FILES_CONTENT . "/{$view}/" . FILENAME_COLLECTION_VIEW)) {
-						include(DIR_FILES_CONTENT . "/{$view}/" . FILENAME_COLLECTION_VIEW);
+						$content = DIR_FILES_CONTENT . "/{$view}/" . FILENAME_COLLECTION_VIEW;
 					} else if (file_exists(DIR_FILES_CONTENT . "/{$view}.php")) {
-						include(DIR_FILES_CONTENT . "/{$view}.php");
+						$content = DIR_FILES_CONTENT . "/{$view}.php";
 					} else if (file_exists(DIR_FILES_CONTENT_REQUIRED . "/{$view}/" . FILENAME_COLLECTION_VIEW)) {
-						include(DIR_FILES_CONTENT_REQUIRED . "/{$view}/" . FILENAME_COLLECTION_VIEW);
+						$content = DIR_FILES_CONTENT_REQUIRED . "/{$view}/" . FILENAME_COLLECTION_VIEW;
 					} else if (file_exists(DIR_FILES_CONTENT_REQUIRED . "/{$view}.php")) {
-						include(DIR_FILES_CONTENT_REQUIRED . "/{$view}.php");
+						$content = DIR_FILES_CONTENT_REQUIRED . "/{$view}.php";
 					}
-					
+					$wrapTemplateInTheme = true;
 					$themeFilename = $view . '.php';
 				}
-	
 				
-				$innerContent = ob_get_contents();
-				
-				if (ob_get_level() == (OB_INITIAL_LEVEL + 1)) {
-					ob_end_clean();
-				}
 				
 				if (is_object($this->c)) {
 					$c = $this->c;
@@ -489,8 +504,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				// obtain theme information for this collection
 				if (isset($this->themeOverride)) {
 					$theme = $this->themeOverride;
-				} else if (isset($controller->theme)) {
-					$theme = $controller->theme;
+				} else if (isset($this->controller->theme)) {
+					$theme = $this->controller->theme;
 				} else if (($tmpTheme = $this->getThemeFromPath($viewPath)) != false) {
 					$theme = $tmpTheme;
 				} else if (is_object($this->c) && ($tmpTheme = $this->c->getCollectionThemeObject()) != false) {
@@ -499,10 +514,20 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$theme = FILENAME_COLLECTION_DEFAULT_THEME;
 				}		
 	
-				$this->setThemeForView($theme, $themeFilename, $singlePage);
+				$this->setThemeForView($theme, $themeFilename, $wrapTemplateInTheme);
 	
 				// finally, we include the theme (which was set by setTheme and will automatically include innerContent)
 				// disconnect from our db and exit
+				if ($content != false) {
+					include($content);
+				}
+
+				$innerContent = ob_get_contents();
+				
+				if (ob_get_level() == (OB_INITIAL_LEVEL + 1)) {
+					ob_end_clean();
+				}
+				
 				include($this->theme);
 				
 				$this->controller->runTask('on_render_complete', $this->controller->getTask());
@@ -517,24 +542,24 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			} catch(ADODB_Exception $e) {
 				// if it's a database exception we go here.
 				if (Config::get('SITE_DEBUG_LEVEL') == DEBUG_DISPLAY_ERRORS) {
-					$this->renderError('An unexpected error occurred.', $e->getMessage());		
+					$this->renderError(t('An unexpected error occurred.'), $e->getMessage(), $e);		
 				} else {
-					$this->renderError('An unexpected error occurred.', 'A database error occurred while processing this request.');
+					$this->renderError(t('An unexpected error occurred.'), t('A database error occurred while processing this request.'), $e);
 				}
 				
 				// log if setup to do so
 				if (ENABLE_LOG_ERRORS) {
 					$l = new Log(LOG_TYPE_EXCEPTIONS, true, true);
-					$l->write('Exception Occurred: ' . $e->getMessage());
+					$l->write(t('Exception Occurred: ') . $e->getMessage());
 					$l->write($e->getTraceAsString());
 					$l->close();
 				}
 			} catch (Exception $e) {
-				$this->renderError('An unexpected error occurred.', $e->getMessage());
+				$this->renderError(t('An unexpected error occurred.'), $e->getMessage(), $e);
 				// log if setup to do so
 				if (ENABLE_LOG_ERRORS) {
 					$l = new Log(LOG_TYPE_EXCEPTIONS, true, true);
-					$l->write('Exception Occurred: ' . $e->getMessage());
+					$l->write(t('Exception Occurred: ') . $e->getMessage());
 					$l->write($e->getTraceAsString());
 					$l->close();
 				}

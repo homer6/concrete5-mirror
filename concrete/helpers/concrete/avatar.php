@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @access private
  * @package Helpers
@@ -25,6 +25,59 @@ class ConcreteAvatarHelper {
 		$aDir = $f->getDirectoryContents(DIR_FILES_AVATARS_STOCK);
 		return $aDir;			
 	}
+
+	function outputUserAvatar($uo, $suppressNone = false, $aspectRatio = 1.0) {			
+		if ($uo->hasAvatar()) {
+			if (file_exists(DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.jpg')) {
+				$size = DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.jpg';
+				$src = REL_DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.jpg';
+			} else {
+				// legacy
+				$size = DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.gif';
+				$src = REL_DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.gif';
+			}
+			if (file_exists($size)) {
+				$isize = getimagesize($size);
+				$isize[0] = round($isize[0]*$aspectRatio);
+				$isize[1] = round($isize[1]*$aspectRatio);
+				
+				$str = '<img class="u-avatar" src="' . $src . '" width="' . $isize[0] . '" height="' . $isize[1] . '" alt="' . $uo->getUserName() . '" />';
+				return $str;
+			}
+		}
+		
+		if (!$suppressNone) {
+			return $this->outputNoAvatar($aspectRatio);
+		}
+	}
+	
+	public function getImagePath($uo) {
+		if (!$uo->hasAvatar()) {
+			return false;
+		}
+		
+		$cacheStr = "?" . time();
+		if (file_exists(DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.jpg')) {
+			$base = DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.jpg';
+			$src = REL_DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.jpg';
+		} else {
+			$base = DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.gif';
+			$src = REL_DIR_FILES_AVATARS . '/' . $uo->getUserID() . '.gif';
+		}
+		$src .= $cacheStr;
+		if (!file_exists($base)) {
+			return "";
+		} else {
+			return $src;
+		}
+	}
+
+	
+	function outputNoAvatar($aspectRatio = 1.0) {
+		$str = '<img class="u-avatar" src="' . AVATAR_NONE . '" width="' . AVATAR_WIDTH*$aspectRatio . '" height="' . AVATAR_HEIGHT*$aspectRatio . '" alt="" />';
+		return $str;
+	}
+	
 
 	function processUploadedAvatar($pointer, $uID) {
 		$uHasAvatar = 0;
@@ -73,12 +126,12 @@ class ConcreteAvatarHelper {
 		}
 		
 		
-		$newPath = DIR_FILES_AVATARS . '/' . $uID . '.gif';
+		$newPath = DIR_FILES_AVATARS . '/' . $uID . '.jpg';
 		
 		if ($im) {
 			$res = imageCopyResampled($image, $im, 0, 0, 0, 0, $finalWidth, $finalHeight, $oWidth, $oHeight);
 			if ($res) {
-				$res2 = imageGIF($image, $newPath);
+				$res2 = imageJPEG($image, $newPath);
 				if ($res2) {
 					$uHasAvatar = 1;
 				}
@@ -88,7 +141,12 @@ class ConcreteAvatarHelper {
 		return $uHasAvatar;
 	}
 	
-	function removeAvatar($uID) { 
+	function removeAvatar($ui) {
+		if (is_object($ui)) {
+			$uID = $ui->getUserID();
+		} else {
+			$uID = $ui;
+		}
 		$db = Loader::db();
 		$db->query("update Users set uHasAvatar = 0 where uID = ?", array($uID));
 	}

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -93,14 +93,30 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$db = Loader::db();
 			if (is_object($ak)) {
 				$v = array($this->getCollectionID(), $this->getVersionID(), $ak->getCollectionAttributeKeyID());
-				$q = "select value from CollectionAttributeValues where cID = ? and cvID = ? and akID = ?";				
+				$q = "select value from CollectionAttributeValues where cID = ? and cvID = ? and akID = ?";		
+				$value = $db->GetOne($q, $v);
+				$akType = $ak->getCollectionAttributeKeyType();
 			} else if (is_string($ak)) {
 				$db = Loader::db();
 				$v = array($this->getCollectionID(), $this->getVersionID(), $ak);
-				$q = "select value from CollectionAttributeValues cav inner join CollectionAttributeKeys cak on cav.akID = cak.akID where cID = ? and cvID = ? and cak.akHandle = ?";
+				$q = "select cak.akType, cav.value from CollectionAttributeValues cav inner join CollectionAttributeKeys cak on cav.akID = cak.akID where cID = ? and cvID = ? and cak.akHandle = ?";
+				$r = $db->getRow($q, $v);
+				$value = $r['value'];
+				$akType = $r['akType'];
 			}
-			$value = $db->getOne($q, $v);
-			return $value;
+			$v = false;
+			switch($akType) {
+				case "IMAGE_FILE":
+					if ($value > 0) {
+						Loader::block('library_file');
+						$v = LibraryFileBlockController::getFile($value);
+					}
+					break;
+				default:
+					$v = $value;
+					break;
+			}
+			return $v;
 		}
 		
 		public function getAttribute($akHandle) {
@@ -397,10 +413,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$newCID = $db->Insert_ID();
 			}
 			
+			$cvIsApproved = (isset($data['cvIsApproved']) && $data['cvIsApproved'] == 0) ? 0 : 1;
 			
 			if ($res) {
 				// now we add a pending version to the collectionversions table
-				$v2 = array($newCID, 1, $data['name'], $data['handle'], $data['cDescription'], $cDatePublic, $cDate, VERSION_INITIAL_COMMENT, $data['uID'], 1);
+				$v2 = array($newCID, 1, $data['name'], $data['handle'], $data['cDescription'], $cDatePublic, $cDate, VERSION_INITIAL_COMMENT, $data['uID'], $cvIsApproved);
 				$q2 = "insert into CollectionVersions (cID, cvID, cvName, cvHandle, cvDescription, cvDatePublic, cvDateCreated, cvComments, cvAuthorUID, cvIsApproved) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 				$r2 = $db->prepare($q2);
 				$res2 = $db->execute($r2, $v2);

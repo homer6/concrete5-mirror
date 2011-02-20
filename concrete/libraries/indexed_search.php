@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
 *
 * A wrapper class for results from the search engine, allowing for abstraction in case search engines are changed in the future.
@@ -149,7 +149,7 @@ class IndexedSearch {
 			
 			$query->addSubquery( $subQuery, $required );	
 		}
-
+		$query = utf8_encode($query);
 		$resultsTmp = $index->find($query);
 
 		$results = array();

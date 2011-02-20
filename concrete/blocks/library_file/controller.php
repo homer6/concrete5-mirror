@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Blocks
  * @category Concrete
@@ -20,22 +20,33 @@
  */
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	class LibraryFileBlockController extends BlockController {
-	
-		protected $btDescription = "Files added to the asset library";
-		protected $btName = "Library File";
+	 
 		protected $btIsInternal = 1;
 		protected $btTable = 'btFile';
 		
+		/** 
+		 * Used for localization. If we want to localize the name/description we have to include this
+		 */
+		public function getBlockTypeDescription() {
+			return t("Files added to the asset library");
+		}
+		
+		public function getBlockTypeName() {
+			return t("Library File");
+		}		
+		
 		function getFile($fID) {
 			$db = Loader::db();
-			$r = $db->query("select bID, filename, origfilename, url from btFile where bID = ?", array($fID));
+			$r = $db->query("select bID, filename, origfilename, url, type, generictype from btFile where bID = ?", array($fID));
 			$obj = $r->fetchRow();
 			
 			$bf = new LibraryFileBlockController;
-			$bf->bID = $obj['bID'];
-			$bf->filename = $obj['filename'];
-			$bf->origfilename = $obj['origfilename'];			
-			$bf->url = $obj['url'];
+			$bf->bID 			= $obj['bID'];
+			$bf->filename 		= $obj['filename'];
+			$bf->origfilename 	= $obj['origfilename'];
+			$bf->generictype 	= $obj['generictype'];
+			$bf->type 			= $obj['type'];
+			$bf->url 			= $obj['url'];
 			return $bf;
 		}
 
@@ -83,6 +94,9 @@
 		}
 		public function getFileRelativePath() {
 			return REL_DIR_FILES_UPLOADED . '/' . $this->filename;
+		}
+		public function getFileFullURL() {
+			return BASE_URL . REL_DIR_FILES_UPLOADED . '/' . $this->filename;
 		}
 		
 		
@@ -185,6 +199,10 @@
 			
 		}
 
+		/** 
+		 * Gets the system thumbnail for a given file object. This function returns a relative path
+		 * @return string $path
+		 */
 		function getThumbnailRelativePath($filename = null) {
 			if (!$filename) {
 				$db = Loader::db();
@@ -199,7 +217,11 @@
 				return REL_DIR_FILES_UPLOADED_THUMBNAILS . '/' . $newFileName;
 			}
 		}
-		
+
+		/** 
+		 * Gets the system thumbnail for a given file object. This function returns the absolute path
+		 * @return string $path
+		 */
 		function getThumbnailAbsolutePath($filename = null) {
 			if (!$filename) {
 				$db = Loader::db();
@@ -212,6 +234,51 @@
 			} else {
 				$newFileName = substr($filename, 0, strrpos($filename, '.')) . '.jpg';
 				return DIR_FILES_UPLOADED_THUMBNAILS . '/' . $newFileName;
+			}
+		}
+		
+		/** 
+		 * Returns a thumbnail for the current file object. If a width and height are specified, attempts to create or retrieve a thumbnail of that size specifically
+		 * Returns an object with the following properties: src, width, height, alt
+		 * @param int $maxWidth
+		 * @param int $maxHeight
+		 * @return object $thumbnail
+		 */
+		public function getThumbnail($maxWidth = null, $maxHeight = null) {
+			$thumb = new stdClass;
+			if ($maxWidth == null && $maxHeight == null) {
+				$src = $this->getThumbnailRelativePath();
+				$abspath = $this->getThumbnailAbsolutePath();
+			} else if ($this->filename != '' && is_int($maxWidth) && is_int($maxHeight)) {
+				// then we check to see if a file with these dimensions exists
+				$pi = pathinfo($this->filename);
+				$filename = $pi['filename'] . '_' . $maxWidth . 'x' . $maxHeight . '.jpg';
+				if (!file_exists(DIR_FILES_CACHE . '/' . $filename)) {
+					// create image there
+					LibraryFileBlockController::createImage(DIR_FILES_UPLOADED . '/' . $this->filename, DIR_FILES_CACHE . '/' . $filename, $maxWidth, $maxHeight);
+				}
+				
+				$src = REL_DIR_FILES_CACHE . '/' . $filename;
+				$abspath = DIR_FILES_CACHE . '/' . $filename;
+			}
+			
+			if (isset($abspath) && file_exists($abspath)) {			
+				$thumb->src = $src;
+				$dimensions = getimagesize($abspath);
+				$thumb->width = $dimensions[0];
+				$thumb->height = $dimensions[1];
+				$thumb->alt = $this->getOriginalFilename();
+				return $thumb;
+			}				
+		}
+		
+		/** 
+		 * Prints out an image string for the current thumbnail, using the getThumbnail method
+		 */
+		public function outputThumbnail($maxWidth = null, $maxHeight = null) {
+			$thumb = $this->getThumbnail($maxWidth, $maxHeight);
+			if (is_object($thumb)) {
+				print '<img class="ccm-output-thumbnail" alt="' . htmlentities($thumb->alt, ENT_QUOTES) . '" src="' . $thumb->src . '" width="' . $thumb->width . '" height="' . $thumb->height . '" />';
 			}
 		}
 

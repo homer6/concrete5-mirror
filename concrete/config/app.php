@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  *
  * When this file is run it basically queries the database for site config items and sets those up, possibly overriding items in the base.php.
@@ -32,6 +32,10 @@ if (!defined('ENABLE_LOG_DATABASE_QUERIES')) {
 # Default URL rewriting setting
 if (!defined('URL_REWRITING')) {
 	Config::getOrDefine('URL_REWRITING', false);
+}
+
+if (!defined('URL_REWRITING_ALL')) {
+	define("URL_REWRITING_ALL", false);
 }
 
 if (URL_REWRITING == true) {

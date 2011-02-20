@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Blocks
  * @subpackage BlockTypes
@@ -28,14 +28,23 @@
 		* @var object
 		*/
 		var $pobj;
-		
-		protected $btDescription = "Adds blog-style comments (a guestbook) to your page.";
-		protected $btName = "Guestbook";
+		  
 		protected $btTable = 'btGuestBook';
 		protected $btInterfaceWidth = "300";
 		protected $btInterfaceHeight = "260";	
 		
 		protected $btIncludeAll = 1;
+		
+		/** 
+		 * Used for localization. If we want to localize the name/description we have to include this
+		 */
+		public function getBlockTypeDescription() {
+			return t("Adds blog-style comments (a guestbook) to your page.");
+		}
+		
+		public function getBlockTypeName() {
+			return t("Guestbook");
+		}			
 			
 		function delete() {
 			$E = new GuestBookBlockEntry($this->bID);
@@ -80,25 +89,33 @@
 			$v = Loader::helper('validation/strings');
 			$errors = array();
 			
-			if(!$v->email($_POST['email'])) {
-				$errors['email'] = "- invalid email address";
+			$u = new User();
+			$uID = intval( $u->getUserID() );
+			if($this->authenticationRequired && !$u->isLoggedIn()){
+					$errors['notLogged'] = '- '.t("Your session has expired.  Please log back in."); 
+			}elseif(!$this->authenticationRequired){		
+				if(!$v->email($_POST['email'])) {
+					$errors['email'] = '- '.t("invalid email address");
+				}
+				if(!$v->notempty($_POST['name'])) {
+					$errors['name'] = '- '.t("name is required");
+				}
 			}
-			if(!$v->notempty($_POST['name'])) {
-				$errors['name'] = "- name is required";
-			}
+			
 			if(!$v->notempty($_POST['commentText'])) {
-				$errors['commentText'] = "- a comment is required";
+				$errors['commentText'] = '- '.t("a comment is required");
 			}
 			
 			if(count($errors)) {
 				$E = new GuestBookBlockEntry($this->bID);
-				$E->user_name = $_POST['name'];
-				$E->user_email = $_POST['email'];
+				$E->user_name = $_POST['name'].'';
+				$E->user_email = $_POST['email'].'';
 				$E->commentText = $_POST['commentText'];
+				$E->uID			= $uID;
 				
 				$E->entryID = ($_POST['entryID']?$_POST['entryID']:NULL);
 				
-				$this->set('response', 'Please correct the following errors:');
+				$this->set('response', t('Please correct the following errors:') );
 				$this->set('errors',$errors);
 				$this->set('Entry',$E);	
 			} else {
@@ -106,16 +123,39 @@
 				if($_POST['entryID']) { // update
 					$bp = $this->getPermissionsObject(); 
 					if($bp->canWrite()) {
-						$E->updateEntry($_POST['entryID'], $_POST['commentText'], $_POST['name'], $_POST['email']);
-						$this->set('response', 'The comment has been saved');
+						$E->updateEntry($_POST['entryID'], $_POST['commentText'], $_POST['name'], $_POST['email'], $uID );
+						$this->set('response', t('The comment has been saved') );
 					} else {
-						$this->set('response', 'An Error occured while saving the comment');
+						$this->set('response', t('An Error occured while saving the comment') );
 						return true;
 					}
 				} else { // add			
-					$E->addEntry($_POST['commentText'], $_POST['name'], $_POST['email'], (!$this->requireApproval), $cID);	
-					$this->set('response', 'Thanks! Your comment has been posted.');
+					$E->addEntry($_POST['commentText'], $_POST['name'], $_POST['email'], (!$this->requireApproval), $cID, $uID );	
+					$this->set('response', t('Thanks! Your comment has been posted.') );
 				}
+				 
+				$stringsHelper = Loader::helper('validation/strings');
+				if( $stringsHelper->email($this->notifyEmail) ){
+					global $c; 
+					if(intval($uID)>0){
+						Loader::model('userinfo');
+						$ui = UserInfo::getByID($uID);
+						$fromEmail=$ui->getUserEmail();
+						$fromName=$ui->getUserName();
+					}else{
+						$fromEmail=$_POST['email'];
+						$fromName=$_POST['name'];
+					} 
+					$mh = Loader::helper('mail');
+					$mh->to( $this->notifyEmail ); 
+					$mh->addParameter('guestbookURL', BASE_URL.DIR_REL.$c->getCollectionPath() ); 
+					$mh->addParameter('comment',  $_POST['commentText'] );  
+					$mh->from($fromEmail,$fromName);
+					$mh->load('block_guestbook_notification');
+					$mh->setSubject( t('Guestbook Comment Notification') ); 
+					//echo $mh->body.'<br>';
+					@$mh->sendMail(); 
+				} 
 			}
 			return true;
 		}
@@ -153,7 +193,7 @@
 			if($bp->canWrite()) {
 				$Entry = new GuestBookBlockEntry($this->bID);
 				$Entry->removeEntry($_GET['entryID']);
-				$this->set('response', 'The comment has been removed');
+				$this->set('response', t('The comment has been removed.') );
 			}
 		}
 	
@@ -168,7 +208,7 @@
 			if($bp->canWrite()) {
 				$Entry = new GuestBookBlockEntry($this->bID);
 				$Entry->approveEntry($_GET['entryID']);
-				$this->set('response', 'The comment has been approved');
+				$this->set('response', t('The comment has been approved.') );
 			}
 		}
 		
@@ -181,7 +221,7 @@
 			if($bp->canWrite()) {
 				$Entry = new GuestBookBlockEntry($this->bID);
 				$Entry->unApproveEntry($_GET['entryID']);
-				$this->set('response', 'The comment has been set to not approved');
+				$this->set('response', t('The comment has been unapproved.') );
 			}
 		}
 	
@@ -197,6 +237,12 @@
 		 * @var integer
 		*/
 		var $bID;
+		
+		/**
+		 * blocks uID user id
+		 * @var integer
+		*/
+		var $uID;		
 		/**
 		 * the entry id
 		 * @var integer
@@ -235,6 +281,7 @@
 			$this->user_name 	= $data['user_name'];
 			$this->user_email 	= $data['user_email'];
 			$this->commentText 	= $data['commentText'];
+			$this->uID 			= $data['uID'];
 		}
 		
 		/** 
@@ -243,12 +290,12 @@
 		 * @param string $name
 		 * @param string $email
 		*/
- 		function addEntry($comment, $name, $email, $approved, $cID) {
+ 		function addEntry($comment, $name, $email, $approved, $cID, $uID=0 ) {
 			$txt = Loader::helper('text');
  		
 			$db = Loader::db();
-			$query = "INSERT INTO btGuestBookEntries (bID, cID, user_name, user_email, commentText, approved) VALUES (?, ?, ?, ?, ?, ?)";
-			$res = $db->query($query, array($this->bID, $cID, $txt->sanitize($name), $txt->sanitize($email), $txt->sanitize($comment),$approved) );
+			$query = "INSERT INTO btGuestBookEntries (bID, cID, uID, user_name, user_email, commentText, approved) VALUES (?, ?, ?, ?, ?, ?, ?)";
+			$res = $db->query($query, array($this->bID, $cID, intval($uID), $txt->sanitize($name), $txt->sanitize($email), $txt->sanitize($comment), $approved) );
 		}
 		
 		
@@ -258,12 +305,13 @@
 		 * @param string $comment
 		 * @param string $name
 		 * @param string $email
+		 * @param string $uID
 		*/
-	 	function updateEntry($entryID, $comment, $name, $email) {
+	 	function updateEntry($entryID, $comment, $name, $email, $uID=0 ) {
 			$db = Loader::db();
 			$txt = Loader::helper('text');
-			$query = "UPDATE btGuestBookEntries SET user_name=?, user_email=?, commentText=? WHERE entryID=? AND bID=?";
-			$res = $db->query($query, array($txt->sanitize($name),$txt->sanitize($email),$txt->sanitize($comment),$entryID,$this->bID));
+			$query = "UPDATE btGuestBookEntries SET user_name=?, uID=? user_email=?, commentText=? WHERE entryID=? AND bID=?";
+			$res = $db->query($query, array($txt->sanitize($name), intval($uID), $txt->sanitize($email),$txt->sanitize($comment),$entryID,$this->bID));
 		}
  		
 		/** 

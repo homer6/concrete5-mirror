@@ -1,4 +1,4 @@
-<?php  
+<?php   
 defined('C5_EXECUTE') or die(_("Access Denied."));
 global $c;
 global $cp;
@@ -15,40 +15,34 @@ if (is_object($c)) {
 }
 ?>
 
-<?php 
+<?php  
 $akt = $c->getCollectionAttributeValue('meta_title'); 
 $akd = $c->getCollectionAttributeValue('meta_description');
 $akk = $c->getCollectionAttributeValue('meta_keywords');
 if ($akt) { 
 	$pageTitle = $akt; ?>
-	<title><?php echo $akt?></title>
-<?php  } else { 
+	<title><?php  echo $akt?></title>
+<?php   } else { 
 	$pageTitle = $c->getCollectionName();
 	?>
-	<title><?php echo SITE . ' :: ' . $pageTitle?></title>
-<?php  } 
+	<title><?php  echo SITE . ' :: ' . $pageTitle?></title>
+<?php   } 
 
 if ($akd) { ?>
-	<meta name="description" content="<?php echo htmlspecialchars($akd)?>" />
-<?php  } else { ?>	
-	<meta name="description" content="<?php echo htmlspecialchars($pageDescription)?>" />
-<?php  }
+	<meta name="description" content="<?php  echo htmlspecialchars($akd)?>" />
+<?php   } else { ?>	
+	<meta name="description" content="<?php  echo htmlspecialchars($pageDescription)?>" />
+<?php   }
 
 if ($akk) { ?>
-	<meta name="keywords" content="<?php echo htmlspecialchars($akk)?>" />
-<?php  } ?>
+	<meta name="keywords" content="<?php  echo htmlspecialchars($akk)?>" />
+<?php   } ?>
 
-<?php  
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 
-// output header items
-print $this->controller->outputHeaderItems();
-
-?>
-
-<?php  $u = new User(); ?>
-
+<?php   $u = new User(); ?>
 <script type="text/javascript">
-<?php 
+<?php  
 	if ($u->config('UI_BREADCRUMB')) { 
 		echo("var CCM_ENABLE_BREADCRUMB = true;\r");
 	} else {
@@ -68,15 +62,21 @@ print $this->controller->outputHeaderItems();
 		echo("var CCM_ARRANGE_MODE = {$isArrangeMode};\r");
 	}
 ?>
-var CCM_IMAGE_PATH = "<?php echo ASSETS_URL_IMAGES?>";
-var CCM_TOOLS_PATH = "<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>";
-var CCM_REL = "<?php echo DIR_REL?>";
+var CCM_IMAGE_PATH = "<?php  echo ASSETS_URL_IMAGES?>";
+var CCM_TOOLS_PATH = "<?php  echo REL_DIR_FILES_TOOLS_REQUIRED?>";
+var CCM_REL = "<?php  echo DIR_REL?>";
 
 </script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery1.2.6.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/swfobject2.1.js"></script>
+<script type="text/javascript" src="<?php  echo REL_DIR_FILES_TOOLS_REQUIRED?>/i18n_js"></script>
+<script type="text/javascript" src="<?php  echo ASSETS_URL_JAVASCRIPT?>/jquery1.2.6.js"></script>
+<script type="text/javascript" src="<?php  echo ASSETS_URL_JAVASCRIPT?>/swfobject2.1.js"></script>
 
-<?php  
+<?php   
+// output header items
+print $this->controller->outputHeaderItems();
+?>
+
+<?php   
 	if (is_object($cp)) {
 		$v = View::getInstance();
 

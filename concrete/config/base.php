@@ -1,5 +1,6 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
+define('DISPATCHER_FILENAME', 'index.php');
 
 # These items should be set by site.php in config/ but if they're not that means we're installing and we need something there
 if (!defined('BASE_URL')) {
@@ -7,7 +8,7 @@ if (!defined('BASE_URL')) {
 }
 
 if (!defined('DIR_REL')) {
-	$uri = substr($_SERVER['SCRIPT_NAME'], 0, strrpos($_SERVER['SCRIPT_NAME'], '/'));
+	$uri = substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], DISPATCHER_FILENAME) - 1);
 	define('DIR_REL', $uri);
 }
 
@@ -40,6 +41,28 @@ if (!defined('ENABLE_CUSTOM_USER_ATTRIBUTES_MODEL')) {
 	define('ENABLE_CUSTOM_USER_ATTRIBUTES_MODEL', false);
 }
 
+if (!defined('STATISTICS_TRACK_PAGE_VIEWS')) {
+	define('STATISTICS_TRACK_PAGE_VIEWS', true);
+}
+
+
+if (!defined('LOCALE')) {
+	define("LOCALE", 'en_US');
+}
+
+if (strpos(LOCALE, '_') > -1) {
+	$loc = explode('_', LOCALE);
+	if (is_array($loc) && count($loc) == 2) {
+		define('LANGUAGE', $loc[0]);
+	}
+}
+
+if (!defined("LANGUAGE")) {
+	define("LANGUAGE", LOCALE);
+}
+
+define("LANGUAGE_DOMAIN_CORE", "messages");
+
 # Debug Menu - Determines whether a "Submit Feedback/Bug/Question" is active */
 # Currently Concrete5 does not include this capability but it will likely come back.
 define('MENU_FEEDBACK_DISPLAY', 1);
@@ -55,6 +78,11 @@ define('DIR_BASE', dirname($_SERVER['SCRIPT_FILENAME']));
 # The core concrete directory. Either one per install or one per server
 define('DIRNAME_APP', 'concrete');
 
+# if "concrete/" does NOT exist in DIR_BASE then we set multi_site to on
+if (!is_dir(DIR_BASE . '/' . DIRNAME_APP)) {
+	define("MULTI_SITE", 1);
+}
+
 # The core output buffering level. In the view class we need to know what the
 # initial value is. Usually it's zero but sometimes PHP is setting this to one
 # (gzip encoding?)
@@ -63,7 +91,6 @@ define('OB_INITIAL_LEVEL', ob_get_level());
 # Sessions/TMP directories
 define('DIR_SESSIONS', '/tmp');
 define('DIR_TMP', '/tmp');
-define('DISPATCHER_FILENAME', 'index.php');
 define('DISPATCHER_FILENAME_CORE', 'dispatcher.php');
 
 # Used by the loader to load core libraries
@@ -100,6 +127,7 @@ define('DIRNAME_MODELS', 'models');
 define('DIRNAME_LIBRARIES', 'libraries');
 define('DIRNAME_PAGE_TYPES', 'page_types');
 define('DIRNAME_ELEMENTS', 'elements');
+define('DIRNAME_LANGUAGES', 'languages');
 define('DIRNAME_JOBS', 'jobs');
 define('DIRNAME_DASHBOARD', 'dashboard');
 define('DIRNAME_DASHBOARD_MODULES', 'modules');
@@ -129,6 +157,7 @@ if (defined('MULTI_SITE') && MULTI_SITE == 1) {
 	define('ASSETS_URL_WEB', BASE_URL);
 } else {
 	define('ASSETS_URL_WEB', BASE_URL . DIR_REL);
+	define('MULTI_SITE', 0);
 }
 
 define('ASSETS_URL', ASSETS_URL_WEB . '/concrete');
@@ -207,6 +236,7 @@ define('DIR_FILES_TRASH', DIR_FILES_UPLOADED . '/trash');
 # Cache
 define('DIR_FILES_CACHE', DIR_FILES_UPLOADED . '/cache');
 define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
+define('REL_DIR_FILES_CACHE', REL_DIR_FILES_UPLOADED . '/cache');
 
 # Binaries used by the system
 # Currently unused
@@ -271,11 +301,16 @@ define('HOME_UID', USER_SUPER_ID);
 define('HOME_HANDLE', "home");
 
 # User avatar constants - should probably be moved into the avatar helper class as avatar constants
-define('AVATAR_WIDTH', 80);
-define('AVATAR_HEIGHT', 80);
+if (!defined('AVATAR_WIDTH') && !defined('AVATAR_HEIGHT')) {
+	define('AVATAR_WIDTH', 80);
+	define('AVATAR_HEIGHT', 80);
+}
+
 define('DIR_FILES_AVATARS', DIR_FILES_UPLOADED . '/avatars');
 define('REL_DIR_FILES_AVATARS', REL_DIR_FILES_UPLOADED . '/avatars');
-define('AVATAR_NONE', ASSETS_URL_IMAGES . '/spacer.gif');
+if (!defined('AVATAR_NONE')) {
+	define('AVATAR_NONE', ASSETS_URL_IMAGES . '/spacer.gif');
+}
 define('DIR_FILES_AVATARS_STOCK', DIR_FILES_UPLOADED . '/stock_avatars');
 define('REL_DIR_FILES_AVATARS_STOCK', REL_DIR_FILES_UPLOADED . '/stock_avatars');
 
@@ -305,15 +340,16 @@ define('SESSION', 'CONCRETE5');
 
 # Variables/constants necessary for ADODB
 define('DB_TYPE', 'mysql');
-define('DB_USE_CACHE', true);
-define('MULTI_SITE', 0);
+if (!defined('DB_USE_CACHE')) {
+	define('DB_USE_CACHE', true);
+}
 $ADODB_ASSOC_CASE =  2;
 $ADODB_ACTIVE_CACHESECS = 300;
 $ADODB_CACHE_DIR = DIR_FILES_CACHE;
 define('ADODB_OUTP', 'concrete_log_query');
-define('APP_VERSION', '5.0.0');
+define('APP_VERSION', '5.1.1');
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)
-define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number.php');
+define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number');
 define('APP_VERSION_LATEST_DOWNLOAD', 'http://www.concrete5.org/download/');
 
 require_once(DIR_LIBRARIES_CORE . '/loader.php');

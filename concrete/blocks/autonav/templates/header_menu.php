@@ -1,17 +1,18 @@
-<?php 
+<?php  
 	defined('C5_EXECUTE') or die(_("Access Denied."));
-	$ba = new AutonavBlockController($b);
-	$aBlocks = $ba->generateNav();
-	$c = $b->getBlockCollectionObject();
+	$aBlocks = $controller->generateNav();
+	global $c;
 	echo("<ul class=\"nav-header\">");
 	$isFirst = true;
 	foreach($aBlocks as $ni) {
 		$_c = $ni->getCollectionObject();
 		if (!$_c->getCollectionAttributeValue('exclude_nav')) {
 		
-			if ($c->getCollectionID() == $_c->getCollectionID()) 
+			if (strpos($c->getCollectionPath(), $_c->getCollectionPath()) === 0) {
 				$navSelected='nav-selected';
-			else $navSelected='';
+			} else {
+				$navSelected = '';
+			}
 			
 			if ($isFirst) $isFirstClass = 'first';
 			else $isFirstClass = '';

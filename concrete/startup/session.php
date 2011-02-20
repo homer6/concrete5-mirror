@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 // Start the session
@@ -10,6 +10,8 @@ ini_set('session.gc_maxlifetime', SESSION_MAX_LIFETIME);
 //if we've set the _postSID variable, we populate session_id using it
 if (isset($_REQUEST['ccm-session'])) {
 	session_id($_REQUEST['ccm-session']);
+} else if (isset($_REQUEST['sessionIDOverride'])) {
+	session_id($_REQUEST['sessionIDOverride']);
 }
 
 session_name(SESSION);

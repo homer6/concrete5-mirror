@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 /**
@@ -56,8 +56,8 @@ class UserAttributeKey extends Object {
 				foreach($row as $k => $v) {
 					$cak->{$k} = $v;
 				}
+				return $cak;
 			}
-			return $cak;
 		}
 	}
 	
@@ -194,13 +194,13 @@ class UserAttributeKey extends Object {
 		$db = Loader::db();
 		$v = array($this->getKeyID(), $uID);
 		$cnt = $db->getOne("select count(ukID) from UserAttributeValues where ukID = ? and uID = ?", $v);
-		if ($cnt) {
-			array_unshift($v, $value);
-			if ($cnt > 0) {
-				$db->query("update UserAttributeValues set value = ? where ukID = ? and uID = ?", $v);
-			} else {
-				$db->query("insert into UserAttributeValues (value, ukID, uID) values (?, ?, ?)", $v);
-			}
+	
+		array_unshift($v, $value);
+
+		if ($cnt > 0) {
+			$db->query("update UserAttributeValues set value = ? where ukID = ? and uID = ?", $v);
+		} else {
+			$db->query("insert into UserAttributeValues (value, ukID, uID) values (?, ?, ?)", $v);
 		}
 	}
 	
@@ -243,7 +243,7 @@ class UserAttributeKey extends Object {
 				break;
 			case "BOOLEAN":
 				$checked = ($text == 1) ? 'checked' : '';
-				return '<input type="checkbox" name="' . $this->getFormElementName() . '" id="' . $this->getFormElementName() . '" value="1" ' . $checked . ' />';
+				return '<input type="checkbox" name="' . $this->getFormElementName() . '" id="' . $this->getFormElementName() . '" value="1" ' . $checked . ' class="uak-checkbox"/>';
 				break;
 			case "SELECT":
 				$r = '<select name="' . $this->getFormElementName() . '" id="' . $this->getFormElementName() . '" class="uak-select">';
@@ -300,7 +300,7 @@ class UserAttributeKey extends Object {
 				break;
 			case "SELECT":
 				$r = '<select name="' . $this->getFormElementName() . '" class="uak-select">';
-				$r .= '<option value="">N/A</option>';
+				$r .= '<option value="">' . t('N/A') . '</option>';
 				$arr = preg_split("/\r|\n/", trim($this->getKeyValues()), -1, PREG_SPLIT_NO_EMPTY);
 				foreach($arr as $v) {
 					$selected = ($text == $v) ? 'selected' : '';

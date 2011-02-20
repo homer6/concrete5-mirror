@@ -1,4 +1,4 @@
-<?php 
+<?php  
 // Chinese language file contributed by "Cuiyan (cysoft)" cysoft#php.net.
 // Encode by GB2312
 // Simplified Chinese

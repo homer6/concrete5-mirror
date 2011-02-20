@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 /**
@@ -39,13 +39,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		protected $btHasRendered = false;
 
 		protected $identifier;
-		
-		/**
-		 * @access private
-		 */
-		public function getRenderOverride() {
-			return $this->renderOverride;
-		}
 		
 		/**
 		 * Sets a value used by a particular block. These variables will automatically be present in the corresponding views used by the block.
@@ -97,8 +90,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$bv = new BlockView();
 			$bv->setController($this);
 			// sometimes we need the block type available in here
-			$bt = BlockType::getByID($this->getBlockObject()->getBlockTypeID());
-			$a = $this->getBlockObject()->getBlockAreaObject();
+			if (is_object($this->getBlockObject())) {
+				$bt = BlockType::getByID($this->getBlockObject()->getBlockTypeID());
+				$a = $this->getBlockObject()->getBlockAreaObject();
+			}
 			$this->renderOverride = $view;
 		}
 		
@@ -184,8 +179,25 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 			}
 			parent::__construct();
-			$this->set('controller', $this);		
+			$this->set('controller', $this);
 		}
+		
+		public function setupAndRun($method) {
+			if ($method) {
+				$this->task = $method;
+			}
+			if (method_exists($this, 'on_start')) {
+				call_user_func_array(array($this, 'on_start'), array($method));
+			}
+			if ($method) {
+				$this->runTask($method, array());
+			}
+			
+			if (method_exists($this, 'on_before_render')) {
+				call_user_func_array(array($this, 'on_before_render'), array($method));
+			}
+		}
+
 		
 		/**
 		 * Gets the generic Block object attached to this controller's instance
@@ -263,6 +275,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 */
 		public function isBlockTypeInternal() {
 			return $this->btIsInternal;
+		}
+		
+		/** 
+		 * Returns a key/value array of strings that is used to translate items when used in javascript
+		 */
+		public function getJavaScriptStrings() {
+			return array();
 		}
 		
 	}

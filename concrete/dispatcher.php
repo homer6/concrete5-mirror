@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 	## This constant ensures that we're operating inside dispatcher.php. There is a LATER check to ensure that dispatcher.php is being called correctly. ##
 	define('C5_EXECUTE', true);
@@ -21,6 +21,7 @@
 	## Load required libraries ##
 	Loader::library('object');
 	Loader::library('log');
+	Loader::library('localization');
 	Loader::library('request');
 	Loader::library('events');
 	Loader::library('model');
@@ -58,6 +59,11 @@
 	
 	## User level config ##	
 	require('config/app.php');
+	
+	## Site-level config POST user/app config ##
+	if (file_exists(DIR_BASE . '/config/site_post.php')) {
+		require(DIR_BASE . '/config/site_post.php');
+	}
 
 	## Set debug-related and logging activities
 	require('startup/debug_logging.php');
@@ -153,8 +159,10 @@
 	require('startup/process.php');
 	
 	## Record the view
-	$u->recordView($c);
-
+	if (STATISTICS_TRACK_PAGE_VIEWS == true) {
+		$u->recordView($c);
+	}
+	
 	## now we display (provided we've gotten this far)
 
 	$v = View::getInstance();

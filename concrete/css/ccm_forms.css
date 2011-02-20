@@ -55,7 +55,7 @@ a.ccm-button-right {float: right}
 div.ccm-button, a.ccm-button-right, a.ccm-button-left, a.ccm-button {display: block; text-decoration: none !important; height: 38px; background: transparent url(../images/button_l.png) no-repeat;}
 a.ccm-button-right:hover, a.ccm-button-left:hover, a.ccm-button:hover {background: transparent url(../images/button_l_active.png) no-repeat scroll;}
 
-div.ccm-button span,a.ccm-button-left span, a.ccm-button-right span, a.ccm-button span {height: 12px; display: block; float: left; padding-top: 11px; padding-bottom: 15px; margin-left: 15px; padding-right: 16px; font-size: 11px; color: #535353; background: transparent url(../images/button_r.png) repeat-y scroll right top;}
+div.ccm-button span,a.ccm-button-left span, a.ccm-button-right span, a.ccm-button span {white-space: nowrap; height: 12px; display: block; float: left; padding-top: 11px; padding-bottom: 15px; margin-left: 15px; padding-right: 16px; font-size: 11px; color: #535353; background: transparent url(../images/button_r.png) repeat-y scroll right top;}
 /*
 div.ccm-buttons:after {
 	content: ".";
@@ -85,6 +85,8 @@ a.ccm-button em.ccm-button-close {background-image: url(../images/icons/close.pn
 	padding-left:20px;
 	padding-right: 0;
 }
+
+th.ccm-permissions-header {text-align: left !important; white-space: nowrap}
 
 table.ccm-grid {border-left: 1px solid #D4D4D4; border-top: 1px solid #D4D4D4; font-size: 12px; }
 table.ccm-grid th, table.ccm-grid td {border-right: 1px solid #D4D4D4; border-bottom: 1px solid #D4D4D4; font-size: 12px; padding: 7px; background: #fff}
@@ -166,10 +168,12 @@ div.ccm-block-field-group {margin-bottom: 10px; border-bottom: 1px dotted #aaa; 
 div.ccm-block-field-group h2 {margin-bottom: 6px}
 
 div#ccm-block-type-list {padding-top: 2px}
-div.ccm-block-type a.ccm-block-type-help {top: 10px; right: 10px; position: absolute}
+div.ccm-block-type a.ccm-block-type-help {float:right; margin-right:10px; margin-top:10px; position: static}
 div.ccm-block-type a.ccm-scrapbook-delete {top: 8px; right: 10px; position: absolute}
 div.ccm-block-type a.ccm-block-type-inner, div.ccm-block-type p.ccm-block-type-inner {background-repeat: no-repeat; background-position: 8px 8px; color: #666; display: block; font-size: 14px; padding: 8px 8px 8px 30px; text-decoration: none; border: 1px solid #fff}
 div.ccm-block-type p.ccm-block-type-inner {margin: 0px}
 div.ccm-block-type a.ccm-block-type-inner:hover {background-color: #d9e7ff; border: 1px solid #94a7c7}
-div.ccm-block-type {position: relative; padding: 0px 0px 2px 0px; border-bottom: 1px solid #dedede; margin-bottom: 2px}
+div.ccm-block-type {position: static; padding: 0px 0px 2px 0px; border-bottom: 1px solid #dedede; margin-bottom: 2px; left:0px; top:0px; width:auto; height:auto;}
 div.ccm-block-type div.ccm-block-type-description {display: none; padding-left: 30px; color: #aaa; font-size: 12p; padding-top: 2px; padding-bottom: 6px}
+
+ 

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Helpers
  * @category Concrete
@@ -45,6 +45,9 @@ class TextHelper {
 		$text = trim(strip_tags($string));
 		if ($maxlength > 0) {
 			$text = substr($text, 0, $maxlength);
+		}
+		if ($text == null) {
+			return ""; // we need to explicitly return a string otherwise some DB functions might insert this as a ZERO.
 		}
 		return $text;
 	}

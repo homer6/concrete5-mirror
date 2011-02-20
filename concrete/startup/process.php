@@ -1,4 +1,4 @@
-<?php 
+<?php  
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	
 	# Filename: _process.php
@@ -119,27 +119,17 @@
 				}
 				break;
 			case 'passthru':
-				$a = Area::get($c, $_GET['arHandle']);
-				$b = Block::getByID($_GET['bID'], $c, $a);
-				// basically, we hand off the current request to the block
-				// which handles permissions and everything
-				$p = new Permissions($b);
-				if ($p->canRead()) {
-					$action = $b->passThruBlock($_REQUEST['method']);
-					/*
-					if ($action != -1) {
-						if ($action) {
-							header('Location: ' . $action);
-							exit;
-						} else {
-							header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . $step);
-							exit;
-						}
+				if (isset($_GET['bID']) && isset($_GET['arHandle'])) {
+					$a = Area::get($c, $_GET['arHandle']);
+					$b = Block::getByID($_GET['bID'], $c, $a);
+					// basically, we hand off the current request to the block
+					// which handles permissions and everything
+					$p = new Permissions($b);
+					if ($p->canRead()) {
+						$action = $b->passThruBlock($_REQUEST['method']);
 					}
-					*/
-					
-					break;
 				}
+				break;
 		}
 	}
 	
@@ -649,15 +639,18 @@
 				// the $c below identifies that we're adding a collection _to_ that particular collection object
 				//$newCollectionID = $ct->addCollection($c);				
 				
-				$nc = $c->add($ct, $_POST);
+				$data = $_POST;
+				$data['cvIsApproved'] = 0;
+				
+				$nc = $c->add($ct, $data);
 				
 				if (is_object($nc)) {
 					if ($_POST['rel'] == 'SITEMAP') { 
 						if ($cp->canApproveCollection()) {
-							$v = new Version($c, "RECENT");
+							$v = new Version($nc, "RECENT");
 							$v->approve();
 							$u = new User();
-							$u->unloadCollectionEdit($c);
+							$u->unloadCollectionEdit($nc);
 						}
 						header('Location: ' . URL_SITEMAP);
 						exit;

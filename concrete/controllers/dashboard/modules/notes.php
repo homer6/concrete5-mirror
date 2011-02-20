@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class NotesDashboardModuleController extends DashboardController {
@@ -29,7 +29,7 @@ class NotesDashboardModuleController extends DashboardController {
 	}
 	
 	public function notes_saved() {
-		return 'Your dashboard notes were saved.';
+		return t('Your dashboard notes were saved.');
 	}
 	
 }

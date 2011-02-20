@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 Loader::model('collection_attributes');
 Loader::model('collection_types');
@@ -36,28 +36,29 @@ if ($_POST['add'] || $_POST['update']) {
 	$akHandle = $txt->sanitize($_POST['akHandle']);
 	$akName = $txt->sanitize($_POST['akName']);
 	$akValues = $txt->sanitize($_POST['akValues']);
+	$akValues = preg_replace('/\r\n|\r/', "\n", $akValues); // make linebreaks consistant
 	$akType = $txt->sanitize($_POST['akType']);
 	$akSearchable = $_POST['akSearchable'] ? 1 : 0;
 	
 	$error = array();
 	if (!$akHandle) {
-		$error[] = "Handle required.";
+		$error[] = t("Handle required.");
 	}
 	if (!$akName) {
-		$error[] = "Name required.";
+		$error[] = t("Name required.");
 	}
 	if (!$akType) {
-		$error[] = "Type required.";
+		$error[] = t("Type required.");
 	}
 	if ($akType == 'SELECT' && !$akValues) {
-		$error[] = "A select attribute must have at least one option.";
+		$error[] = t("A select attribute must have at least one option.");
 	}
 	
 	if (count($error) == 0) {
 		if ($_POST['add']) {
 			if ($akHandle) {
 				if (CollectionAttributeKey::inUse($akHandle)) {
-					$error[] = "An attribute with the handle '" . $akHandle . "' already exists.";
+					$error[] = t("An attribute with the handle %s already exists.", $akHandle);
 				}
 			}
 			if (count($error) == 0) {
@@ -81,11 +82,11 @@ if ($_REQUEST['task'] == 'delete') {
 }
 
 if ($_GET['created']) {
-	$message = "Attribute Key Created.";
+	$message = t("Attribute Key Created.");
 } else if ($_GET['deleted']) { 
-	$message = "Attribute Key Deleted.";
+	$message = t("Attribute Key Deleted.");
 } else if ($_GET['updated']) {
-	$message = "Attribute Key Updated.";
+	$message = t("Attribute Key Updated.");
 }
 
 $attribs = CollectionAttributeKey::getList();
@@ -93,48 +94,55 @@ $attribs = CollectionAttributeKey::getList();
 
 if ($editMode) { ?>	
 
-<h1><span>Edit Attribute Definition (<em class="required">*</em> - required field)</span></h1>
+<h1><span><?php  echo t('Edit Attribute Definition')?> (<em class="required">*</em> - <?php  echo t('required field')?>)</span></h1>
 <div class="ccm-dashboard-inner">
-	<form method="post" id="ccm-attribute-update" action="<?php echo $this->url('/dashboard/collection_types/attributes/')?>">
-	<input type="hidden" name="akID" value="<?php echo $_REQUEST['akID']?>" />
+	<form method="post" id="ccm-attribute-update" action="<?php  echo $this->url('/dashboard/collection_types/attributes/')?>">
+	<input type="hidden" name="akID" value="<?php  echo $_REQUEST['akID']?>" />
 	<input type="hidden" name="task" value="edit" />
 	<input type="hidden" name="update" value="1" />
 	
 	<div style="margin:0px; padding:0px; width:100%; height:auto" >	
 	<table class="entry-form" border="0" cellspacing="1" cellpadding="0">
 	<tr>
-		<td class="subheader">Handle <span class="required">*</span></td>
-		<td class="subheader">Type <span class="required">*</span></td>
-		<td class="subheader">Searchable? <span class="required">*</span></td>
+		<td class="subheader"><?php  echo t('Handle')?> <span class="required">*</span></td>
+		<td class="subheader"><?php  echo t('Type')?> <span class="required">*</span></td>
+		<td class="subheader"><?php  echo t('Searchable?')?> <span class="required">*</span></td>
 	</tr>	
 	<tr>
-		<td style="width: 33%"><input type="text" name="akHandle" style="width: 100%" value="<?php echo $akHandle?>" /></td>
+		<td style="width: 33%"><input type="text" name="akHandle" style="width: 100%" value="<?php  echo $akHandle?>" /></td>
 		<td style="width: 33%"><select name="akType" style="width: 100%" onchange="if (this.value == 'SELECT') { document.getElementById('akValues').disabled = false; document.getElementById('reqValues').style.display='inline'; } else {  document.getElementById('reqValues').style.display='none'; document.getElementById('akValues').disabled = true; }">
-			<option value="TEXT"<?php  if ($akType == 'TEXT') { ?> selected<?php  } ?>>Text Box</option>
-			<option value="BOOLEAN"<?php  if ($akType == 'BOOLEAN') { ?> selected<?php  } ?>>Check Box</option>
-			<option value="SELECT"<?php  if ($akType == 'SELECT') { ?> selected<?php  } ?>>Select Menu</option>
-			<option value="SELECT_ADD"<?php  if ($akType == 'SELECT_ADD') { ?> selected<?php  } ?>>Select Menu + Add Option</option>
-			<option value="DATE"<?php  if ($akType == 'DATE') { ?> selected <?php  } ?>>Date</option>
+			<option value="TEXT"<?php   if ($akType == 'TEXT') { ?> selected<?php   } ?>><?php  echo t('Text Box')?></option>
+			<option value="BOOLEAN"<?php   if ($akType == 'BOOLEAN') { ?> selected<?php   } ?>><?php  echo t('Check Box')?></option>
+			<option value="SELECT"<?php   if ($akType == 'SELECT') { ?> selected<?php   } ?>><?php  echo t('Select Menu')?></option>
+			<option value="SELECT_ADD"<?php   if ($akType == 'SELECT_ADD') { ?> selected<?php   } ?>><?php  echo t('Select Menu + Add Option')?></option>
+			<option value="DATE"<?php   if ($akType == 'DATE') { ?> selected <?php   } ?>><?php  echo t('Date')?></option>
+			<option value="IMAGE_FILE"<?php   if ($akType == 'IMAGE_FILE') { ?> selected <?php   } ?>><?php  echo t('Image/File')?></option>
 		</select></td>
-		<td style="width: 33%"><input type="checkbox" name="akSearchable" style="vertical-align: middle" <?php  if ($akSearchable) { ?> checked <?php  } ?> /> Yes, include this field in the search index.</td>
+		<td style="width: 33%"><input type="checkbox" name="akSearchable" style="vertical-align: middle" <?php   if ($akSearchable) { ?> checked <?php   } ?> /> <?php  echo t('Yes, include this field in the search index.')?></td>
 	</tr>
 	<tr>
-		<td class="subheader" colspan="3">Name <span class="required">*</span></td>
+		<td class="subheader" colspan="3"><?php  echo t('Name')?> <span class="required">*</span></td>
 	</tr>
 	<tr>
-		<td colspan="3"><input type="text" name="akName" style="width: 100%" value="<?php echo $akName?>" /></td>
+		<td colspan="3"><input type="text" name="akName" style="width: 100%" value="<?php  echo $akName?>" /></td>
 	</tr>
 	<tr>
-		<td class="subheader" colspan="3">Values <span class="required" id="reqValues" <?php  if ($akType != 'SELECT') { ?> style="display: none"<?php  } ?>>*</span></td>
+		<td class="subheader" colspan="3"><?php  echo t('Values')?> <span class="required" id="reqValues" <?php   if ($akType != 'SELECT') { ?> style="display: none"<?php   } ?>>*</span></td>
 	</tr>
 	<tr>
-		<td colspan="3"><input type="text" id="akValues" name="akValues" style="width: 100%" value="<?php echo $akValues?>" <?php  if ($akType != 'SELECT') { ?> disabled <?php  } ?> /><br/>(For select types only - separate menu options with a comma, no space.)</td>
+		<td colspan="3">
+        <textarea id="akValues" name="akValues" style="width: 100%" <?php   if ($akType != 'SELECT') { ?> disabled="disabled" <?php   } ?>><?php  echo $akValues?></textarea>
+        <br/>(<?php  echo t('For select types only - separate menu options with line breaks')?>)
+        <!-- 
+        <input type="text" id="akValues" name="akValues" style="width: 100%" value="<?php  echo $akValues?>" <?php   if ($akType != 'SELECT') { ?> disabled <?php   } ?> /><br/>(<?php  echo t('For select types only - separate menu options with a comma, no space.')?>)
+        	-->
+        </td>
 	</tr>
 	<tr>
 		<td colspan="3" class="header">
 
-		<a href="<?php echo $this->url('/dashboard/collection_types')?>" class="ccm-button-left"><span>Cancel</span></a>
-		<a href="javascript:void(0)" onclick="$('#ccm-attribute-update').get(0).submit()" class="ccm-button-right"><span>Update</span></a>
+		<a href="<?php  echo $this->url('/dashboard/collection_types')?>" class="ccm-button-left"><span><?php  echo t('Cancel')?></span></a>
+		<a href="javascript:void(0)" onclick="$('#ccm-attribute-update').get(0).submit()" class="ccm-button-right"><span><?php  echo t('Update')?></span></a>
 		
 		</td>
 	</tr>
@@ -146,51 +154,55 @@ if ($editMode) { ?>
 	
 </div>
 
-<?php  
+<?php   
 
 } else { ?>
 
-<h1><span>Add Page Attribute</span></h1>
+<h1><span><?php  echo t('Add Page Attribute')?></span></h1>
 <div class="ccm-dashboard-inner">
 
-<form method="post" id="ccm-add-attribute" action="<?php echo $this->url('/dashboard/collection_types/attributes/')?>">
+<form method="post" id="ccm-add-attribute" action="<?php  echo $this->url('/dashboard/collection_types/attributes/')?>">
 <input type="hidden" name="add" value="1" />
 
 <div style="margin:0px; padding:0px; width:100%; height:auto" >	
 <table class="entry-form" border="0" cellspacing="1" cellpadding="0">
 <tr>
-	<td class="subheader">Handle <span class="required">*</span></td>
-	<td class="subheader">Type <span class="required">*</span></td>
-	<td class="subheader">Searchable? <span class="required">*</span></td>
+	<td class="subheader"><?php  echo t('Handle')?> <span class="required">*</span></td>
+	<td class="subheader"><?php  echo t('Type')?> <span class="required">*</span></td>
+	<td class="subheader"><?php  echo t('Searchable?')?> <span class="required">*</span></td>
 </tr>	
 <tr>
-	<td style="width: 33%"><input type="text" name="akHandle" style="width: 100%" value="<?php echo $_POST['akHandle']?>" /></td>
+	<td style="width: 33%"><input type="text" name="akHandle" style="width: 100%" value="<?php  echo $_POST['akHandle']?>" /></td>
 	<td style="width: 33%"><select name="akType" style="width: 100%" onchange="if (this.value == 'SELECT') { document.getElementById('akValues').disabled = false; document.getElementById('reqValues').style.display='inline'; } else {  document.getElementById('reqValues').style.display='none'; document.getElementById('akValues').disabled = true; }">
-		<option value="TEXT"<?php  if ($_POST['akType'] == 'TEXT') { ?> selected<?php  } ?>>Text Box</option>
-		<option value="BOOLEAN"<?php  if ($_POST['akType'] == 'BOOLEAN') { ?> selected<?php  } ?>>Check Box</option>
-		<option value="SELECT"<?php  if ($_POST['akType'] == 'SELECT') { ?> selected<?php  } ?>>Select Menu</option>
-		<option value="SELECT_ADD"<?php  if ($_POST['akType'] == 'SELECT_ADD') { ?> selected<?php  } ?>>Select Menu + Add Option</option>
-		<option value="DATE"<?php  if ($_POST['akType'] == 'DATE') { ?> selected <?php  } ?>>Date</option>
+		<option value="TEXT"<?php   if ($_POST['akType'] == 'TEXT') { ?> selected<?php   } ?>><?php  echo t('Text Box')?></option>
+		<option value="BOOLEAN"<?php   if ($_POST['akType'] == 'BOOLEAN') { ?> selected<?php   } ?>><?php  echo t('Check Box')?></option>
+		<option value="SELECT"<?php   if ($_POST['akType'] == 'SELECT') { ?> selected<?php   } ?>><?php  echo t('Select Menu')?></option>
+		<option value="SELECT_ADD"<?php   if ($_POST['akType'] == 'SELECT_ADD') { ?> selected<?php   } ?>><?php  echo t('Select Menu + Add Option')?></option>
+		<option value="DATE"<?php   if ($_POST['akType'] == 'DATE') { ?> selected <?php   } ?>><?php  echo t('Date')?></option>
+		<option value="IMAGE_FILE"<?php   if ($_POST['akType'] == 'IMAGE_FILE') { ?> selected <?php   } ?>><?php  echo t('Image/File')?></option>
 	</select></td>
-	<td style="width: 33%"><input type="checkbox" name="akSearchable" style="vertical-align: middle" <?php  if ($_POST['akSearchable']) { ?> checked <?php  } ?> /> Yes, include this field in the search index.</td>
+	<td style="width: 33%"><input type="checkbox" name="akSearchable" style="vertical-align: middle" <?php   if ($_POST['akSearchable']) { ?> checked <?php   } ?> /> <?php  echo t('Yes, include this field in the search index.')?></td>
 </tr>
 <tr>
-	<td class="subheader" colspan="3">Name <span class="required">*</span></td>
+	<td class="subheader" colspan="3"><?php  echo t('Name')?> <span class="required">*</span></td>
 </tr>
 <tr>
-	<td colspan="3"><input type="text" name="akName" style="width: 100%" value="<?php echo $_POST['akName']?>" /></td>
+	<td colspan="3"><input type="text" name="akName" style="width: 100%" value="<?php  echo $_POST['akName']?>" /></td>
 </tr>
 <tr>
-	<td class="subheader" colspan="3">Values <span class="required" id="reqValues" <?php  if ($_POST['akType'] != 'SELECT') { ?> style="display: none"<?php  } ?>>*</span></td>
+	<td class="subheader" colspan="3"><?php  echo t('Values')?> <span class="required" id="reqValues" <?php   if ($_POST['akType'] != 'SELECT') { ?> style="display: none"<?php   } ?>>*</span></td>
 </tr>
 <tr>
-	<td colspan="3"><input type="text" id="akValues" name="akValues" style="width: 100%" value="<?php echo $_POST['akValues']?>" <?php  if ($_POST['akType'] != 'SELECT') { ?> disabled <?php  } ?> /><br/>(For select types only - separate menu options with a comma, no space.)</td>
+	<td colspan="3">
+    	<textarea id="akValues" name="akValues" style="width: 100%" <?php   if ($_POST['akType'] != 'SELECT') { ?> disabled="disabled" <?php   } ?>><?php  echo $_POST['akValues']?></textarea>
+        <br/>(<?php  echo t('For select types only - separate menu options with line breaks')?>)
+    </td>
 </tr>
 <tr>
 	<td colspan="3" class="header">
 
-	<a href="<?php echo $this->url('/dashboard/collection_types')?>" class="ccm-button-left"><span>Cancel</span></a>
-	<a href="javascript:void(0)" onclick="$('#ccm-add-attribute').get(0).submit()" class="ccm-button-right"><span>Add Attribute</span></a>
+	<a href="<?php  echo $this->url('/dashboard/collection_types')?>" class="ccm-button-left"><span><?php  echo t('Cancel')?></span></a>
+	<a href="javascript:void(0)" onclick="$('#ccm-add-attribute').get(0).submit()" class="ccm-button-right"><span><?php  echo t('Add')?></span></a>
 	
 	</td>
 </tr>
@@ -202,4 +214,4 @@ if ($editMode) { ?>
 </div>
 
 
-<?php  } ?>
+<?php   } ?>

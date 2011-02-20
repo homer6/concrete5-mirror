@@ -1,4 +1,4 @@
-<?php 
+<?php  
 // Catalan language
 // contributed by "Josep Lladonosa" jlladono#pie.xtec.es
 $ADODB_LANG_ARRAY = array (

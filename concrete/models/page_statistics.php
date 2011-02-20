@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -32,7 +32,7 @@ class PageStatistics {
 	public static function getTotalPageViews($date = null) {
 		$db = Loader::db();
 		if ($date != null) {
-			return $db->GetOne("select count(pstID) from PageStatistics where DATE_FORMAT(timestamp, '%Y-%m-%d') = ?", array($date));
+			return $db->GetOne("select count(pstID) from PageStatistics where date = ?", array($date));
 		} else {
 			return $db->GetOne("select count(pstID) from PageStatistics");
 		}
@@ -48,7 +48,7 @@ class PageStatistics {
 		$db = Loader::db();
 		if ($date != null) {
 			$v = array($u->getUserID(), $date);
-			return $db->GetOne("select count(pstID) from PageStatistics where uID <> ? and DATE_FORMAT(timestamp, '%Y-%m-%d') = ?", $v);
+			return $db->GetOne("select count(pstID) from PageStatistics where uID <> ? and date = ?", $v);
 		} else {
 			$v = array($u->getUserID());
 			return $db->GetOne("select count(pstID) from PageStatistics where uID <> ?", $v);
@@ -83,6 +83,28 @@ class PageStatistics {
 		return $db->GetOne("select count(cID) from Pages where cIsCheckedOut = 1");
 	}
 	
+	
+	/** 
+	 * For a particular page ID, grabs all the pages of this page, and increments the cTotalChildren number for them
+	 */
+	public static function incrementParents($cID) {
+		$db = Loader::db();
+		$cParentID = $db->GetOne("select cParentID from Pages where cID = ?", array($cID));
 
+		$q = "update Pages set cChildren = cChildren+1 where cID = ?";
+		$r = $db->query($q, array($cParentID));
 
+	}
+
+	/** 
+	 * For a particular page ID, grabs all the pages of this page, and decrements the cTotalChildren number for them
+	 */
+	public static function decrementParents($cID) {
+		$db = Loader::db();
+		$cParentID = $db->GetOne("select cParentID from Pages where cID = ?", array($cID));
+
+		$q = "update Pages set cChildren = cChildren - 1 where cID = ?";
+		$r = $db->query($q, array($cParentID));
+
+	}
 }

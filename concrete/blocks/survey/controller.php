@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Blocks
  * @subpackage BlockTypes
@@ -26,20 +26,31 @@ class SurveyBlockController extends BlockController {
 	* @var object
 	*/
 	var $pobj;
-	
-	protected $btDescription = "Survey block";
-	protected $btName = "Survey";
+	 
 	protected $btTable = 'btSurvey';
 	protected $btInterfaceWidth = "420";
 	protected $btInterfaceHeight = "300";	
 	protected $btIncludeAll = 1;
 	
 	var $options = array();
+
+	/** 
+	 * Used for localization. If we want to localize the name/description we have to include this
+	 */
+	public function getBlockTypeDescription() {
+		return t("Provide a simple survey, along with results in a pie chart format.");
+	}
 	
+	public function getBlockTypeName() {
+		return t("Survey");
+	} 
 	
 	function __construct($obj = NULL) {
 		parent::__construct($obj);
-		
+		global $c;
+		if (is_object($c)) {
+			$this->cID = $c->getCollectionID();
+		}
 		if($this->bID) {
 			$db = Loader::db();
 			$v = array($this->bID);
@@ -66,13 +77,13 @@ class SurveyBlockController extends BlockController {
 		$u = new User();
 		if ($u->isRegistered()) {
 			$db = Loader::db();
-			$v = array($u->getUserID(), $this->bID);
-			$q = "select count(resultID) as total from btSurveyResults where uID = ? and bID = ?";
+			$v = array($u->getUserID(), $this->bID, $this->cID);
+			$q = "select count(resultID) as total from btSurveyResults where uID = ? and bID = ? AND cID = ?";
 			$result = $db->getOne($q,$v);
 			if ($result > 0) {
 				return true;
 			}
-		} elseif ($_COOKIE['ccmPoll' . $this->bID] == 'voted') {
+		} elseif ($_COOKIE['ccmPoll' . $this->bID.'-'.$this->cID] == 'voted') {
 			return true;
 		}
 		return false;
@@ -107,10 +118,10 @@ class SurveyBlockController extends BlockController {
 				$duID = $u->getUserID();
 			}
 			
-			$v = array($_REQUEST['optionID'], $this->bID, $duID, $_SERVER['REMOTE_ADDR']);
-			$q = "insert into btSurveyResults (optionID, bID, uID, ipAddress) values (?, ?, ?, ?)";
+			$v = array($_REQUEST['optionID'], $this->bID, $duID, $_SERVER['REMOTE_ADDR'], $this->cID);
+			$q = "insert into btSurveyResults (optionID, bID, uID, ipAddress, cID) values (?, ?, ?, ?, ?)";
 			$db->query($q, $v);
-			setcookie("ccmPoll" . $this->bID, "voted", time() + 1296000, DIR_REL . '/');
+			setcookie("ccmPoll" . $this->bID.'-'.$this->cID, "voted", time() + 1296000, DIR_REL . '/');
 			$this->redirect($c->getCollectionPath());
 		}
 	}		
@@ -145,10 +156,13 @@ class SurveyBlockController extends BlockController {
 		parent::save($args);
 		$db = Loader::db();
 		
-		if(!is_array($args['survivingOptionNames'])) {
+		if(!is_array($args['survivingOptionNames'])) 
 			$args['survivingOptionNames'] = array();
-		}
-		$db->query("DELETE FROM btSurveyOptions WHERE optionName NOT IN ('".implode("','",$args['survivingOptionNames'])."') AND bID = ?",array($this->bID));
+ 
+		$slashedArgs=array();
+		foreach($args['survivingOptionNames'] as $arg)
+			$slashedArgs[]=addslashes($arg); 
+		$db->query("DELETE FROM btSurveyOptions WHERE optionName NOT IN ('".implode("','",$slashedArgs)."') AND bID = ".intval($this->bID) );
 			
 		if (is_array($args['pollOption'])) {
 			$displayOrder = 0;
@@ -199,9 +213,10 @@ class BlockPollOption {
 	function getOptionDisplayOrder() {return $this->displayOrder;}
 	
 	function getResults() {
+		global $c;
 		$db = Loader::db();
-		$v = array($this->optionID);
-		$q = "select count(resultID) from btSurveyResults where optionID = ?";
+		$v = array($this->optionID, intval($c->getCollectionID()) );
+		$q = "select count(resultID) from btSurveyResults where optionID = ? AND cID=?";
 		$result = $db->getOne($q, $v);
 		if ($result > 0) {
 			return $result;

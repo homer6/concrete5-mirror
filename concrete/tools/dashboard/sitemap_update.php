@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $ch = Page::getByPath("/dashboard/sitemap");
 $chp = new Permissions($ch);
@@ -16,7 +16,8 @@ if (isset($_REQUEST['cID']) && is_array($_REQUEST['cID'])) {
 }
 
 $json['error'] = false;
-$json['message'] = "Display order saved.";
-print json_encode($json);
+$json['message'] = t("Display order saved.");
+$js = Loader::helper('json');
+print $js->encode($json);
 
 ?>

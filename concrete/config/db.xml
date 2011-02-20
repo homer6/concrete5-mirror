@@ -405,19 +405,14 @@
     <field name="jDescription" type="C" size="255">
       <NOTNULL/>
     </field>
-    <field name="jDateInstalled" type="T">
-      <NOTNULL/>
-    </field>
-    <field name="jDateLastRun" type="T">
-      <NOTNULL/>
-    </field>
+    <field name="jDateInstalled" type="T"></field>
+    <field name="jDateLastRun" type="T"></field>
     <field name="pkgID" type="I" size="10">
       <NOTNULL/>
-      <UNSIGNED />
+      <DEFAULT value="0"/>
+      <UNSIGNED/>
     </field>
-    <field name="jLastStatusText" type="C" size="255">
-      <NOTNULL/>
-    </field>
+    <field name="jLastStatusText" type="C" size="255"></field>
     <field name="jLastStatusCode" type="I2" size="4">
       <NOTNULL/>
       <DEFAULT value="0"/>
@@ -549,6 +544,7 @@
       <DEFAULT value="0"/>
       <UNSIGNED/>
     </field>
+    <field name="date" type="D" />
     <field name="timestamp" type="T">
       <NOTNULL/>
       <DEFTIMESTAMP/>
@@ -560,6 +556,9 @@
     </field>
     <index name="cID">
       <col>cID</col>
+    </index>
+    <index name="date">
+      <col>date</col>
     </index>
     <index name="uID">
       <col>uID</col>

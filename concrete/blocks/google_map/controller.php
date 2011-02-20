@@ -1,27 +1,47 @@
-<?php 
+<?php  
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	class GoogleMapBlockController extends BlockController {
 		
 		var $pobj;
 		
-		protected $btDescription = "Enter an address and a Google Map of that location will be placed in your page.";
-		protected $btName = "Google Map";
 		protected $btTable = 'btGoogleMap';
 		protected $btInterfaceWidth = "400";
 		protected $btInterfaceHeight = "220";
 		
-		public $title = "My Map";
+		public $title = "";
 		public $api_key = "";
 		public $location = "";
 		public $latitude = "";
 		public $longitude = "";
 		public $zoom = 14;								
 		
+		/** 
+		 * Used for localization. If we want to localize the name/description we have to include this
+		 */
+		public function getBlockTypeDescription() {
+			return t("Enter an address and a Google Map of that location will be placed in your page.");
+		}
+		
+		public function getBlockTypeName() {
+			return t("Google Map");
+		}		
+		
+		public function getJavaScriptStrings() {
+			return array(
+				'maps-api-key' => t('Please enter a valid Google Maps API key.'),
+				'maps-zoom' => t('Please enter a zoom number from 0 to 17.')
+			);
+		}
+		
+		function __construct($obj = null) {		
+			parent::__construct($obj);	
+		}		
 		
 		public function add() {
 			$db = Loader::db();		
 			$q = 'SELECT api_key FROM '.$this->btTable.' WHERE api_key!="" ';
 			$this->api_key = $db->getOne($q);
+			$this->title=t("My Map");
 		}
 		
 		function view(){ 
@@ -79,8 +99,11 @@
 			//echo htmlspecialchars($xml); 
 			$enc = mb_detect_encoding($xml);
 			$xml = mb_convert_encoding($xml, 'UTF-8', $enc);
-			$this->xmlObj = new SimpleXMLElement($xml);
-		}	
+			try {
+				$this->xmlObj = new SimpleXMLElement($xml);
+			} catch (Exception $e) {
+			}
+		}
 	
 		public function getCoords(){
 			if(!$this->xmlObj) return 'No XML Loaded';	

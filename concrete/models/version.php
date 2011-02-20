@@ -1,4 +1,4 @@
-<?php 
+<?php  
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 /**
  * Contains the collection version object.
@@ -57,11 +57,15 @@
 			if ($extended) {
 				if ($this->cvAuthorUID > 0) {
 					$uAuthor = UserInfo::getByID($this->cvAuthorUID);
-					$this->cvAuthorUname = $uAuthor->getUserName();
+					if (is_object($uAuthor)) {
+						$this->cvAuthorUname = $uAuthor->getUserName();
+					}
 				}
 				if ($this->cvApproverUID > 0) {
 					$uApprover = UserInfo::getByID($this->cvApproverUID);
-					$this->cvApproverUname = $uApprover->getUserName();
+					if (is_object($uApprover)) {
+						$this->cvApproverUname = $uApprover->getUserName();
+					}
 				}
 			}
 			
@@ -103,7 +107,7 @@
 			$c = $this->cObj;
 
 			$u = new User();
-			$versionComments = (!$versionComments) ? "New Version {$newVID}" : $versionComments;
+			$versionComments = (!$versionComments) ? t("New Version %s", $newVID) : $versionComments;
 			
 			$dh = Loader::helper('date');
 			$v = array($c->getCollectionID(), $newVID, $c->getCollectionName(), $c->getCollectionHandle(), $c->getCollectionDescription(), $c->getCollectionDatePublic(), $dh->getLocalDateTime(), $versionComments, $u->getUserID(), 1);
@@ -155,7 +159,7 @@
 			
 			// now we approve our version
 			$v2 = array($uID, $cID, $cvID);
-			$q2 = "update CollectionVersions set cvIsApproved = 1, cvApproverUID = ? where cID = ? and cvID = ?";
+			$q2 = "update CollectionVersions set cvIsNew = 0, cvIsApproved = 1, cvApproverUID = ? where cID = ? and cvID = ?";
 			$r = $db->query($q2, $v2);
 			
 			// next, we rescan our collection paths for the particular collection, but only if this isn't a generated collection

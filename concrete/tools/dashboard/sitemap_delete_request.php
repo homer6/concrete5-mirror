@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $ch = Page::getByPath("/dashboard/sitemap");
@@ -17,16 +17,16 @@ $json['message'] = false;
 if (isset($_REQUEST['cID'] ) && is_numeric($_REQUEST['cID'])) {
 	$c = Page::getByID($_REQUEST['cID']);
 } else {
-	$error = 'Invalid ID passed';
+	$error = t('Invalid ID passed');
 }
 
 if ((!is_object($c)) || (($c->getCollectionID() != $_REQUEST['cID']) && ($c->getCollectionPointerOriginalID() != $_REQUEST['cID']))) {
-	$error = 'Invalid Collection Specified';
+	$error = t('Invalid Page ID Specified.');
 }
 
 $cp = new Permissions($c);
 if (!$cp->canDeleteCollection()) {
-	$error = 'You are not allowed to delete this collection';
+	$error = t('You are not allowed to delete this page.');
 }
 
 if (isset($error)) {
@@ -41,10 +41,9 @@ if (isset($error)) {
 	}
 	$json['cID'] = $_REQUEST['cID'];
 	$json['error'] = false;
-	$json['message'] = 'Page Removed';
+	$json['message'] = t('Page Removed');
 }
 
-print json_encode($json);
+$js = Loader::helper('json');
+print $js->encode($json);
 exit;
-
-?>

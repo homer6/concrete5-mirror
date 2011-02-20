@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 /**
@@ -129,6 +129,39 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				return UserInfo::getByID($newUID);
 			}
 		}
+		
+		/**
+		 * Deletes a user
+		 * @return void
+		 */
+		public function delete(){
+			// we will NOT let you delete the admin user
+			if ($this->uID == USER_SUPER_ID) {
+				return false;
+			}
+
+			// run any internal event we have for user deletion
+			$ret = Events::fire('on_user_delete', $this);
+			if ($ret < 0) {
+				return false;
+			}
+			
+			$db = Loader::db();  
+			$r = $db->query("DELETE FROM UserGroups WHERE uID = ?",array(intval($this->uID)) );
+			$r = $db->query("DELETE FROM Users WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM UserValidationHashes WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM UserAttributeValues WHERE uID = ?",array(intval($this->uID)));
+			
+			$r = $db->query("DELETE FROM AreaGroupBlockTypes WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM CollectionVersionBlockPermissions WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM PagePermissionPageTypes WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM AreaGroups WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM PagePermissions WHERE uID = ?",array(intval($this->uID)));
+			$r = $db->query("DELETE FROM Piles WHERE uID = ?",array(intval($this->uID)));
+			
+			$r = $db->query("UPDATE Blocks set uID=? WHERE uID = ?",array( intval(USER_SUPER_ID), intval($this->uID)));
+			$r = $db->query("UPDATE Pages set uID=? WHERE uID = ?",array( intval(USER_SUPER_ID), intval($this->uID)));			
+		}
 
 		/**
 		 * Called only by the getGroupMembers function it sets the "type" of member for this group. Typically only used programmatically
@@ -183,20 +216,46 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 		}
 		
+		/** 
+		 * Sets the attribute of a user info object to the specified value, and saves it in the database 
+		 */
+		public function setAttribute($attributeHandle, $value) {
+			Loader::model('user_attributes');
+			$uk = UserAttributeKey::getByHandle($attributeHandle);
+			if (is_object($uk)) {
+				$uk->saveValue($this->getUserID(), $value);
+			} else {
+				throw new Exception(t('Invalid user attribute key.'));
+			}
+		}
+		
 		public function update($data) {
 			$db = Loader::db();
 			if ($this->uID) {
+				$uName = $this->getUserName();
+				$uEmail = $this->getUserEmail();
+				$uHasAvatar = $this->hasAvatar();
+				if (isset($data['uName'])) {
+					$uName = $data['uName'];
+				}
+				if (isset($data['uEmail'])) {
+					$uEmail = $data['uEmail'];
+				}
+				if (isset($data['uHasAvatar'])) {
+					$uHasAvatar = $data['uHasAvatar'];
+				}
+				
 				if ($data['uPassword'] != null) {
 					if (User::encryptPassword($data['uPassword']) == User::encryptPassword($data['uPasswordConfirm'])) {
-						$v = array($data['uName'], $data['uEmail'], User::encryptPassword($data['uPassword']), $data['uHasAvatar']);
-						$r = $db->prepare("update Users set uName = ?, uEmail = ?, uPassword = ?, uHasAvatar = ? where uID = '{$this->uID}'");
+						$v = array($uName, $uEmail, User::encryptPassword($data['uPassword']), $uHasAvatar, $this->uID);
+						$r = $db->prepare("update Users set uName = ?, uEmail = ?, uPassword = ?, uHasAvatar = ? where uID = ?");
 						$res = $db->execute($r, $v);
 					} else {
 						$updateGroups = false;
 					}
 				} else {
-					$v = array($data['uName'], $data['uEmail'], $data['uHasAvatar']);
-					$r = $db->prepare("update Users set uName = ?, uEmail = ?, uHasAvatar = ? where uID = '{$this->uID}'");
+					$v = array($uName, $uEmail, $uHasAvatar, $this->uID);
+					$r = $db->prepare("update Users set uName = ?, uEmail = ?, uHasAvatar = ? where uID = ?");
 					$res = $db->execute($r, $v);
 				}
 
@@ -204,6 +263,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				if (isset($_SESSION['uID']) && $_SESSION['uID'] == $this->uID) {
 					$_SESSION['uName'] = $data['uName']; // make sure to keep the new uName in there
 				}
+
+				// run any internal event we have for user update
+				Events::fire('on_user_update', $this);
 				
 				return $res;
 			}

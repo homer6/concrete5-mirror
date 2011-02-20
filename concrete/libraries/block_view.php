@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 /**
@@ -58,7 +58,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		/**
 		 * Creates a URL that can be posted or navigated to that, when done so, will automatically run the corresponding method inside the block's controller.
 		 * <code>
-		 *     <a href="<?php echo $this->action('get_results')?>">Get the results</a>
+		 *     <a href="<?php  echo $this->action('get_results')?>">Get the results</a>
 		 * </code>
 		 * @param string $task
 		 * @param strign $extraParams Adds items onto the end of the query string. Useful for anchor links, etc...
@@ -81,7 +81,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		*/
 		public function inc($file, $args = array()) {
 			extract($args);
-			$base = $this->getBlocKPath();
+			$base = $this->getBlockPath();
+			extract($this->controller->getSets());
+			extract($this->controller->getHelperObjects());
+
 			include($base . '/' . $file);
 		}
 		
@@ -100,10 +103,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				} else {
 					$base = DIR_PACKAGES_CORE . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
 				}
-			} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle())) {
-				$base = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle();
-			} else {
+			} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle())) {
 				$base = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle();
+			} else {
+				$base = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle();
 			}
 			
 			return $base;
@@ -148,9 +151,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 			if ($obj instanceof BlockType) {
 				$bt = $obj;
+				$base = $obj->getBlockTypePath();
 			} else {
 				$bFilename = $obj->getBlockFilename();
 				$b = $obj;
+				$base = $b->getBlockPath();
 				$this->block = $b;
 				$this->c = $b->getBlockCollectionObject();
 				if ($bFilename == '' && is_object($this->area)) {
@@ -164,24 +169,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}				
 
 			$btHandle = $obj->getBlockTypeHandle();
-
-			if ($obj->getPackageID() > 0) {
-				if (is_dir(DIR_PACKAGES . '/' . $obj->getPackageHandle())) {
-					$base = DIR_PACKAGES . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
-				} else {
-					$base = DIR_PACKAGES_CORE . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
-				}
-			} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle())) {
-				$base = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle();
-			} else {
-				$base = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle();
-			}
+			Localization::setDomain($base);
 			
 			if (!isset($this->controller)) {
 				$this->controller = Loader::controller($obj);
 			}
 			
-			$this->controller->runTask($view, array());
+			$this->controller->setupAndRun($view);
 			extract($this->controller->getSets());
 			extract($this->controller->getHelperObjects());
 			extract($args);
@@ -189,9 +183,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if ($this->controller->getRenderOverride() != '') { 
 				$_filename = $this->controller->getRenderOverride() . '.php';
 			}
+			if (!in_array($view, array('view', 'add', 'edit'))) {
+				// then we're trying to render a custom view file, which we'll pass to the bottom functions as $_filename
+				$_filename = $view . '.php';
+				$view = 'view';
+			}
+
 			switch($view) {
 				case 'view':
-					$_filename = FILENAME_BLOCK_VIEW;
+					if (!isset($_filename)) {
+						$_filename = FILENAME_BLOCK_VIEW;
+					}
 					if ($bFilename) {
 						if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename)) {
 							$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename;
@@ -199,10 +201,21 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 							$template = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename;
 						}
 					} else {
-						if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '.php')) {
-							$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '.php';
-						} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
-							$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
+					
+						if (strpos($_filename, 'templates/') === 0) {
+							if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
+								$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
+							} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
+								$template = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
+							}
+						}
+						
+						if (!isset($template)) {
+							if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '.php')) {
+								$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '.php';
+							} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
+								$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
+							}
 						}
 					}
 					break;
@@ -235,6 +248,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (isset($footer)) {
 				include($footer);
 			}
+
+			Localization::reset();
+			
 		}
 	}
 	

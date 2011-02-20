@@ -1,4 +1,4 @@
-<?php  
+<?php   
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $includeAssetLibrary = true; 
 $assetLibraryPassThru = array(
@@ -14,16 +14,25 @@ if ($controller->getFileID() > 0) {
 }
 if ($controller->getFileOnstateID() > 0) { 
 	$bfo = $controller->getFileOnstateObject();
+
 }
 
 ?>
-<h2>Image</h2>
-<?php echo $al->image('ccm-b-image', 'fID', 'Choose Image', $bf);?>
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Image')?></h2>
+<?php  echo $al->image('ccm-b-image', 'fID', t('Choose Image'), $bf);?>
+</div>
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Image On-State')?> (<?php  echo t('Optional')?>)</h2>
+<?php  echo $al->image('ccm-b-image-onstate', 'fOnstateID', t('Choose Image On-State'), $bfo);?>
+</div>
 
-<br/><br/><br/>
-<h2>Image On-State (Optional)</h2>
-<?php echo $al->image('ccm-b-image-onstate', 'fOnstateID', 'Choose Image On-State', $bfo);?>
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Image Links to URL')?></h2>
+<?php  echo  $form->text('externalLink', $externalLink, array('style' => 'width: 250px')); ?>
+</div>
 
-<br/><br/><br/>
-<h2>Alt Text/Caption</h2>
-<input type="text" style="width: 200px" name="altText" value="<?php echo $controller->getAltText()?>" />
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Alt Text/Caption')?></h2>
+<?php  echo  $form->text('altText', $altText, array('style' => 'width: 250px')); ?>
+</div>

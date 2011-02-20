@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php   defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
 <style>
 table#videoBlockSetup th {font-weight: bold; text-style: normal; padding-right: 8px; white-space: nowrap; vertical-align:top ; padding-bottom:8px}
 table#videoBlockSetup td{ font-size:12px; vertical-align:top; padding-bottom:8px;}
@@ -7,13 +7,13 @@ table#videoBlockSetup .note{ font-size:10px; color:#999999; font-weight:normal }
 
 <table id="videoBlockSetup" style="width:100%"> 
 	<tr>
-		<th>YouTube Video Title</th>
-		<td><input type="text" style="width: 230px" name="title" value="<?php echo $bObj->title?>"/></td>
+		<th><?php  echo t('Title')?></th>
+		<td><input type="text" style="width: 230px" name="title" value="<?php  echo $bObj->title?>"/></td>
 	</tr>	
 	<tr>
-		<th>Video URL</th>
+		<th><?php  echo t('URL')?></th>
 		<td>
-			<input type="text" style="width: 230px" id="YouTubeVideoURL" name="videoURL" value="<?php echo $bObj->videoURL?>" />
+			<input type="text" style="width: 230px" id="YouTubeVideoURL" name="videoURL" value="<?php  echo $bObj->videoURL?>" />
 		</td>
 	</tr>	
 </table>

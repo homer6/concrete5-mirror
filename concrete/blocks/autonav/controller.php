@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Blocks
  * @subpackage BlockTypes
@@ -149,11 +149,17 @@
 	 
 	class AutonavBlockController extends BlockController {
 
-		protected $btDescription = "Creates navigation trees and sitemaps";
-		protected $btName = "Auto-Nav";
 		protected $btTable = 'btNavigation';
 		protected $btInterfaceWidth = "500";
 		protected $btInterfaceHeight = "350";
+
+		public function getBlockTypeDescription() {
+			return t("Creates navigation trees and sitemaps.");
+		}
+		
+		public function getBlockTypeName() {
+			return t("Auto-Nav");
+		}
 
 		var $navArray = array();
 		var $cParentIDArray = array();
@@ -177,24 +183,25 @@
 		// TODO - Implement displayUnavailablePages in the btNavigation table, and in the frontend of the autonav block
 
 		function __construct($obj = null) {
-			if (is_object($obj)) {
-				switch(strtolower(get_class($obj))) {
-					case "page":
-						// instantiating autonav on a particular collection page, instead of adding
-						// it through the block interface
-						$this->bID = null;
-						$this->cID = $obj->getCollectionID();
-						$this->cParentID = $obj->getCollectionParentID();
-						break;
-					case "block": // block
-						// standard block object
-						$this->bID = $obj->bID;
-						$cobj = $obj->getBlockCollectionObject();
-						$this->cID = ($cobj->getCollectionPointerID()) ? $cobj->getCollectionPointerOriginalID() : $cobj->getCollectionID();
-						$this->displayCID = $cobj->getCollectionID();
-						$this->cParentID = $cobj->cParentID;
-						break;
-				}
+			switch(strtolower(get_class($obj))) {
+				case "blocktype":
+					// instantiating autonav on a particular collection page, instead of adding
+					// it through the block interface
+					$this->bID = null;
+					global $c;
+					if (is_object($c)) {
+						$this->cID = $c->getCollectionID();
+						$this->cParentID = $c->getCollectionParentID();
+					}
+					break;
+				case "block": // block
+					// standard block object
+					$this->bID = $obj->bID;
+					$cobj = $obj->getBlockCollectionObject();
+					$this->cID = ($cobj->getCollectionPointerID()) ? $cobj->getCollectionPointerOriginalID() : $cobj->getCollectionID();
+					$this->displayCID = $cobj->getCollectionID();
+					$this->cParentID = $cobj->cParentID;
+					break;
 			}
 			
 			parent::__construct($obj);
@@ -203,7 +210,7 @@
 		function save($args) {
 			$args['displayPagesIncludeSelf'] = isset($args['displayPagesIncludeSelf']) ? 1 : 0;
 			$args['displayPagesCID'] = isset($args['displayPagesCID']) ? $args['displayPagesCID'] : 0;
-			$args['displaySubPageLevelsNum'] = isset($args['displaySubPageLevelsNum']) ? 1 : 0;
+			$args['displaySubPageLevelsNum'] = $args['displaySubPageLevelsNum'] > 0 ? $args['displaySubPageLevelsNum'] : 0;
 			$args['displayUnavailablePages'] = isset($args['displayUnavailablePages']) ? 1 : 0;
 			parent::save($args);
 		}

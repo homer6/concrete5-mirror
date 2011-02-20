@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * @package Helpers
  * @category Concrete
@@ -24,7 +24,7 @@ class MailHelper {
 	private $from = array();
 	private $data = array();
 	private $subject = '';
-	private $body = '';
+	public $body = '';
 	private $template;
 	
 	/** 
@@ -80,7 +80,7 @@ class MailHelper {
 		for ($i = 0; $i < count($arr); $i++) {
 			$v = $arr[$i];
 			if (isset($v[1])) {
-				$str .= $v[1] . ' <' . $v[0] . '>';
+				$str .= '"' . $v[1] . '" <' . $v[0] . '>';
 			} else {
 				$str .= $v[0];
 			}
@@ -126,15 +126,15 @@ class MailHelper {
 		if (ENABLE_LOG_EMAILS) {
 			$l = new Log(LOG_TYPE_EMAILS, true, true);
 			if (ENABLE_EMAILS) {
-				$l->write('**EMAILS ARE ENABLED. THIS EMAIL WAS SENT TO mail()**');
+				$l->write('**' . t('EMAILS ARE ENABLED. THIS EMAIL WAS SENT TO mail()') . '**');
 			} else {
-				$l->write('**EMAILS ARE DISABLED. THIS EMAIL WAS LOGGED BUT NOT SENT**');
+				$l->write('**' . t('EMAILS ARE DISABLED. THIS EMAIL WAS LOGGED BUT NOT SENT') . '**');
 			}
-			$l->write('Template Used: ' . $this->template);
-			$l->write('To: ' . $to);
-			$l->write('From : ' . $from);
-			$l->write('Subject : ' . $this->subject);
-			$l->write('Body: ' . $this->body);
+			$l->write(t('Template Used') . ': ' . $this->template);
+			$l->write(t('To') . ': ' . $to);
+			$l->write(t('From') . ': ' . $from);
+			$l->write(t('Subject') . ': ' . $this->subject);
+			$l->write(t('Body') . ': ' . $this->body);
 			$l->close();
 		}		
 	}

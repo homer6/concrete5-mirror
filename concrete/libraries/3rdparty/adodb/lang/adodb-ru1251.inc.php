@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 // Russian language file contributed by "Cyrill Malevanov" cyrill#malevanov.spb.ru.
 

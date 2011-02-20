@@ -1,2 +1,2 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-<div class="ccm-paging-top">Viewing <b><?php echo $pOptions['currentRangeStart']?></b> to <b><span id="pagingPageResults"><?php echo $pOptions['currentRangeEnd']?></span></b> (<b><span id="pagingTotalResults"><?php echo $pOptions['total']?></span></b> Total)</div>
+<?php   defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<div class="ccm-paging-top"><?php  echo t('Viewing <b>%s</b> to <b>%s</b> (<b>%s</b> Total)', $pOptions['currentRangeStart'], "<span id=\"pagingPageResults\">" . $pOptions['currentRangeEnd'] . "</span>", "<span id=\"pagingTotalResults\">" . $pOptions['total'] . "</span>")?></div>

@@ -54,8 +54,8 @@ var miniSurvey ={
 	addQuestion : function(mode){
 			var msqID=0;
 			if(mode!='Edit') mode='';
-			else msqID=parseInt($('#msqID').val())
-			var postStr='question='+escape($('#question'+mode).val())+'&options='+escape($('#answerOptions'+mode).val());
+			else msqID=parseInt($('#msqID').val()) 
+			var postStr='question='+encodeURIComponent($('#question'+mode).val())+'&options='+encodeURIComponent($('#answerOptions'+mode).val());
 			postStr+='&inputType='+$('input[@name=answerType'+mode+']:checked').val()
 			postStr+='&msqID='+msqID+'&qsID='+parseInt(this.qsID);			
 			$.ajax({ 
@@ -65,9 +65,9 @@ var miniSurvey ={
 					success: function(msg){ 
 						eval('var jsonObj='+msg);
 						if(!jsonObj){
-						   alert('Ajax Error');
+						   alert(ccm_t('ajax-error'));
 						}else if(jsonObj.noRequired){
-						   alert('please complete all required fields');
+						   alert(ccm_t('complete-required'));
 						}else{
 						   if(jsonObj.mode=='Edit'){
 							   $('#questionEditedMsg').slideDown('slow');
@@ -106,7 +106,7 @@ var miniSurvey ={
 			});
 	},	
 	deleteQuestion : function(el,msqID){
-			if(confirm('Are you sure you want to delete this question?')){
+			if(confirm(ccm_t('delete-question'))) {
 				$.ajax({ 
 					url: this.serviceURL+"mode=delQuestion&qsID="+parseInt(this.qsID)+'&msqID='+parseInt(msqID),
 					success: function(msg){	miniSurvey.resetQuestion(); miniSurvey.refreshSurvey();  }			
@@ -128,7 +128,7 @@ var miniSurvey ={
 			
 			var n=$('#ccmSurveyName');
 			if( !n || parseInt(n.val().length)==0 ){
-				alert('Your form must have a name.');
+				alert(ccm_t('form-name'));
 				this.showPane('options');
 				n.focus();
 				failed=1;
@@ -136,7 +136,7 @@ var miniSurvey ={
 			
 			var Qs=$('.miniSurveyQuestionRow'); 
 			if( !Qs || parseInt(Qs.length)<1 ){
-				alert('Please add at least one question to your form.');
+				alert(ccm_t('form-min-1'));
 				failed=1;
 			}
 			

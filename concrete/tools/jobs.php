@@ -1,8 +1,10 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
-set_time_limit(0);
+if (!ini_get('safe_mode')) {
+	@set_time_limit(0);
+}
 $jobObj = Loader::model("job");
 $outputDisabled=0;
 
@@ -34,7 +36,7 @@ if( strlen($_REQUEST['jHandle'])>0 || intval($_REQUEST['jID'])>0 ){
 		
 	if(!$jobObj){ 
 		$jsonErrorCode=1;
-		$jsonMessage='Error: Job not found';
+		$jsonMessage=t('Error: Job not found');
 	}else{ 
 	
 		//Change Job Status
@@ -58,7 +60,7 @@ if( strlen($_REQUEST['jHandle'])>0 || intval($_REQUEST['jID'])>0 ){
 	Job::runAllJobs();
 	if(!$_REQUEST['debug']) 
 		$outputDisabled=1;
-	$jsonMessage='All Jobs Run Successfully';
+	$jsonMessage=t('All Jobs Run Successfully');
 	$runTime=date('n/j/y \a\t g:i A');
 	$jsonJHandle ='All Jobs';	
 }

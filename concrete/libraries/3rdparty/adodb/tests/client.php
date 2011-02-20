@@ -1,6 +1,6 @@
 <html>
 <body bgcolor=white>
-<?php 
+<?php  
 /** 
  * V4.50 6 July 2004  (c) 2001-2002 John Lim (jlim#natsoft.com.my). All rights reserved.
  * Released under both BSD license and Lesser GPL library license. 

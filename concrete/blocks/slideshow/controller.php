@@ -1,11 +1,9 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class SlideshowBlockController extends BlockController {
 	
 	var $pobj;
 	
-	protected $btDescription = "Add a javascript slideshow of images.";
-	protected $btName = "Slideshow";
 	protected $btTable = 'btSlideshow';
 	protected $btInterfaceWidth = "550";
 	protected $btInterfaceHeight = "400";
@@ -15,6 +13,24 @@ class SlideshowBlockController extends BlockController {
 	
 	public $playback = "ORDER";	
 
+	/** 
+	 * Used for localization. If we want to localize the name/description we have to include this
+	 */
+	public function getBlockTypeDescription() {
+		return t("Display a running loop of images.");
+	}
+	
+	public function getBlockTypeName() {
+		return t("Slideshow");
+	}
+	
+	public function getJavaScriptStrings() {
+		return array(
+			'choose-file' => t('Choose Image/File'),
+			'choose-min-2' => t('Please choose at least two images.')
+		);
+	}
+	
 	function __construct($obj = null) {		
 		parent::__construct($obj);
 		$this->db = Loader::db();

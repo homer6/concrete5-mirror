@@ -1,19 +1,46 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class FormBlockController extends BlockController {
 
-	protected $btDescription = "Build simple forms and surveys.";
-	public $btName = "Form";
 	public $btTable = 'btForm';
 	public $btQuestionsTablename = 'btFormQuestions';
 	public $btAnswerSetTablename = 'btFormAnswerSet';
 	public $btAnswersTablename = 'btFormAnswers'; 	
 	public $btInterfaceWidth = '420';
 	public $btInterfaceHeight = '430';
+	public $thankyouMsg=''; 
 		
-	public function __construct($b = null){
+	/** 
+	 * Used for localization. If we want to localize the name/description we have to include this
+	 */
+	public function getBlockTypeDescription() {
+		return t("Build simple forms and surveys.");
+	}
+	
+	public function getBlockTypeName() {
+		return t("Form");
+	}
+	
+	public function getJavaScriptStrings() {
+		return array(
+			'delete-question' => t('Are you sure you want to delete this question?'),
+			'form-name' => t('Your form must have a name.'),
+			'complete-required' => t('Please complete all required fields.'),
+			'ajax-error' => t('AJAX Error.'),
+			'form-min-1' => t('Please add at least one question to your form.')			
+		);
+	}
+	
+	public function __construct($b = null){ 
 		parent::__construct($b);
 		//$this->bID = intval($this->_bID);
+		if(!strlen($this->thankyouMsg)){ 
+			$this->thankyouMsg = $this->getDefaultThankYouMsg();
+		}
+	}
+	
+	public function getDefaultThankYouMsg() {
+		return t("Thanks for taking the time to report a problem or ask a question. We're on it and you'll receive a response soon!");
 	}
 	
 	//form add or edit submit
@@ -24,10 +51,10 @@ class FormBlockController extends BlockController {
 			$q = "select count(*) as total from {$this->btTable} where bID = ".intval($this->bID);
 			$total = $db->getOne($q);
 		}else $total = 0;
-		$v = array( $data['qsID'], $data['surveyName'], intval($data['notifyMeOnSubmission']), $data['recipientEmail'], intval($this->bID) );
+		$v = array( $data['qsID'], $data['surveyName'], intval($data['notifyMeOnSubmission']), $data['recipientEmail'], $data['thankyouMsg'], intval($this->bID) );
 		
-		$q = ($total > 0) ? "update {$this->btTable} set questionSetId = ?, surveyName=?, notifyMeOnSubmission=?, recipientEmail=? where bID = ?"
-			: "insert into {$this->btTable} (questionSetId,surveyName, notifyMeOnSubmission, recipientEmail, bID) values (?, ?, ?, ?, ?)";		
+		$q = ($total > 0) ? "update {$this->btTable} set questionSetId = ?, surveyName=?, notifyMeOnSubmission=?, recipientEmail=?, thankyouMsg=? where bID = ?"
+			: "insert into {$this->btTable} (questionSetId,surveyName, notifyMeOnSubmission, recipientEmail, thankyouMsg, bID) values (?, ?, ?, ?, ?, ?)";		
 
 		$rs = $db->query($q,$v); 
 		
@@ -69,7 +96,7 @@ class FormBlockController extends BlockController {
 		//question set id
 		$qsID=intval($_POST['qsID']);	
 		if($qsID==0)
-			throw new Exception("Oops, something is wrong with the form you posted (it doesn't have a question set id).");
+			throw new Exception(t("Oops, something is wrong with the form you posted (it doesn't have a question set id)."));
 		
 		//save main survey record	
 		$q="insert into {$this->btAnswerSetTablename} (questionSetId) values (?)";
@@ -110,11 +137,8 @@ class FormBlockController extends BlockController {
 			$mh->addParameter('formName', $this->surveyName);
 			$mh->addParameter('questionSetId', $this->questionSetId);
 			$mh->addParameter('questionAnswerPairs', $questionAnswerPairs); 
-			ob_start();
 			$mh->load('block_form_submission');
-			$mh->setBody(ob_get_contents());
-			ob_end_clean();
-			$mh->setSubject($this->surveyName.' Form Submission');
+			$mh->setSubject($this->surveyName.' '.t('Form Submission') ); 
 			//echo $mh->body.'<br>';
 			@$mh->sendMail(); 
 		} 
@@ -157,7 +181,7 @@ class FormBlockController extends BlockController {
  *
  * @package Blocks
  * @subpackage BlockTypes
- * @author Tony Trupp <tony@concrete5.org>
+ * @author 
  * @copyright  Copyright (c) 2003-2008 Concrete5. (http://www.concrete5.org)
  * @license    http://www.concrete5.org/license/     MIT License
  *
@@ -311,25 +335,25 @@ class MiniSurvey{
 							<td valign="top">'.$this->loadInputType($questionRow,$showEdit).'</td>';
 					echo '</tr>';
 				}			
-				echo '<tr><td>&nbsp;</td><td><input class="formBlockSubmitButton" name="Submit" type="submit" value="Submit" /></td></tr>';
+				echo '<tr><td>&nbsp;</td><td><input class="formBlockSubmitButton" name="Submit" type="submit" value="'.t('Submit').'" /></td></tr>';
 				echo '</table>';
 			}else{
 				echo '<div id="miniSurveyTableWrap"><div id="miniSurveyPreviewTable" class="miniSurveyTable">';					
 				while( $questionRow=$questionsRS->fetchRow() ){	 ?>
-					<div id="miniSurveyQuestionRow<?php echo $questionRow['msqID']?>" class="miniSurveyQuestionRow">
-						<div class="miniSurveyQuestion"><?php echo $questionRow['question']?></div>
-						<?php  /* <div class="miniSurveyResponse"><?php echo $this->loadInputType($questionRow,$showEdit)?></div> */ ?>
+					<div id="miniSurveyQuestionRow<?php  echo $questionRow['msqID']?>" class="miniSurveyQuestionRow">
+						<div class="miniSurveyQuestion"><?php  echo $questionRow['question']?></div>
+						<?php   /* <div class="miniSurveyResponse"><?php  echo $this->loadInputType($questionRow,$showEdit)?></div> */ ?>
 						<div class="miniSurveyOptions">
 							<div style="float:right">
-								<a href="#" onclick="miniSurvey.moveUp(this,<?php echo $questionRow['msqID']?>);return false" class="moveUpLink"></a> 
-								<a href="#" onclick="miniSurvey.moveDown(this,<?php echo $questionRow['msqID']?>);return false" class="moveDownLink"></a>						  
+								<a href="#" onclick="miniSurvey.moveUp(this,<?php  echo $questionRow['msqID']?>);return false" class="moveUpLink"></a> 
+								<a href="#" onclick="miniSurvey.moveDown(this,<?php  echo $questionRow['msqID']?>);return false" class="moveDownLink"></a>						  
 							</div>						
-							<a href="#" onclick="miniSurvey.reloadQuestion(<?php echo $questionRow['msqID']?>);return false">edit</a> &nbsp;&nbsp; 
-							<a href="#" onclick="miniSurvey.deleteQuestion(this,<?php echo $questionRow['msqID']?>);return false">remove</a>
+							<a href="#" onclick="miniSurvey.reloadQuestion(<?php  echo $questionRow['msqID']?>);return false"><?php  echo t('edit')?></a> &nbsp;&nbsp; 
+							<a href="#" onclick="miniSurvey.deleteQuestion(this,<?php  echo $questionRow['msqID']?>);return false"><?php  echo t('remove')?></a>
 						</div>
 						<div class="miniSurveySpacer"></div>
 					</div>
-				<?php  }			 
+				<?php   }			 
 				echo '</div></div>';
 			}
 		}

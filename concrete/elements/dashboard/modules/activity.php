@@ -1,12 +1,14 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
-You are logged in as <b><?php echo $uName?></b>. You logged in on <b><?php echo $uLastLogin?></b>. 
+<?php   defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  echo t('You are logged in as <b>%s</b>. You logged in on <b>%s</b>.', $uName, $uLastLogin)?> 
 <ul class="ccm-dashboard-list">
-<li>Number of visits since your previous login: <b><?php echo $uLastActivity?></b></li>
-<li>Total Visits: <b><?php echo $totalViews?></b> <span style="color: #aaa">(Not including yours.)</span></li>
-<li>Page Versions: <b><?php echo $totalVersions?></b></li>
-<li>Last Edit: <b><?php echo $lastEditSite?></b></li>
-<li>Last Login: <b><?php echo $lastLoginSite?></b></li>
-<li>Pages in Edit Mode: <b><?php echo $totalEditMode?></b></li>
-<li>Total Form Submissions: <a href="<?php echo $this->url('/dashboard/form_results/')?>"><b><?php echo $totalFormSubmissionsToday?></b> today</a> (<b><?php echo $totalFormSubmissions?></b> total)</li>
+<?php   if (isset($uLastActivity)) { ?>
+	<li><?php  echo t('Number of visits since your previous login')?>: <b><?php  echo $uLastActivity?></b></li>
+<?php   } ?>
+<li><?php  echo t('Total visits')?>: <b><?php  echo $totalViews?></b></li>
+<li><?php  echo t('Total page versions')?>: <b><?php  echo $totalVersions?></b></li>
+<li><?php  echo t('Last edit')?>: <b><?php  echo $lastEditSite?></b></li>
+<li><?php  echo t('Last login')?>: <b><?php  echo $lastLoginSite?></b></li>
+<li><?php  echo t('Total pages in edit mode')?>: <b><?php  echo $totalEditMode?></b></li>
+<li><?php  echo t('Total form submissions')?>: <a href="<?php  echo $this->url('/dashboard/form_results/')?>"><b><?php  echo $totalFormSubmissionsToday?></b> <?php  echo t('today')?></a> (<b><?php  echo $totalFormSubmissions?></b> <?php  echo t('total')?>)</li>
 
 </ul>

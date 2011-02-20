@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -13,13 +13,13 @@ if (isset($_REQUEST['bID'])) {
 			$resp['error'] = 0;
 		} else {
 			$resp['error'] = 1;
-			$resp['message'] = 'Could not find block.';
+			$resp['message'] = t('Could not find block.');
 		}
 	} else {
 		$resp['error'] = 1;
-		$resp['message'] = 'You do not have permission to remove that block.';
+		$resp['message'] = t('You do not have permission to remove that block.');
 	}
 }
-
-print json_encode($resp);
+$js = Loader::helper('json');
+print $js->encode($resp);
 ?>

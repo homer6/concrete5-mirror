@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 // Contributed by Grzegorz Pacan <gp#dione.cc>
 

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -59,11 +59,11 @@ if (!$canViewPane) {
 
 ?>
 
-<?php  Loader::element('pane_header', array('c'=>$c)); ?>
+<?php   Loader::element('pane_header', array('c'=>$c)); ?>
 
-<div id="<?php echo $divID?>">
+<div id="<?php  echo $divID?>">
 
-<?php  if (!$_GET['close']) {
+<?php   if (!$_GET['close']) {
 
 	if (!$c->isEditMode() && ($_GET['ctask'] != 'add')) {
 		// first, we attempt to check the user in as editing the collection
@@ -76,7 +76,7 @@ if (!$canViewPane) {
 	if (($c->isEditMode() || ($_GET['ctask'] == 'add')) && $toolSection) {
 		require_once(DIR_FILES_ELEMENTS_CORE . '/' . $toolSection . '.php');
 	} else {
-		$error = "Someone has already checked out this page for editing.";
+		$error = t("Someone has already checked out this page for editing.");
 	}
 
 }

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 class DownloadFileController extends Controller {
@@ -13,16 +13,23 @@ class DownloadFileController extends Controller {
 	public function view($bID = 0) {
 		// get the block
 		$block = $this->getBlock($bID);
-		$file = $block->getFileObject();
-		
-		// if block password is blank download
-		if (!$block->getPassword())
-			return $this->download($file);
-		
-		// otherwise show the form
-		$this->set('bID', $bID);
-		$this->set('filename', $file->getFilename());
-		$this->set('filesize', filesize(DIR_FILES_UPLOADED."/".$file->getFilename()));
+		if (is_object($block)) {
+			$file = $block->getFileObject();
+			
+			if ($file) {
+				
+				// if block password is blank download
+				if (!$block->getPassword())
+					return $this->download($file);			
+			
+				// otherwise show the form
+				$this->set('bID', $bID);
+				$this->set('filename', $file->getFilename());
+				$this->set('filesize', filesize(DIR_FILES_UPLOADED."/".$file->getFilename()));
+			}
+			
+		}
+
 	}
 	
 	public function submit_password($bID = 0) {
@@ -32,7 +39,7 @@ class DownloadFileController extends Controller {
 		if ($block->getPassword() == $_POST['password'])
 			return $this->download($file);
 		
-		$this->set('error', "The entered password was incorrect. Please try again.");
+		$this->set('error', t("Password incorrect. Please try again."));
 		$this->view($bID);
 	}
 	
@@ -51,16 +58,26 @@ class DownloadFileController extends Controller {
 		header("Cache-Control: private",false);
 		header("Content-Transfer-Encoding: binary");
 	
-		// this should be from FILES -- but lets not break it just yet
-		$handle = fopen(DIR_FILES_UPLOADED."/".$filename, "r");
-		echo fread($handle, filesize(DIR_FILES_UPLOADED."/".$filename));
+		$buffer = '';
+		$chunk = 1024*1024;
+		$handle = fopen(DIR_FILES_UPLOADED."/".$filename, 'rb');
+		if ($handle === false) {
+			return false;
+		}
+		while (!feof($handle)) {
+			$buffer = fread($handle, $chunk);
+			print $buffer;
+		}
+		
 		fclose($handle);
 		exit;
 	}
 	
 	private function getBlock($bID) {
 		$b = Block::getByID($bID);
-		return $b->getInstance();
+		if (is_object($b)) {
+			return $b->getInstance();
+		}
 	}
 }
 

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 // by Trirat Petchsingh <rosskouk#gmail.com>
 $ADODB_LANG_ARRAY = array (
 			'LANG'                      => 'th',

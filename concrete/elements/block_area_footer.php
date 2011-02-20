@@ -1,9 +1,9 @@
-<?php  
+<?php   
 defined('C5_EXECUTE') or die(_("Access Denied."));
 ?>
 </div>
 
-<?php  
+<?php   
 
 // simple file that controls the adding of blocks.
 
@@ -20,17 +20,17 @@ $c = $a->getAreaCollectionObject();
 $cID = $c->getCollectionID();
 $u = new User();
 
-if (($a->areaAcceptsBlocks()) || $cp->canAdminPage()) { ?>
+if ($a->areaAcceptsBlocks()) { ?>
 
-<?php  if (!$c->isArrangeMode()) { ?>
+<?php   if (!$c->isArrangeMode()) { ?>
 	<script type="text/javascript">
-	ccm_areaMenuObj<?php echo $a->getAreaID()?> = new Object();
-	ccm_areaMenuObj<?php echo $a->getAreaID()?>.type = "AREA";
-	ccm_areaMenuObj<?php echo $a->getAreaID()?>.aID = <?php echo $a->getAreaID()?>;
-	ccm_areaMenuObj<?php echo $a->getAreaID()?>.arHandle = "<?php echo $arHandle?>";
+	ccm_areaMenuObj<?php  echo $a->getAreaID()?> = new Object();
+	ccm_areaMenuObj<?php  echo $a->getAreaID()?>.type = "AREA";
+	ccm_areaMenuObj<?php  echo $a->getAreaID()?>.aID = <?php  echo $a->getAreaID()?>;
+	ccm_areaMenuObj<?php  echo $a->getAreaID()?>.arHandle = "<?php  echo $arHandle?>";
 
-	$(function() {ccm_menuInit(ccm_areaMenuObj<?php echo $a->getAreaID()?>)});
+	$(function() {ccm_menuInit(ccm_areaMenuObj<?php  echo $a->getAreaID()?>)});
 	</script>
-	<div id="a<?php echo $a->getAreaID()?>controls" class="ccm-add-block">Add To <?php echo $arHandle?></div>
-	<?php  } ?>
-<?php  } ?>
+	<div id="a<?php  echo $a->getAreaID()?>controls" class="ccm-add-block"><?php  echo t('Add To %s', $arHandle)?></div>
+	<?php   } ?>
+<?php   } ?>

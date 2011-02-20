@@ -1,4 +1,4 @@
-<?php 
+<?php  
 /**
  * Contains the group and grouplist classes.
  * @package Users 
@@ -83,10 +83,14 @@
 					}
 					break;
 			}
-			$minGID .= ($omitRequiredGroups) ? 2 : 0;
+
 			$groups = array();
 			if ($where) {
-				$q = "select gID from $table where gID > $minGID and {$where} order by gID asc";
+				if (!$omitRequiredGroups) {
+					$groups[] = Group::getByID(GUEST_GROUP_ID);
+					$groups[] = Group::getByID(REGISTERED_GROUP_ID);
+				}
+				$q = "select gID from $table where gID > 2 and {$where} order by gID asc";
 				$r = $db->query($q);
 				while ($row = $r->fetchRow()) {
 					$g = Group::getByID($row['gID']);
@@ -240,7 +244,33 @@
 					break;
 			}
 		}
-		
+
+		/**
+		 * Deletes a group
+		 * @return void
+		 */
+		function delete(){
+			// we will NOT let you delete the required groups
+			if ($this->gID == REGISTERED_GROUP_ID || $this->gID == GUEST_GROUP_ID) {
+				return false;
+			}
+			
+			// run any internal event we have for group deletion
+			$ret = Events::fire('on_group_delete', $this);
+			if ($ret < 0) {
+				return false;
+			}
+			
+			$db = Loader::db(); 
+			$r = $db->query("DELETE FROM UserGroups WHERE gID = ?",array(intval($this->gID)) );
+			$r = $db->query("DELETE FROM Groups WHERE gID = ?",array(intval($this->gID)) );
+			$r = $db->query("DELETE FROM CollectionVersionBlockPermissions WHERE gID = ?",array(intval($this->gID)) );
+			$r = $db->query("DELETE FROM PagePermissionPageTypes WHERE gID = ?",array(intval($this->gID)) );
+			$r = $db->query("DELETE FROM PagePermissions WHERE gID = ?",array(intval($this->gID)) );
+			$r = $db->query("DELETE FROM AreaGroupBlockTypes WHERE gID = ?",array(intval($this->gID)) );
+			$r = $db->query("DELETE FROM AreaGroups WHERE gID = ?",array(intval($this->gID)) ); 
+		}
+
 		function inGroup() {
 			return $this->inGroup;
 		}

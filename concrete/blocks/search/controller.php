@@ -1,23 +1,38 @@
-<?php 
+<?php  
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	class SearchBlockController extends BlockController {
 		
 		var $pobj;
-		
-		protected $btDescription = "Add a search box to your site.";
-		protected $btName = "Search";
+		  
 		protected $btTable = 'btSearch';
 		protected $btInterfaceWidth = "400";
 		protected $btInterfaceHeight = "170";
 		
-		public $title = "Search";
+		public $title = "";
 		public $buttonText = ">"; 
 		public $baseSearchPath = "";
 		public $resultsURL = "";
 		
+		/** 
+		 * Used for localization. If we want to localize the name/description we have to include this
+		 */
+		public function getBlockTypeDescription() {
+			return t("Add a search box to your site.");
+		}
+		
+		public function getBlockTypeName() {
+			return t("Search");
+		}		
+		
+		public function getJavaScriptStrings() {
+			return array('search-title' => t('Please enter a valid search title.'));
+		}
 		
 		function __construct($obj = null) {		
 			parent::__construct($obj);
+			if ($this->title == '') {
+				$this->title=t("Search");
+			}
 		}
 		
 		public function indexExists() {
@@ -95,8 +110,8 @@
 					if( count($this->search_paths) ){
 						$pathsBooleanQuery = new Zend_Search_Lucene_Search_Query_Boolean();
 						foreach($this->search_paths as $path){
-							$pattern = new Zend_Search_Lucene_Index_Term($path.'*', 'cPath');
-							$pathsQuery = new Zend_Search_Lucene_Search_Query_Wildcard($pattern);
+							$pattern = new Zend_Search_Lucene_Index_Term($path, 'cPath');
+							$pathsQuery = new Zend_Search_Lucene_Search_Query_Term($pattern);
 							$pathsBooleanQuery->addSubquery($pathsQuery, NULL);
 						}
 						$subqueries[]=array('query'=>$pathsBooleanQuery,'required'=>true);
@@ -146,7 +161,7 @@
 				$this->set('paginator', $pagination);
 			
 			} catch(Zend_Search_Lucene_Exception $e) {
-				$this->set('error', 'Unable to complete search: ' . $e->getMessage());
+				$this->set('error', t('Unable to complete search: ') . $e->getMessage());
 			}
 		}		
 		

@@ -1,4 +1,4 @@
-<?php 
+<?php  
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 /**
@@ -36,12 +36,13 @@ class Request {
 	
 	private static function parsePathFromRequest($var) {
 		$path = (isset($_SERVER[$var])) ? $_SERVER[$var] : @getenv($var);
-		$path = trim($path, '/');
-		if ($path != '' && $path != trim(DIR_REL . '/' . DISPATCHER_FILENAME, '/')) {
-			return $path;
-		} else {
-			return false;
+		$replace[] = DIR_REL . '/' . DISPATCHER_FILENAME;
+		if (DIR_REL != '') {
+			$replace[] = DIR_REL . '/';
 		}
+		$path = str_replace($replace, '', $path);
+		$path = trim($path, '/');
+		return $path;
 	}
 	
 	public function __construct($path) {
@@ -57,12 +58,12 @@ class Request {
 		static $req;
 		if (!isset($req)) {
 			$path = Request::parsePathFromRequest('ORIG_PATH_INFO');
-			if ($path) {
-				$path = str_replace($_SERVER['SCRIPT_NAME'], '', '/' . $path);
-			} else {
+			if (!$path) {
 				$path = Request::parsePathFromRequest('PATH_INFO');
 			}
-			$path = trim($path, '/');			
+			if (!$path) {
+				$path = Request::parsePathFromRequest('SCRIPT_NAME');
+			}
 			$req = new Request($path);
 		}
 		return $req;

@@ -1,4 +1,4 @@
-<?php  
+<?php    
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $includeAssetLibrary = true;
@@ -7,13 +7,21 @@ $assetLibraryPassThru = array(
 );
 $al = Loader::helper('concrete/asset_library');
 ?>
-<h2>Image</h2>
-<?php echo $al->image('ccm-b-image', 'fID', ' Choose Image');?>
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Image')?></h2>
+<?php  echo $al->image('ccm-b-image', 'fID', t('Choose Image'), $bf);?>
+</div>
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Image On-State')?> (<?php  echo t('Optional')?>)</h2>
+<?php  echo $al->image('ccm-b-image-onstate', 'fOnstateID', t('Choose Image On-State'), $bfo);?>
+</div>
 
-<br/><br/><br/>
-<h2>Image On-State (Optional)</h2>
-<?php echo $al->image('ccm-b-image-onstate', 'fOnstateID', ' Choose Image On-State');?>
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Image Links to URL')?></h2>
+<?php  echo  $form->text('externalLink', array('style' => 'width: 250px')); ?>
+</div>
 
-<br/><br/><br/>
-<strong>Alt Text/Caption</strong><br/>
-<input type="text" style="width: 200px" name="altText" />
+<div class="ccm-block-field-group">
+<h2><?php  echo t('Alt Text/Caption')?></h2>
+<?php  echo  $form->text('altText', array('style' => 'width: 250px')); ?>
+</div>

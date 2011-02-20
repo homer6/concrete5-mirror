@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 include_once('../adodb.inc.php');
 $rs = new ADORecordSet_array();

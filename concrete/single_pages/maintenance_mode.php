@@ -1,5 +1,5 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php   defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
 
-<h1>Coming Back Soon</h1>
+<h1><?php  echo t('Coming Back Soon')?></h1>
 
-This site is currently down for maintenance.
+<?php  echo t('This site is currently down for maintenance.')?>

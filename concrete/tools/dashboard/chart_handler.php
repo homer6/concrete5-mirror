@@ -1,4 +1,4 @@
-<?php 
+<?php  
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
@@ -17,11 +17,11 @@ $u = new User();
 $max = 0;
 
 for ($i = -4; $i < 1; $i++) {
-	$date = date('Y-m-d', strtotime($i . " days"));
+	$date = date('Y-m-d', strtotime($i . ' days'));
 	if ($i == 0) {
-		$daysRow[] = 'Today';
+		$daysRow[] = t('Today');
 	} else {
-		$daysRow[] = date('D', strtotime($i . " days"));
+		$daysRow[] = strftime('%a', strtotime($i . ' days'));
 	}
 	$total = PageStatistics::getTotalPageViewsForOthers($u, $date);
 	$viewsArray[] = $total;
@@ -49,6 +49,6 @@ $g->set_y_max( $max );
 $g->num_decimals = 0;
 $g->is_fixed_num_decimals_forced = true;
 $g->y_label_steps( 5 );
-$g->set_y_legend( 'Views', 12, '#333333' );
+$g->set_y_legend( t('Views'), 12, '#333333' );
 
 echo $g->render();

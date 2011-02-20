@@ -1,13 +1,28 @@
-<?php 
+<?php  
 
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	class PageListBlockController extends BlockController {
 
-		protected $btDescription = "List pages based on type, area";
-		protected $btName = "Page List";
 		protected $btTable = 'btPageList';
 		protected $btInterfaceWidth = "430";
 		protected $btInterfaceHeight = "300";
+		
+		/** 
+		 * Used for localization. If we want to localize the name/description we have to include this
+		 */
+		public function getBlockTypeDescription() {
+			return t("List pages based on type, area.");
+		}
+		
+		public function getBlockTypeName() {
+			return t("Page List");
+		}
+		
+		public function getJavaScriptStrings() {
+			return array(
+				'feed-name' => t('Please give your RSS Feed a name.')
+			);
+		}
 		
 		function getPages($query = null) {
 			$db = Loader::db();
@@ -120,6 +135,8 @@
 			$args['num'] = ($args['num'] > 0) ? $args['num'] : 0;
 			$args['cThis'] = ($args['cParentID'] == $this->cID) ? '1' : '0';
 			$args['cParentID'] = ($args['cParentID'] == 'OTHER') ? $args['cParentIDValue'] : $args['cParentID'];
+			$args['truncateSummaries'] = ($args['truncateSummaries']) ? '1' : '0';
+			$args['truncateChars'] = intval($args['truncateChars']); 
 
 			parent::save($args);
 		
@@ -130,7 +147,7 @@
 			if(!$b) return '';
 			$btID = $b->getBlockTypeID();
 			$bt = BlockType::getByID($btID);
-			$rssUrl = $uh->getBlockTypeToolsURL($bt)."/rss.php?bID=".$b->getBlockID()."&cID=".$b->getBlockCollectionID()."&arHandle=".$b->getAreaHandle();
+			$rssUrl = $uh->getBlockTypeToolsURL($bt)."/rss?bID=".$b->getBlockID()."&cID=".$b->getBlockCollectionID()."&arHandle=".$b->getAreaHandle();
 			return $rssUrl;
 		}
 	}

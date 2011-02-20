@@ -1,4 +1,4 @@
-<?php 
+<?php  
   
 /*
 V4.80 8 Mar 2006  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
@@ -12,38 +12,38 @@ V4.80 8 Mar 2006  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reser
 
 <table><tr valign=top><td>
 <form method=get>
-<input type=checkbox name="testaccess" value=1 <?php  echo !empty($testaccess) ? 'checked' : '' ?>> <b>Access</b><br>
-<input type=checkbox name="testibase" value=1 <?php  echo !empty($testibase) ? 'checked' : '' ?>> <b>Interbase</b><br>
-<input type=checkbox name="testmssql" value=1 <?php  echo !empty($testmssql) ? 'checked' : '' ?>> <b>MSSQL</b><br>
- <input type=checkbox name="testmysql" value=1 <?php  echo !empty($testmysql) ? 'checked' : '' ?>> <b>MySQL</b><br>
-<input type=checkbox name="testmysqlodbc" value=1 <?php  echo !empty($testmysqlodbc) ? 'checked' : '' ?>> <b>MySQL ODBC</b><br>
-<input type=checkbox name="testmysqli" value=1 <?php  echo !empty($testmysqli) ? 'checked' : '' ?>> <b>MySQLi</b>
+<input type=checkbox name="testaccess" value=1 <?php   echo !empty($testaccess) ? 'checked' : '' ?>> <b>Access</b><br>
+<input type=checkbox name="testibase" value=1 <?php   echo !empty($testibase) ? 'checked' : '' ?>> <b>Interbase</b><br>
+<input type=checkbox name="testmssql" value=1 <?php   echo !empty($testmssql) ? 'checked' : '' ?>> <b>MSSQL</b><br>
+ <input type=checkbox name="testmysql" value=1 <?php   echo !empty($testmysql) ? 'checked' : '' ?>> <b>MySQL</b><br>
+<input type=checkbox name="testmysqlodbc" value=1 <?php   echo !empty($testmysqlodbc) ? 'checked' : '' ?>> <b>MySQL ODBC</b><br>
+<input type=checkbox name="testmysqli" value=1 <?php   echo !empty($testmysqli) ? 'checked' : '' ?>> <b>MySQLi</b>
 <br>
-<td><input type=checkbox name="testsqlite" value=1 <?php  echo !empty($testsqlite) ? 'checked' : '' ?>> <b>SQLite</b><br>
-<input type=checkbox name="testproxy" value=1 <?php  echo !empty($testproxy) ? 'checked' : '' ?>> <b>MySQL Proxy</b><br>
-<input type=checkbox name="testoracle" value=1 <?php  echo !empty($testoracle) ? 'checked' : '' ?>> <b>Oracle (oci8)</b> <br>
-<input type=checkbox name="testpostgres" value=1 <?php  echo !empty($testpostgres) ? 'checked' : '' ?>> <b>PostgreSQL</b><br>
-<input type=checkbox name="testpgodbc" value=1 <?php  echo !empty($testpgodbc) ? 'checked' : '' ?>> <b>PostgreSQL ODBC</b><br>
+<td><input type=checkbox name="testsqlite" value=1 <?php   echo !empty($testsqlite) ? 'checked' : '' ?>> <b>SQLite</b><br>
+<input type=checkbox name="testproxy" value=1 <?php   echo !empty($testproxy) ? 'checked' : '' ?>> <b>MySQL Proxy</b><br>
+<input type=checkbox name="testoracle" value=1 <?php   echo !empty($testoracle) ? 'checked' : '' ?>> <b>Oracle (oci8)</b> <br>
+<input type=checkbox name="testpostgres" value=1 <?php   echo !empty($testpostgres) ? 'checked' : '' ?>> <b>PostgreSQL</b><br>
+<input type=checkbox name="testpgodbc" value=1 <?php   echo !empty($testpgodbc) ? 'checked' : '' ?>> <b>PostgreSQL ODBC</b><br>
 <td>
-<input type=checkbox name="testpdopgsql" value=1 <?php  echo !empty($testpdopgsql) ? 'checked' : '' ?>> <b>PgSQL PDO</b><br>
-<input type=checkbox name="testpdomysql" value=1 <?php  echo !empty($testpdomysql) ? 'checked' : '' ?>> <b>MySQL PDO</b><br>
-<input type=checkbox name="testpdosqlite" value=1 <?php  echo !empty($testpdosqlite) ? 'checked' : '' ?>> <b>SQLite PDO</b><br>
-<input type=checkbox name="testpdoaccess" value=1 <?php  echo !empty($testpdoaccess) ? 'checked' : '' ?>> <b>Access PDO</b><br>
-<input type=checkbox name="testpdomssql" value=1 <?php  echo !empty($testpdomssql) ? 'checked' : '' ?>> <b>MSSQL PDO</b><br>
+<input type=checkbox name="testpdopgsql" value=1 <?php   echo !empty($testpdopgsql) ? 'checked' : '' ?>> <b>PgSQL PDO</b><br>
+<input type=checkbox name="testpdomysql" value=1 <?php   echo !empty($testpdomysql) ? 'checked' : '' ?>> <b>MySQL PDO</b><br>
+<input type=checkbox name="testpdosqlite" value=1 <?php   echo !empty($testpdosqlite) ? 'checked' : '' ?>> <b>SQLite PDO</b><br>
+<input type=checkbox name="testpdoaccess" value=1 <?php   echo !empty($testpdoaccess) ? 'checked' : '' ?>> <b>Access PDO</b><br>
+<input type=checkbox name="testpdomssql" value=1 <?php   echo !empty($testpdomssql) ? 'checked' : '' ?>> <b>MSSQL PDO</b><br>
 
-<input type=checkbox name="testpdoora" value=1 <?php  echo !empty($testpdoora) ? 'checked' : '' ?>> <b>OCI PDO</b><br>
+<input type=checkbox name="testpdoora" value=1 <?php   echo !empty($testpdoora) ? 'checked' : '' ?>> <b>OCI PDO</b><br>
 
-<td><input type=checkbox name="testdb2" value=1 <?php  echo !empty($testdb2) ? 'checked' : '' ?>> DB2<br>
-<input type=checkbox name="testvfp" value=1 <?php  echo !empty($testvfp) ? 'checked' : '' ?>> VFP+ODBTP<br>
-<input type=checkbox name="testado" value=1 <?php  echo !empty($testado) ? 'checked' : '' ?>> ADO (for mssql and access)<br>
-<input type=checkbox name="nocountrecs" value=1 <?php  echo !empty($nocountrecs) ? 'checked' : '' ?>> $ADODB_COUNTRECS=false<br>
-<input type=checkbox name="nolog" value=1 <?php  echo !empty($nolog) ? 'checked' : '' ?>> No SQL Logging<br>
-<input type=checkbox name="time" value=1 <?php  echo !empty($_GET['time']) ? 'checked' : '' ?>> ADOdb time test
+<td><input type=checkbox name="testdb2" value=1 <?php   echo !empty($testdb2) ? 'checked' : '' ?>> DB2<br>
+<input type=checkbox name="testvfp" value=1 <?php   echo !empty($testvfp) ? 'checked' : '' ?>> VFP+ODBTP<br>
+<input type=checkbox name="testado" value=1 <?php   echo !empty($testado) ? 'checked' : '' ?>> ADO (for mssql and access)<br>
+<input type=checkbox name="nocountrecs" value=1 <?php   echo !empty($nocountrecs) ? 'checked' : '' ?>> $ADODB_COUNTRECS=false<br>
+<input type=checkbox name="nolog" value=1 <?php   echo !empty($nolog) ? 'checked' : '' ?>> No SQL Logging<br>
+<input type=checkbox name="time" value=1 <?php   echo !empty($_GET['time']) ? 'checked' : '' ?>> ADOdb time test
 </table>
 <input type=submit>
 </form>
 
-<?php 
+<?php  
 
 if ($ADODB_FETCH_MODE != ADODB_FETCH_DEFAULT) print "<h3>FETCH MODE IS NOT ADODB_FETCH_DEFAULT</h3>";
 
