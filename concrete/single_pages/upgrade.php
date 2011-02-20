@@ -27,8 +27,7 @@
     <a href="<?php echo DIR_REL?>/"><?php echo t('Back to Home')?></a>.
     <?php  if(!isset($hide_force) || !$hide_force) { ?>
         <p>
-        <a href="<?php echo DIR_REL?>/index.php/tools/required/upgrade?force=1"><?php echo t('click here')?></a>
-        <?php echo t('If you would like to re-run this script.')?>
+        <?php echo t('<a href="%s">Click here</a> if you would like to re-run this script.', DIR_REL . '/index.php/tools/required/upgrade?force=1')?>
         </p>
     <?php  } ?>
 <?php  } ?>

@@ -100,6 +100,14 @@ class InstallController extends Controller {
 		} else {
 			$this->set('diffTest', false);
 		}
+		
+		if (version_compare(PHP_VERSION, '5.2.0', '>')) {
+			$phpVtest = true;
+		} else {
+			$phpVtest = false;
+		}
+		$this->set('phpVtest',$phpVtest);
+		
 	}
 	
 	public function passedRequiredItems() {
@@ -317,6 +325,7 @@ class InstallController extends Controller {
 						$cab2 = CollectionAttributeKey::add($textareat, array('akHandle' => 'meta_description', 'akName' => t('Meta Description'), 'akIsSearchable' => true));
 						$cab3 = CollectionAttributeKey::add($textareat, array('akHandle' => 'meta_keywords', 'akName' => t('Meta Keywords'), 'akIsSearchable' => true, null));
 						$cab4 = CollectionAttributeKey::add($boolt, array('akHandle' => 'exclude_nav', 'akName' => t('Exclude From Nav'), 'akIsSearchable' => true));
+						$cab4b = CollectionAttributeKey::add($boolt, array('akHandle' => 'exclude_page_list', 'akName' => t('Exclude From Page List'), 'akIsSearchable' => true));
 						
 						$cab5 = CollectionAttributeKey::add($textareat, array('akHandle' => 'header_extra_content', 'akName' => t('Header Extra Content'), 'akIsSearchable' => true));
 						$cab6 = CollectionAttributeKey::add($boolt, array('akHandle' => 'exclude_search_index', 'akName' => t('Exclude From Search Index'), 'akIsSearchable' => true));

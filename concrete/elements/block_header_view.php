@@ -7,6 +7,6 @@ if( method_exists($b,'getBlockCollectionObject')  ){
 	if(!$b->isGlobal()) $blockStyles = BlockStyles::retrieve($b->bID, $bc );
 } 
 
-if($blockStyles){ ?>
+if( $blockStyles && $blockStyles->getID() ){ ?>
 	<div id="<?php echo $blockStyles->getCssID(1) ?>" class="<?php echo $blockStyles->getClassName() ?>ccm-block-styles" >
 <?php  } ?>
