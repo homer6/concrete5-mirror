@@ -31,14 +31,6 @@ if ($plID == 0) {
 	$pl = PageTheme::getSiteTheme();
 	$plID = $pl->getThemeID();
 }
-
-//marketplace
-if (ENABLE_MARKETPLACE_SUPPORT) {
-	$themesHelper = Loader::helper('concrete/marketplace/themes'); 
-	$availableThemes=$themesHelper->getPreviewableList();
-} else {
-	$availableThemes=array();
-}
 ?>
 
 <style>
@@ -53,6 +45,34 @@ li.themeWrap .ccm-theme-name a{text-decoration:none}
 li.themeWrap .ccm-theme-name a:hover{ text-decoration:underline} 
 ul#ccm-select-marketplace-theme li .desc{ font-size:10px; }
 </style>
+
+<script type="text/javascript">
+ccm_loginInstallSuccessFn = function() {
+	ccm_hidePane(ccm_showPane(this, CCM_TOOLS_PATH + "/edit_collection_popup.php?ctask=set_theme&cID=" + CCM_CID));
+};
+ccm_isRemotelyLoggedIn = '<?php  echo UserInfo::isRemotelyLoggedIn()?>';
+ccm_remoteUID = <?php  echo UserInfo::getRemoteAuthUserId() ?>;
+ccm_remoteUName = '<?php  echo UserInfo::getRemoteAuthUserName()?>';
+
+function ccm_updateMoreThemesTab() {
+    $("#ccm-more-themes-interface-tab").html(ccmi18n.marketplaceLoadingMsg);
+    $.ajax({
+        url: CCM_TOOLS_PATH + '/marketplace/refresh_theme',
+        type: 'POST',
+		data: 'cID=<?php echo $c->getCollectionID()?>',
+        success: function(html){
+            $("#ccm-more-themes-interface-tab").html(html);
+
+			ccm_enable_scrollers();
+			ccmLoginHelper.bindInstallLinks();
+        },
+    });
+}
+
+$(document).ready(function(){
+    ccm_updateMoreThemesTab();
+});
+</script>
 
 <div class="ccm-pane-controls">
  
@@ -132,7 +152,7 @@ ul#ccm-select-marketplace-theme li .desc{ font-size:10px; }
 							
 								<a href="javascript:void(0)" ccm-theme-id="<?php echo $t->getThemeID()?>"><?php echo $t->getThemeThumbnail()?></a>
 									<?php  if ($t->getThemeID() != $plID) { ?><a title="<?php echo t('Preview')?>" onclick="ccm_previewInternalTheme(<?php echo $c->getCollectionID()?>, <?php echo intval($t->getThemeID())?>,'<?php echo addslashes(str_replace(array("\r","\n",'\n'),'',$t->getThemeName())) ?>')" href="javascript:void(0)" class="preview">
-									<img src="<?php echo DIR_REL?>/concrete/images/icons/magnifying.png" alt="<?php echo t('Preview')?>" class="ccm-preview" /></a><?php  } ?>
+									<img src="<?php echo ASSETS_URL_IMAGES?>/icons/magnifying.png" alt="<?php echo t('Preview')?>" class="ccm-preview" /></a><?php  } ?>
 								<div class="ccm-theme-name" ><?php echo $t->getThemeName()?></div>
 						
 							</li>
@@ -153,30 +173,8 @@ ul#ccm-select-marketplace-theme li .desc{ font-size:10px; }
 				</ul>
 				*/ ?>	
 			
-				<?php  if( !count($availableThemes) ){ ?>
-					<div><?php echo t('Unable to connect to the marketplace.')?></div>
-				<?php  }else{ ?>
-						
-					<div class="ccm-scroller" current-page="1" current-pos="0" num-pages="<?php echo ceil(count($availableThemes)/4)?>" >
-						<a href="javascript:void(0)" class="ccm-scroller-l"><img src="<?php echo ASSETS_URL_IMAGES?>/button_scroller_l.png" width="28" height="79" alt="l" /></a>
-						<a href="javascript:void(0)" class="ccm-scroller-r"><img src="<?php echo ASSETS_URL_IMAGES?>/button_scroller_r.png" width="28" height="79" alt="l" /></a>
-						
-						<div class="ccm-scroller-inner">
-							<ul id="ccm-select-marketplace-theme" style="width: <?php echo count($availableThemes) * 132?>px">			
-							<?php  foreach($availableThemes as $availableTheme){ ?>
-								<li class="themeWrap">
-									<a href="<?php echo $availableTheme->getThemeURL() ?>" target="_blank"><img src="<?php echo $availableTheme->getThemeThumbnail() ?>" /></a>
-										<a title="<?php echo t('Preview')?>" onclick="ccm_previewMarketplaceTheme(<?php echo $c->getCollectionID()?>, <?php echo intval($availableTheme->getRemoteCollectionID())?>,'<?php echo addslashes($availableTheme->getThemeName()) ?>','<?php echo addslashes($availableTheme->getThemeHandle()) ?>')" href="javascript:void(0)" class="preview">
-										<img src="<?php echo DIR_REL?>/concrete/images/icons/magnifying.png" alt="<?php echo t('Preview')?>" class="ccm-preview" /></a>
-									<div class="ccm-theme-name" ><a target="_blank" href="<?php echo $availableTheme->getThemeURL() ?>"><?php echo $availableTheme->getThemeName() ?></a></div>
-									<div class="desc"><?php echo $stringHelper->shortText($availableTheme->getThemeDescription(),60) ?></div>
-									<?php  /* <a href="<?php echo $availableTheme->getThemeURL() ?>">Get Theme &raquo;</a> */ ?>
-								</li>
-							<?php  } ?> 
-							</ul>
-						</div>
-					</div>			
-				<?php  } ?> 	
+				<p><?php echo t('Unable to connect to the Concrete5 Marketplace.')?></p>
+
 			</div> 				
 				
 	
@@ -210,7 +208,7 @@ ccm_submit = function() {
 	$('form[name=ccmPermissionsForm]').get(0).submit();
 } 
 
-$(function() {
+ccm_enable_scrollers = function() {
 	$("a.ccm-scroller-l").hover(function() {
 		$(this).children('img').attr('src', '<?php echo ASSETS_URL_IMAGES?>/button_scroller_l_active.png');
 	}, function() {
@@ -227,6 +225,9 @@ $(function() {
 	var thumbWidth = 132;
 
 
+	
+	$('a.ccm-scroller-r').unbind();
+	$('a.ccm-scroller-l').unbind();
 	
 	$('a.ccm-scroller-r').click(function() {
 		var item = $(this).parent().children('div.ccm-scroller-inner').children('ul');
@@ -294,7 +295,11 @@ $(function() {
 			$(this).hide();
 		}
 	});
-	
+}
+
+$(function() {
+	ccm_enable_scrollers();
+
 	$("#ccm-select-page-type a").click(function() {
 		$("#ccm-select-page-type li").each(function() {
 			$(this).removeClass('ccm-item-selected');

@@ -20,57 +20,78 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 class HtmlHelper {
 
 	/** 
-	 * Includes a CSS file. This function looks in several places. First it checks the currently active theme, then if a package is specified it checks there. Otherwise if nothing is found it
+	 * Includes a CSS file. This function looks in several places. 
+	 * First, if the item is either a path or a URL it just returns the link to that item (as XHTML-formatted style tag.) 
+	 * Then it checks the currently active theme, then if a package is specified it checks there. Otherwise if nothing is found it
 	 * fires off a request to the relative directory CSS directory. If nothing is there, then it checks to the assets directories
 	 * @param $file
 	 * @return $str
 	 */
 	public function css($file, $pkgHandle = null) {
+
+		$css = new CSSOutputObject();
+
+		// if the first character is a / then that means we just go right through, it's a direct path
+		if (substr($file, 0, 1) == '/' || substr($file, 0, 4) == 'http' || strpos($file, DISPATCHER_FILENAME) > -1) {
+			$css->compress = false;
+			$css->file = $file;
+		}
+		
 		$v = View::getInstance();
 		// checking the theme directory for it. It's just in the root.
 		if (file_exists($v->getThemeDirectory() . '/' . $file)) {
-			$str = '<style type="text/css">@import "' . $v->getThemePath() . '/' . $file . '";</style>';
+			$css->file = $v->getThemePath() . '/' . $file;
 		} else if ($pkgHandle != null) {
 			if (file_exists(DIR_BASE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file)) {
-				$str = '<style type="text/css">@import "' . DIR_REL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file . '";</style>';
+				$css->file = DIR_REL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file;
 			} else if (file_exists(DIR_BASE_CORE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file)) {
-				$str = '<style type="text/css">@import "' . ASSETS_URL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file . '";</style>';
+				$css->file = ASSETS_URL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file;
 			}
 		}
 			
-		if (!isset($str)) {
+		if ($css->file == '') {
 			if (file_exists(DIR_BASE . '/' . DIRNAME_CSS . '/' . $file)) {
-				$str = '<style type="text/css">@import "' . DIR_REL . '/' . DIRNAME_CSS . '/' . $file . '";</style>';
+				$css->file = DIR_REL . '/' . DIRNAME_CSS . '/' . $file;
 			} else {
-				$str = '<style type="text/css">@import "' . ASSETS_URL_CSS . '/' . $file . '";</style>';
+				$css->file = ASSETS_URL_CSS . '/' . $file;
 			}
 		}
-		return $str;
+		return $css->__toString();
 	}
 	
 	/** 
-	 * Includes a JavaScript file. This function looks in several places. If a package is specified it checks there. Otherwise if nothing is found it
+	 * Includes a JavaScript file. This function looks in several places. 
+	 * First, if the item is either a path or a URL it just returns the link to that item (as XHTML-formatted script tag.) 
+	 * If a package is specified it checks there. Otherwise if nothing is found it
 	 * fires off a request to the relative directory JavaScript directory.
 	 * @param $file
 	 * @return $str
 	 */
 	public function javascript($file, $pkgHandle = null) {
+
+		$js = new JavaScriptOutputObject();
+		
+		if (substr($file, 0, 1) == '/' || substr($file, 0, 4) == 'http' || strpos($file, DISPATCHER_FILENAME) > -1) {
+			$js->compress = false;
+			$js->file = $file;
+		}
+
 		if ($pkgHandle != null) {
 			if (file_exists(DIR_BASE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
-				$str = '<script type="text/javascript" src="' . DIR_REL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file . '"></script>';
+				$js->file = DIR_REL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file;
 			} else if (file_exists(DIR_BASE_CORE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
-				$str = '<script type="text/javascript" src="' . ASSETS_URL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file . '"></script>';
+				$js->file = ASSETS_URL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/'. $file;
 			}
 		}
 			
-		if (!isset($str)) {
+		if ($js->file == '') {
 			if (file_exists(DIR_BASE . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
-				$str = '<script type="text/javascript" src="' . DIR_REL . '/' . DIRNAME_JAVASCRIPT . '/' . $file . '"></script>';
+				$js->file = DIR_REL . '/' . DIRNAME_JAVASCRIPT . '/' . $file;
 			} else {
-				$str = '<script type="text/javascript" src="' . ASSETS_URL_JAVASCRIPT . '/' . $file . '"></script>';
+				$js->file = ASSETS_URL_JAVASCRIPT . '/' . $file;
 			}
 		}
-		return $str;
+		return $js->__toString();
 	}
 	
 	
@@ -130,4 +151,34 @@ class HtmlHelper {
 	
 }
 
-?>
+/** 
+ * @access private
+ */
+class HeaderOutputObject {
+
+	public $file = '';
+	public $compress = true;
+
+}
+
+/** 
+ * @access private
+ */
+class JavaScriptOutputObject extends HeaderOutputObject {
+
+	public function __toString() {
+		return '<script type="text/javascript" src="' . $this->file . '"></script>';
+	}
+	
+}
+
+/** 
+ * @access private
+ */
+class CSSOutputObject extends HeaderOutputObject {
+
+	public function __toString() {
+		return '<link rel="stylesheet" type="text/css" href="' . $this->file . '" />';
+	}
+	
+}

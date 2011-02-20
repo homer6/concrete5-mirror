@@ -135,6 +135,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				if ($dsn) {
 					$_dba = @NewADOConnection($dsn);
 					if (is_object($_dba)) {
+						if (DB_CHARSET != '') {
+							$names = 'SET NAMES \'' . DB_CHARSET . '\'';
+							if (DB_COLLATE != '') {
+								$names .= ' COLLATE \'' . DB_COLLATE . '\'';
+							}
+							$charset = 'SET CHARACTER SET \'' . DB_CHARSET . '\'';
+							if (DB_COLLATE != '') {
+								$charset .= ' COLLATE \'' . DB_COLLATE . '\'';
+							}
+							$_dba->Execute($names);
+							$_dba->Execute($charset);
+						}
+						
 						ADOdb_Active_Record::SetDatabaseAdapter($_dba);
 						$_db = new Database();
 						$_db->setDatabaseObject($_dba);
@@ -189,8 +202,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (file_exists(DIR_PACKAGES . '/' . $pkgHandle . '/' . FILENAME_PACKAGE_CONTROLLER)) {
 				require_once(DIR_PACKAGES . '/' . $pkgHandle . '/' . FILENAME_PACKAGE_CONTROLLER);
 				$class = Object::camelcase($pkgHandle) . "Package";
-				$cl = new $class;
-				return $cl;
+				if (class_exists($class)) {
+					$cl = new $class;
+					return $cl;
+				}
 			}
 		}
 		
@@ -293,17 +308,22 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 				}
 			} else if ($item instanceof Block || $item instanceof BlockType) {
-				if ($item->getPackageID() > 0) {
+				if ($item->getPackageID() > 0 && file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
 					require_once(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER);
 				} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
 					require_once(DIR_FILES_BLOCK_TYPES . "/" . $item->getBlockTypeHandle() . "/" . FILENAME_BLOCK_CONTROLLER);
-				} else {
+				} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
 					require_once(DIR_FILES_BLOCK_TYPES_CORE . "/" . $item->getBlockTypeHandle() . "/" . FILENAME_BLOCK_CONTROLLER);
 				}
 				$class = Object::camelcase($item->getBlockTypeHandle()) . 'BlockController';
-				if ($item instanceof BlockType) {
+				if (class_exists($class) && $item instanceof BlockType) {
 					$controller = new $class($item);
 				}
+				
+				if ($item instanceof Block) {
+					$c = $item->getBlockCollectionObject();
+				}
+				
 			} else {
 				$path = $item;
 			}
@@ -356,5 +376,15 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$controller->setupRestrictedMethods();
 			return $controller;
 		}
-		
+
+		/**
+		* Instantiates one of our Soap Client Singletons
+		*/		
+		public function soapClient($client) {			
+			Loader::library('soap_clients');
+			$client .= 'SoapClient';			
+			$api = call_user_func_array($client.'::getInstance',Array());					
+			$api->setup();
+			return $api;
+		}
 	}

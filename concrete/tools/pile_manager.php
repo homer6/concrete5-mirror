@@ -7,6 +7,7 @@ if (!$u->isRegistered()) {
 }
 Loader::model('pile');
 $p = false;
+
 if ($_REQUEST['btask'] == 'add' || $_REQUEST['ctask'] == 'add') {
 	// add a block to a pile
 	$c = Page::getByID($_REQUEST['cID']);

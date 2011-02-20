@@ -65,7 +65,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$cvID = $c->getVersionID();
 			}
 
-			$ca = new Cache();
+			$ca = new Cache(); 
+			
 			$b = $ca->get('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle);
 			if ($b instanceof Block) {
 				return $b;
@@ -104,8 +105,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				
 				$bt = BlockType::getByID($b->getBlockTypeID());
 				$class = $bt->getBlockTypeClass();
+				if ($class == false) {
+					// we can't find the class file, so we return
+					return false;
+				}
+				
 				$b->instance = new $class($b);
-
+				
+				
 				if ($c != null || $a != null) {
 					$ca = new Cache();
 					$ca->set('block', $bID . ':' . $cID . ':' . $cvID . ':' . $arHandle, $b);
@@ -114,11 +121,37 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 
 			}
 		}
+		
+
+		/** 
+		 * Returns a global block 
+		 */
+		public static function getByName($globalBlockName) {
+			if(!$globalBlockName) return;
+			$db = Loader::db();
+			$bID = $db->getOne( 'SELECT b.bID FROM Blocks AS b, CollectionVersionBlocks AS cvb '.
+							  'WHERE b.bName=? AND b.bID=cvb.bID AND cvb.arHandle="Global Scrapbook" ', 
+							   array($globalBlockName) ); 
+			if ($bID > 0) {
+				return Block::getByID( intval($bID) );
+			} else {
+				return new Block();
+			}
+		}
+		
+		public function display( $view = 'view', $args = array()){
+			if ($this->getBlockTypeID() < 1) {
+				return ;
+			}
+			
+			$bv = new BlockView();
+			$bt = BlockType::getByID( $this->getBlockTypeID() );  
+			$bv->render($this, $view, $args);
+		}
 
 		// if $c is provided, then we check to see if this particular block is aliased
 		// to this particular collection
-
-		function isAlias($c = null) {
+		public function isAlias($c = null) {
 			if ($c) {
 				$db = Loader::db();
 				$cID = $c->getCollectionID();
@@ -130,6 +163,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			} else {
 				return (!$this->isOriginal);
 			}
+		}
+		
+		public function isGlobal(){
+			$db = Loader::db();
+			$q = "SELECT b.bID FROM Blocks AS b, CollectionVersionBlocks AS cvb ".
+				 "WHERE b.bID = '{$this->bID}' AND cvb.bID=b.bID and cvb.arHandle='Global Scrapbook' LIMIT 1";
+			$r = $db->query($q);
+			if ($r) {
+				return ($r->numRows() > 0)?1:0;
+			}			
+			return 0;
 		}
 
 		public function inc($file) {
@@ -275,18 +319,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return PackageList::getHandle($this->pkgID);
 		}
 		
-		function updateBlockName($name) {
+		function updateBlockName( $name, $force=0) {
 			// this function allows children blocks to change the name of the block. This is useful
 			// for the block search functionality - a content local block can make the block name
 			// the fix 30 characters of the content field, for example. This only works if no name has
 			// been assigned to the block already. If one has, then we disregard.
 			$db = Loader::db();
-			if (!$this->bName) {
-				$name = substr($name, 0, 60) . '...';
-				$v = array(htmlspecialchars($name), $this->bID);
-				$q = "update Blocks set bName = ? where bID = ?";
-				$r = $db->prepare($q);
-				$res = $db->execute($r, $v);
+			if (!$this->bName || $force==1) {  
+				if( strlen($name)>60 ) $name = substr($name, 0, 60) . '...';
+				$v = array(htmlspecialchars($name), $this->bID); 
+				$q = "UPDATE Blocks SET bName = ? WHERE bID = ?";
+				$r = $db->query($q,$v);
+				//$res = $db->execute($r, $v);
+				$this->bName=$name;
 			}
 			$this->refreshCache();
 		}
@@ -800,7 +845,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function refreshCache() {
 			$c = $this->getBlockCollectionObject();
 			$a = $this->getBlockAreaObject();
-			if (is_object($c) && is_object($a)) { 
+			if (is_object($c) && is_object($a)) {
 				Cache::delete('block', $this->getBlockID() . ':' . $c->getCollectionID() . ':' . $c->getVersionID() . ':' . $a->getAreaHandle());
 			}
 		}
@@ -825,7 +870,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$r = $db->prepare($q);
 			$res = $db->execute($r, $v);
 			$this->refreshCache();
-
+			
 		}
 
 	}

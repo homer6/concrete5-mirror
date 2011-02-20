@@ -4,8 +4,6 @@ global $c; ?>
 
 <a name="_edit<?php echo $b->getBlockID()?>"></a>
 
-<?php  include(DIR_FILES_ELEMENTS_CORE . '/block_al.php'); ?>
-
 <?php  $ci = Loader::helper("concrete/urls"); ?>
 <?php  $bt = $b->getBlockTypeObject(); ?>
 <?php  $url = $ci->getBlockTypeJavaScriptURL($bt); 

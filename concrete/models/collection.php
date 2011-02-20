@@ -150,7 +150,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function setAttribute($akHandle, $value) {
 			$db = Loader::db();
 			$akID = $db->GetOne("select akID from CollectionAttributeKeys where akHandle = ?", array($akHandle));
-			if ($akID > 1) {
+			if ($akID > 0) {
 				$db->Replace('CollectionAttributeValues', array(
 					'cID' => $this->cID,
 					'cvID' => $this->getVersionID(),
@@ -378,6 +378,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function refreshCache() {
 			$vo = $this->getVersionObject();
 			Cache::delete('page', $this->getCollectionID());
+			Cache::delete('page_path', $this->getCollectionID());
 			if (is_object($vo)) {
 				$vo->refreshCache();
 			}
@@ -402,8 +403,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$blocks = array();
 			while ($row = $r->fetchRow()) {
 				$ab = Block::getByID($row['bID'], $this, $row['arHandle']);
-				$btHandle = $ab->getBlockTypeHandle();
-				$blocks[] = $ab;
+				if (is_object($ab)) {
+					$blocks[] = $ab;
+				}
 			}
 			$r->free();
 			return $blocks;
@@ -413,7 +415,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$db = Loader::db();
 			
 			// first we add the block to the system
-			$nb = $bt->add($data);
+			$nb = $bt->add($data, $this, $a);
 			
 			// now that we have a block, we add it to the collectionversions table
 			

@@ -44,23 +44,36 @@ class Page extends Collection {
 	protected function populatePage($cInfo, $where, $cvID) {
 		$db = Loader::db();
 		
-		$q0 = "select Pages.cID, Pages.pkgID, Pages.cPointerID, Pages.cPointerExternalLink, Pages.cFilename, Collections.cDateAdded, Pages.cDisplayOrder, Collections.cDateModified, cInheritPermissionsFromCID, cInheritPermissionsFrom, cOverrideTemplatePermissions, cPendingAction, cPendingActionUID, cPendingActionTargetCID, cPendingActionDatetime, cCheckedOutUID, cIsTemplate, uID, cPath, Pages.ctID, ctHandle, ctIcon, ptID, cParentID, cChildren, ctName from Pages inner join Collections on Pages.cID = Collections.cID left join PageTypes on (PageTypes.ctID = Pages.ctID) left join PagePaths on (Pages.cID = PagePaths.cID) ";
-		$q2 = "select cParentID, cPointerID, cPath, Pages.cID from Pages left join PagePaths on (Pages.cID = PagePaths.cID) ";
+		$q0 = "select Pages.cID, Pages.pkgID, Pages.cPointerID, Pages.cPointerExternalLink, Pages.cFilename, Collections.cDateAdded, Pages.cDisplayOrder, Collections.cDateModified, cInheritPermissionsFromCID, cInheritPermissionsFrom, cOverrideTemplatePermissions, cPendingAction, cPendingActionUID, cPendingActionTargetCID, cPendingActionDatetime, cCheckedOutUID, cIsTemplate, uID, cPath, Pages.ctID, ctHandle, ctIcon, ptID, cParentID, cChildren, ctName from Pages inner join Collections on Pages.cID = Collections.cID left join PageTypes on (PageTypes.ctID = Pages.ctID) left join PagePaths on (Pages.cID = PagePaths.cID and PagePaths.ppIsCanonical = 1) ";
+		$q2 = "select cParentID, cPointerID, cPath, Pages.cID from Pages left join PagePaths on (Pages.cID = PagePaths.cID and PagePaths.ppIsCanonical = 1) ";
+
+		if ($cInfo != 1) {
+			if (empty($where)) {
+				$ppWhere = "where ";
+			} else {
+				$ppWhere = " and ";
+			}
+			$ppWhere .= "PagePaths.ppIsCanonical = 1";
+		} else {
+			$ppWhere = '';
+		}
+//TBD
+$ppWhere = '';
 		
 		$v = array($cInfo);
-		$q2 .= $where;
+		$q2 .= $where . $ppWhere;
 
 		$r = $db->query($q2, $v);
 		$row = $r->fetchRow();
 		if ($row['cPointerID'] > 0) {
-			$q1 = $q0 . "where Pages.cID = ?";
+			$q1 = $q0 . "where Pages.cID = ?" . $ppWhere;
 			$cPointerOriginalID = $row['cID'];
 			$v = array($row['cPointerID']);
 			$cParentIDOverride = $row['cParentID'];
 			$cPathOverride = $row['cPath'];
 			$cPointerID = $row['cPointerID'];
 		} else {
-			$q1 = $q0 . $where;
+			$q1 = $q0 . $where . $ppWhere;
 		}
 
 		// isTemplate = 0 because we don't want to get return templates
@@ -352,6 +365,9 @@ class Page extends Collection {
 
 		$_cParentID = $c->getCollectionID();
 		$q = "select PagePaths.cPath from PagePaths where cID = '{$_cParentID}'";
+		if ($_cParentID > 1) {
+			$q .=  " and ppIsCanonical = 1";
+		}
 		$cPath = $db->getOne($q);
 		
 		$data['handle'] = $this->getCollectionHandle();
@@ -510,6 +526,19 @@ class Page extends Collection {
 
 	function getCollectionPath() {
 		return $this->cPath;
+	}
+	
+	public static function getCollectionPathFromID($cID) {
+		$path = Cache::get('page_path', $cID);
+		if ($path != false) {
+			return $path;
+		}
+		
+		$db = Loader::db();
+		$path = $db->GetOne("select cPath from PagePaths inner join CollectionVersions on (PagePaths.cID = CollectionVersions.cID and CollectionVersions.cvIsApproved = 1) where PagePaths.cID = ?", array($cID));
+		
+		Cache::set('page_path', $cID, $path);
+		return $path;
 	}
 
 	function getCollectionUserID() {
@@ -792,15 +821,19 @@ class Page extends Collection {
 		}
 
 		$txt = Loader::helper('text');
-		if (!isset($data['cHandle']) && ($this->getCollectionHandle() != '')) {
-			$cHandle = $this->getCollectionHandle();
-		} else if (!$data['cHandle']) {
-			// make the handle out of the title
-			$cHandle = $txt->sanitizeFileSystem($cName);
-		} else {
-			$cHandle = $txt->sanitizeFileSystem($data['cHandle']);
-		}
+        if (!isset($data['cHandle']) && ($this->getCollectionHandle() != '')) {
+            $cHandle = $this->getCollectionHandle();
+        } else if (!$data['cHandle']) {
+            // make the handle out of the title
+            $cHandle = $txt->sanitizeFileSystem($cName);
+        } else {
+            $cHandle = $txt->sanitizeFileSystem($data['cHandle']);
+        }
 		
+		// Update the non-canonical page paths
+		if (isset($data['ppURL']))
+			$this->rescanPagePaths($data['ppURL']);
+
 		if ($this->isGeneratedCollection()) {
 			if (isset($data['cFilename'])) {
 				$cFilename = $data['cFilename'];
@@ -825,6 +858,71 @@ class Page extends Collection {
 		$ret = Events::fire('on_page_update', $this);
 	}
 	
+	public function uniquifyPagePath($origPath) {
+		$db = Loader::db();
+
+		$proceed = false;
+		$suffix = 0;
+		while ($proceed != true) {
+			$newPath = ($suffix == 0) ? $origPath : $origPath . $suffix;
+			$v = array($newPath, $this->cID);
+			$q = "select cID from PagePaths where cPath = ? and cID <> ?";
+			$r = $db->query($q, $v);
+			if ($r->numRows() == 0) {
+				$proceed = true;
+			} else {
+				$suffix++;
+			}
+		}
+
+		return $newPath;
+	}
+
+	public function rescanPagePaths($newPaths) {
+		$db = Loader::db();
+		$txt = Loader::helper('text');
+
+		// First, get the list of page paths from the DB.
+		$ppaths = $this->getPagePaths();
+
+		// Second, reset all of their cPath values to null.
+		$paths = array();
+		foreach ($ppaths as $ppath) {
+			if (!$ppath['ppIsCanonical']) {
+				$paths[$ppath['ppID']] = null;
+			}
+		}
+
+		// Third, fill in the cPath values from the user updated data.
+		foreach ($newPaths as $key=>$val) {
+			if (!empty($val)) {
+				// Auto-prepend a slash if one is missing.
+				$val = $txt->sanitizeFileSystem($val, true);
+				if ($val{0} != '/') {
+					$val = '/' . $val;
+				}
+				$paths[$key] = $val;
+			}
+		}
+		
+		// Fourth, delete, update, or insert page paths as necessary.
+		foreach ($paths as $key=>$val) {
+			if (empty($val)) {
+				$v = array($this->cID, $key);
+				$q = "delete from PagePaths where cID = ? and ppID = ?";
+			} else if (is_numeric($key)) {
+				$val = $this->uniquifyPagePath($val);
+				$v = array($val, $this->cID, $key);
+				$q = "update PagePaths set cPath = ?, ppIsCanonical = 0 where cID = ? and ppID = ?";
+			} else {
+				$val = $this->uniquifyPagePath($val);
+				$v = array($this->cID, $val);
+				$q = "insert into PagePaths (cID, cPath, ppIsCanonical) values (?, ?, 0)";
+			}
+			$r = $db->query($q, $v);
+		}
+	}
+
 	// remove the collection attributes for this version of a page
 	public function clearCollectionAttributes() {
 		$db = Loader::db();
@@ -1004,7 +1102,7 @@ class Page extends Collection {
 	function _duplicateAll($cParent, $cNewParent) {
 		$db = Loader::db();
 		$cID = $cParent->getCollectionID();
-		$q = "select cID from Pages where cParentID = '{$cID}'";
+		$q = "select cID from Pages where cParentID = '{$cID}' order by cDisplayOrder asc";
 		$r = $db->query($q);
 		if ($r) {
 			while ($row = $r->fetchRow()) {
@@ -1029,8 +1127,8 @@ class Page extends Collection {
 		$newC = $cobj->duplicate();
 		$newCID = $newC->getCollectionID();
 		
-		$v = array($newCID, $this->getCollectionTypeID(), $cParentID, $uID, $this->overrideTemplatePermissions(), $this->getPermissionsCollectionID(), $this->getCollectionInheritance(), $this->cFilename, $this->cPointerID, $this->cPointerExternalLink);
-		$q = "insert into Pages (cID, ctID, cParentID, uID, cOverrideTemplatePermissions, cInheritPermissionsFromCID, cInheritPermissionsFrom, cFilename, cPointerID, cPointerExternalLink) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		$v = array($newCID, $this->getCollectionTypeID(), $cParentID, $uID, $this->overrideTemplatePermissions(), $this->getPermissionsCollectionID(), $this->getCollectionInheritance(), $this->cFilename, $this->cPointerID, $this->cPointerExternalLink, $this->ptID, $this->cDisplayOrder);
+		$q = "insert into Pages (cID, ctID, cParentID, uID, cOverrideTemplatePermissions, cInheritPermissionsFromCID, cInheritPermissionsFrom, cFilename, cPointerID, cPointerExternalLink, ptID, cDisplayOrder) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		$res = $db->query($q, $v);
 	
 		Loader::model('page_statistics');
@@ -1075,7 +1173,6 @@ class Page extends Collection {
 		}
 
 		if ($res) {
-			
 			// rescan the collection path
 			$nc->refreshCache();
 			$nc2 = Page::getByID($newCID);
@@ -1231,7 +1328,7 @@ class Page extends Collection {
 		if ($this->cParentID > 0) {
 			$db = Loader::db();
 			// first, we grab the path of the parent, if such a thing exists, for our prefix
-			$q = "select PagePaths.cPath as cPathParent from PagePaths left join Pages on (Pages.cParentID = PagePaths.cID) where Pages.cID = '{$this->cID}'";
+			$q = "select PagePaths.cPath as cPathParent from PagePaths left join Pages on (Pages.cParentID = PagePaths.cID and PagePaths.ppIsCanonical = 1) where Pages.cID = '{$this->cID}'";
 			$cPath = $db->getOne($q);
 
 			// Now we perform the collection path function on the current cID
@@ -1254,9 +1351,12 @@ class Page extends Collection {
 		$db = Loader::db();
 		$q = "select CollectionVersions.cID, CollectionVersions.cvHandle, CollectionVersions.cvID, PagePaths.cID as cpcID from CollectionVersions left join PagePaths on (PagePaths.cID = CollectionVersions.cID) where CollectionVersions.cID = '{$cID}' and CollectionVersions.cvIsApproved = 1";
 		$r = $db->query($q);
-		if ($r) {
-			$row = $r->fetchRow();
+		if (!$r) return;
+
+		$row = $r->fetchRow();
+		if ($row['cvHandle']) {
 			$origPath = $cPath . '/' . $row['cvHandle'];
+
 			// first, we check to see if this path already exists
 			$proceed = false;
 			$suffix = 0;
@@ -1265,33 +1365,39 @@ class Page extends Collection {
 				$v2 = array($newPath);
 				$q2 = "select cID from PagePaths where cPath = ? and cID <> {$cID}";
 				$r2 = $db->query($q2, $v2);
-				$rows = $r2->numRows();
-				if ($rows == 0) {
+				if ($r2->numRows() == 0) {
 					$proceed = true;
 				} else {
 					$suffix++;
 				}
 			}
 
-			$v3 = array($newPath, $cID);
-			if ($row['cvHandle']) {
-				if ($row['cpcID']) {
-					// there's already a row, so we update
-					$q3 = "update PagePaths set cPath = ? where cID = ?";
-				} else {
-					$q3 = "insert into PagePaths (cPath, cID) values (?, ?)";
-				}
+			// If a page path already existed, keep it but mark it as non-canonical.
+			if ($row['cpcID']) {
+				$db->query("update PagePaths set ppIsCanonical = 0 where cID = {$cID}");
+			}
 
-				$r3 = $db->prepare($q3);
-				$res3 = $db->execute($r3, $v3);
-				
-				if ($res3) {
-					$np = Page::getByID($cID, $row['cvID']);
-					$np->refreshCache();
-					return $newPath;
-				}
+			// Check to see if a non-canonical page path already exists for the new location.
+			$v = array($cID, $newPath);
+			$rc = $db->query("select cID from PagePaths where cID = ? and cPath = ?", $v);
+			if ($rc->numRows() > 0) {
+  				// Update the non-canonical path to be canonical.
+				$q3 = "update PagePaths set ppIsCanonical = 1 where cID = ? and cPath = ?";
+			} else {
+				// Create a new page path for the new location.
+				$q3 = "insert into PagePaths (cID, cPath) values (?, ?)";
+			}
+			$rc->free();
+			$r3 = $db->prepare($q3);
+			$res3 = $db->execute($r3, $v);
+			
+			if ($res3) {
+				$np = Page::getByID($cID, $row['cvID']);
+				$np->refreshCache();
+				return $newPath;
 			}
 		}
+		$r->free();
 	}
 
 	function rescanCollectionPathChildren($cID, $cPath) {
@@ -1731,9 +1837,37 @@ class Page extends Collection {
 				
 	}
 	
-	
-	
-	
+	function getPagePaths() {
+		$db = Loader::db();
+
+		$q = "select ppID, cPath, ppIsCanonical from PagePaths where cID = {$this->cID}";
+		$r = $db->query($q, $v);
+		$paths = array();
+		if ($r) {
+			while ($row = $r->fetchRow()) {
+				$paths[] = $row;
+			}
+			$r->free();
+		}
+
+		return $paths;
+	}
+
+	const BLOCK_HANDLE_GUEST 	= 'guestbook';
+	function populateGuestbookInformation(){
+		$this->guestbook_id = 0;
+		$blocks = $this->getBlocks();
+		foreach($blocks as $block){
+			if ($block->btHandle == self::BLOCK_HANDLE_GUEST){
+				$this->guestbook_id    = $block->bID;
+				$ca = new Cache();
+				$this->guestbook_count = $ca->get('GuestBookCount',$block->bID);
+				$this->guestbook_count = $this->guestbook_count ? $this->guestbook_count : '0';
+				
+				break; //break out of foreach after you've found a guestbook
+			}
+		}		
+	}
 }
 
 ?>

@@ -1,5 +1,4 @@
 <?php 
-
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
 Loader::model('collection_types');
@@ -37,7 +36,7 @@ $areasBlocksSerialized=serialize($areasBlocksHTML);
 $postStr='content='.urlencode($areasBlocksSerialized).'&themeHandle='.$themeHandle.'&ctID='.$ctID.'&ctHandle='.$ctHandle;
 
 if (!function_exists('curl_init')) { ?>
-	<div>cURL must be enabled to preview external themes.</div>
+	<div><?php echo t('curl must be enabled to preview external themes.')?></div>
 <?php  }else{
 	$curl_handle = curl_init();
 	curl_setopt($curl_handle, CURLOPT_URL, MARKETPLACE_THEME_PREVIEW_URL);

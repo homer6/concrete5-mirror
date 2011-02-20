@@ -31,7 +31,7 @@ function toggleQuestions(qsID,trigger){
 <div style="margin:0px; padding:0px; width:100%; height:auto" >
 <table class="entry-form" >
 	<tr>
-		<td class="header"><?php echo t('Survey')?></td>
+		<td class="header"><?php echo t('Form')?></td>
 		<td class="header"><?php echo t('Options')?></td>
 	</tr>
 	<?php  foreach($surveys as $thisQuestionSetId=>$survey){
@@ -76,17 +76,17 @@ function toggleQuestions(qsID,trigger){
 			</div>
 			
 			<?php  if($_REQUEST['all']!=1){ ?>
-				<a href="<?php echo $this->url('/dashboard/form_results/', 'view', '?all=1&sortBy='.$_REQUEST['sortBy'].'&qsid='.$questionSet)?>"><?php echo t('Show All')?></a>
+				<a href="<?php echo $this->url('/dashboard/reports/forms/', 'view', '?all=1&sortBy='.$_REQUEST['sortBy'].'&qsid='.$questionSet)?>"><?php echo t('Show All')?></a>
 			<?php  }else{ ?>
-				<a href="<?php echo $this->url('/dashboard/form_results/', 'view', '?all=0&sortBy='.$_REQUEST['sortBy'].'&qsid='.$questionSet)?>"><?php echo t('Show Paging')?></a>
+				<a href="<?php echo $this->url('/dashboard/reports/forms/', 'view', '?all=0&sortBy='.$_REQUEST['sortBy'].'&qsid='.$questionSet)?>"><?php echo t('Show Paging')?></a>
 			<?php  } ?>
 			
 			&nbsp;|&nbsp;
 			 
 			<?php  if($_REQUEST['sortBy']=='chrono'){ ?>
-				<a href="<?php echo $this->url('/dashboard/form_results/', 'view', '?all=1&sortBy=newest&qsid='.$questionSet)?>"><?php echo t('Sort by Newest')?></a>
+				<a href="<?php echo $this->url('/dashboard/reports/forms/', 'view', '?all=1&sortBy=newest&qsid='.$questionSet)?>"><?php echo t('Sort by Newest')?></a>
 			<?php  }else{ ?>
-				<a href="<?php echo $this->url('/dashboard/form_results/', 'view', '?all=0&sortBy=chrono&qsid='.$questionSet)?>"><?php echo t('Sort Chronologically')?></a>
+				<a href="<?php echo $this->url('/dashboard/reports/forms/', 'view', '?all=0&sortBy=chrono&qsid='.$questionSet)?>"><?php echo t('Sort Chronologically')?></a>
 			<?php  } ?>			
 			<div class="spacer"></div>
 		</div>
@@ -106,8 +106,27 @@ function toggleQuestions(qsID,trigger){
 					$questionNumber++; 
 					?>
 					<tr class="<?php echo ($questionNumber>$numQuestionsToShow)?'extra':''?>QuestionRow<?php echo $answerSetId?> <?php echo ($questionNumber>$numQuestionsToShow)?'noDisplay':'' ?>">
-						<td><?php echo $questions[$questionId]['question']?></td>
-						<td><?php echo $answerSet['answers'][$questionId]['answer']?> <?php echo $answerSet['answers'][$questionId]['answerLong']?></td>
+						<td width="33%">
+							<?php echo  $questions[$questionId]['question'] ?>
+						</td>
+						<td>
+							<?php 
+							if( $question['inputType']=='fileupload' ){
+								$fID=intval($answerSet['answers'][$questionId]['answer']);
+								$file=File::getByID($fID);
+								if($fID && $file){
+									$fileVersion=$file->getApprovedVersion();
+									echo '<a href="' . $fileVersion->getRelativePath() .'">'.$fileVersion->getFileName().'</a>';
+								}else{
+									echo t('File not found');
+								}
+							}elseif($question['inputType']=='text'){
+								echo $answerSet['answers'][$questionId]['answerLong'];
+							}else{
+								echo $answerSet['answers'][$questionId]['answer'];
+							}
+							?>							
+						</td>
 					</tr>
 				<?php  } ?>
 			</table>

@@ -11,8 +11,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 class PageList extends DatabaseItemList {
 
 	private $collectionAttributeFilters = array();
+	private $collectionAttributeSortFilter = array();
 	private $includeSystemPages = false;
 	private $displayOnlyPermittedPages = false;
+	private $systemPagesToExclude = array('login.php', 'register.php', 'download_file.php', 'profile/%', 'dashboard/%');
+	private $filterByCParentID = 0;
+	private $ignorePermissions = false;
 	
 	/* magic method for filtering by page attributes. */
 	
@@ -26,6 +30,34 @@ class PageList extends DatabaseItemList {
 				$this->filterByCollectionAttribute($attrib, $a[0]);
 			}
 		}			
+	}
+	
+	public function ignorePermissions() {
+		$this->ignorePermissions = true;
+	}
+	
+	/** 
+	 * Sets up a list to only return items the proper user can access 
+	 */
+	public function setupPermissions() {
+		$u = new User();
+		if ($u->isSuperUser() || ($this->ignorePermissions)) {
+			return; // super user always sees everything. no need to limit
+		}
+		
+		$groups = $u->getUserGroups();
+		$groupIDs = array();
+		foreach($groups as $key => $value) {
+			$groupIDs[] = $key;
+		}
+		
+		$uID = -1;
+		if ($u->isRegistered()) {
+			$uID = $u->getUserID();
+		}
+		
+		$this->addToQuery('left join PagePermissions pp1 on (pp1.cID = p1.cInheritPermissionsFromCID) left join PagePermissions pp2 on (pp2.cID = p2.cInheritPermissionsFromCID)');
+		$this->filter(false, "((pp1.cgPermissions like 'r%' and (pp1.gID in (" . implode(',', $groupIDs) . ") or pp1.uID = {$uID})) or (pp2.cgPermissions like 'r%' and (pp2.gID in (" . implode(',', $groupIDs) .  ") or pp2.uID = {$uID})))");
 	}
 
 	/** 
@@ -75,6 +107,7 @@ class PageList extends DatabaseItemList {
 	 * @param mixed $cParentID
 	 */
 	public function filterByParentID($cParentID) {
+		$this->filterByCParentID = $cParentID;
 		$this->filter('p1.cParentID', $cParentID);
 	}
 	
@@ -87,12 +120,32 @@ class PageList extends DatabaseItemList {
 	}
 
 	/** 
+	 * Filters by user ID of collection (using the uID field)
+	 * @param mixed $ctID
+	 */
+	public function filterByUserID($uID) {
+		$this->filter(false, "(p1.uID = $uID or p2.uID = $uID)");
+	}
+
+	/** 
 	 * Filters by type of collection (using the handle field)
 	 * @param mixed $ctID
 	 */
 	public function filterByCollectionTypeHandle($ctHandle) {
 		$db = Loader::db();
-		$this->filter(false, "(pt1.ctHandle = " . $db->quote($ctHandle) . " or pt2.ctHandle = " . $db->quote($ctHandle) . ")");
+		if (is_array($ctHandle)) {
+			$cth = '(';
+			for ($i = 0; $i < count($ctHandle); $i++) {
+				if ($i > 0) {
+					$cth .= ',';
+				}
+				$cth .= $db->quote($ctHandle[$i]);
+			}
+			$cth .= ')';
+			$this->filter(false, "(pt1.ctHandle in {$cth} or pt2.ctHandle in {$cth})");
+		} else {
+			$this->filter(false, "(pt1.ctHandle = " . $db->quote($ctHandle) . " or pt2.ctHandle = " . $db->quote($ctHandle) . ")");
+		}
 	}
 
 	/** 
@@ -112,6 +165,10 @@ class PageList extends DatabaseItemList {
 		$this->collectionAttributeFilters[] = array($handle, $value, $comparison);
 	}
 	
+	public function sortByCollectionAttribute($handle, $order = 'asc') {
+		$this->collectionAttributeSortFilter = array($handle, $order);
+	}
+	
 	/** 
 	 * If true, pages will be checked for permissions prior to being returned
 	 * @param bool $checkForPermissions
@@ -120,19 +177,68 @@ class PageList extends DatabaseItemList {
 		$this->displayOnlyPermittedPages = $checkForPermissions;
 	}
 	
-	protected function setBaseQuery() {
-		$this->setQuery('select p1.cID, if(p2.cID is null, pt1.ctHandle, pt2.ctHandle) as ctHandle from Pages p1 left join Pages p2 on (p1.cPointerID = p2.cID) left join PageTypes pt1 on (pt1.ctID = p1.ctID) left join PageTypes pt2 on (pt2.ctID = p2.ctID) inner join CollectionVersions cv on (cv.cID = if(p2.cID is null, p1.cID, p2.cID))');
+	protected function setBaseQuery($additionalFields = '') {
+		$this->setQuery('select distinct p1.cID, if(p2.cID is null, pt1.ctHandle, pt2.ctHandle) as ctHandle ' . $additionalFields . ' from Pages p1 left join Pages p2 on (p1.cPointerID = p2.cID) left join PageTypes pt1 on (pt1.ctID = p1.ctID) left join PageTypes pt2 on (pt2.ctID = p2.ctID) inner join CollectionVersions cv on (cv.cID = if(p2.cID is null, p1.cID, p2.cID))');
+	}
+	
+	protected function setupSystemPagesToExclude() {
+		if ($this->filterByCParentID > 1) {
+			return false;
+		}
+		$cIDs = Cache::get('page_list_exclude_ids', false);
+		if ($cIDs == false) {
+			$db = Loader::db();
+			$filters = ''; 
+			for ($i = 0; $i < count($this->systemPagesToExclude); $i++) {
+				$spe = $this->systemPagesToExclude[$i];
+				$filters .= 'cFilename like \'/' . $spe . '\' ';
+				if ($i + 1 < count($this->systemPagesToExclude)) {
+					$filters .= 'or ';
+				}
+			}
+			$cIDs = $db->GetCol("select cID from Pages where 1=1 and ctID = 0 and (" . $filters . ")");
+			if (count($cIDs) > 0) {
+				Cache::set('page_list_exclude_ids', false, $cIDs);
+			}
+		}
+		$cIDStr = implode(',', $cIDs);
+		$this->filter(false, "(p1.cID not in ({$cIDStr}) or p2.cID not in ({$cIDStr}))");
 	}
 	
 	protected function setupCollectionAttributeFilters() {
 		$db = Loader::db();
+		
 		foreach($this->collectionAttributeFilters as $caf) {
 			$akID = $db->GetOne("select akID from CollectionAttributeKeys where akHandle = ?", array($caf[0]));
+			if (!$akID) {
+				$akID = 0;
+			}
 			$tbl = "cav_{$akID}";
-			$this->addToQuery("left join CollectionAttributeValues $tbl on {$tbl}.cID = if(p2.cID is null, p1.cID, p2.cID) and cv.cvID = {$tbl}.cvID");
+			$this->addToQuery("left join CollectionAttributeValues $tbl on {$tbl}.cID = if(p2.cID is null, p1.cID, p2.cID) and {$tbl}.akID = {$akID} and cv.cvID = {$tbl}.cvID");
 			$this->filter($tbl . '.value', $caf[1], $caf[2]);
-			$this->filter($tbl . '.akID', $akID);
+			if ($caf[1] != null && $caf[2] != 'is') {
+				$this->filter($tbl . '.akID', $akID);
+			}
+			
+			if (isset($this->collectionAttributeSortFilter[0]) && $this->collectionAttributeSortFilter[0] == $caf[0]) {
+				$sortByTable = $tbl;
+			}
 		}
+		
+		if (!isset($sortByTable) && (isset($this->collectionAttributeSortFilter[0]))) {
+			$akID = $db->GetOne("select akID from CollectionAttributeKeys where akHandle = ?", array($this->collectionAttributeSortFilter[0]));
+			$tbl = "cav_{$akID}";			
+			$this->addToQuery("left join CollectionAttributeValues $tbl on {$tbl}.cID = if(p2.cID is null, p1.cID, p2.cID) and {$tbl}.akID = {$akID} and cv.cvID = {$tbl}.cvID");
+			$sortByTable = $tbl;
+		}
+		
+		if (isset($sortByTable)) {
+			parent::sortBy($sortByTable . '.value', $this->collectionAttributeSortFilter[1]);
+		}
+	}
+	
+	protected function loadPageID($cID) {
+		return Page::getByID($cID);
 	}
 	
 	/** 
@@ -140,24 +246,22 @@ class PageList extends DatabaseItemList {
 	 */
 	public function get($itemsToGet = 0, $offset = 0) {
 		$pages = array();
-		$this->setBaseQuery();
+		if ($this->getQuery() == '') {
+			$this->setBaseQuery();
+		}		
 		$this->filter('cvIsApproved', 1);
 		$this->filter(false, "(p1.cIsTemplate = 0 or p2.cIsTemplate = 0)");
-		$this->setItemsPerPage(0); // no limit
+		$this->setItemsPerPage($itemsToGet);
 		$this->setupCollectionAttributeFilters();
-		$r = parent::get();
+		$this->setupPermissions();
+		$this->setupCollectionAttributeSortFilters();
+		$this->setupSystemPagesToExclude();
+		$r = parent::get($itemsToGet, $offset);
 		foreach($r as $row) {
-			$nc = Page::getByID($row['cID']);
+			$nc = $this->loadPageID($row['cID']);
 			$nc->loadVersionObject();
-			if ($nc->isSystemPage()) {
-				continue;
-			}
 			$pages[] = $nc;
-			if (count($pages) == $itemsToGet) {
-				break;
-			}
 		}
 		return $pages;
 	}
-	
 }

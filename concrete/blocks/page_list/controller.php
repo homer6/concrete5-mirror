@@ -45,6 +45,7 @@
 			
 
 			$pl = new PageList();
+			$pl->setNameSpace('b' . $this->bID);
 			
 			$cArray = array();
 
@@ -75,6 +76,10 @@
 				$pl->setItemsPerPage($num);
 			}
 
+			$c = $this->getCollectionObject();
+			if (is_object($c)) {
+				$this->cID = $c->getCollectionID();
+			}
 			$cParentID = ($row['cThis']) ? $this->cID : $row['cParentID'];
 			
 			if ($this->displayFeaturedOnly == 1) {
@@ -96,7 +101,7 @@
 			} else {
 				$pages = $pl->get();
 			}
-			
+			$this->set('pl', $pl);
 			return $pages;
 		}
 		
@@ -114,6 +119,10 @@
 			$db = Loader::db();
 
 			$bID = $this->bID;
+			$c = $this->getCollectionObject();
+			if (is_object($c)) {
+				$this->cID = $c->getCollectionID();
+			}
 			
 			$args['num'] = ($args['num'] > 0) ? $args['num'] : 0;
 			$args['cThis'] = ($args['cParentID'] == $this->cID) ? '1' : '0';
@@ -121,6 +130,7 @@
 			$args['truncateSummaries'] = ($args['truncateSummaries']) ? '1' : '0';
 			$args['displayFeaturedOnly'] = ($args['displayFeaturedOnly']) ? '1' : '0';
 			$args['truncateChars'] = intval($args['truncateChars']); 
+			$args['paginate'] = intval($args['paginate']); 
 
 			parent::save($args);
 		

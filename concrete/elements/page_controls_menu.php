@@ -74,7 +74,8 @@ if (isset($cp)) {
 <?php  if ($dh->canRead()) { ?>
 	<li><a id="ccm-nav-dashboard" href="<?php echo $this->url('/dashboard')?>"><?php echo t('Dashboard')?></a></li>
 <?php  } ?>
-<li><a id="ccm-nav-help" helpurl="<?php echo MENU_HELP_URL?>" href="javascript:void(0)" ><?php echo t('Help')?></a></li>
+
+<li><a id="ccm-nav-help" helpurl="<?php echo MENU_HELP_URL?>" href="javascript:void(0)" helpwaiting="<?php echo ConcreteSupportHelper::hasNewHelpResponse() ?>"><?php echo t('Help')?></a></li>
 <li class="ccm-last"><a id="ccm-nav-logout" href="<?php echo $this->url('/login', 'logout')?>"><?php echo t('Sign Out')?></a></li>
 </ul>
 </div>

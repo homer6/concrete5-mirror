@@ -20,7 +20,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
  *
  */
 
-	class User extends Object {
+	class User extends Object { 
 	
 		var $uID = '';
 		var $uName = '';
@@ -90,13 +90,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$_SESSION['uGroups'] = false;
 				}
 				$password = User::encryptPassword($password, PASSWORD_SALT);
-				$v = array($username, $password);
-				$q = "select uID, uName, uIsActive, uIsValidated from Users where uName = ? and uPassword = ?";
+				$v = array($username, $username, $password);
+				$q = "select uID, uName, uIsActive, uIsValidated from Users where (uName = ? OR uEmail = ?) and uPassword = ?";
 				
 				$r = $db->query($q, $v);
 				if ($r) {
 					$row = $r->fetchRow(); 
-					if ($row['uID'] && $row['uIsValidated'] < 1 && USER_VALIDATE_EMAIL_REQUIRED) {
+					if ($row['uID'] && $row['uIsValidated'] === '0' && defined('USER_VALIDATE_EMAIL_REQUIRED') && USER_VALIDATE_EMAIL_REQUIRED == TRUE) {
 						$this->loadError(USER_NON_VALIDATED);
 					} else if ($row['uID'] && $row['uIsActive']) {
 						$this->uID = $row['uID'];

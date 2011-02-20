@@ -45,6 +45,9 @@ div.guestBook-entry {
 }
 </style>
 <h4 class="guestBook-title"><?php echo $controller->title?></h4>
+<?php  if($invalidIP) { ?>
+<div class="ccm-error"><p><?php echo $invalidIP?></p></div>
+<?php  } ?>
 <?php 
 $u = new User();
 $posts = $controller->getEntries();
@@ -69,7 +72,9 @@ foreach($posts as $p) { ?>
 					<?php 
 					if( intval($p['uID']) ){
 						$ui = UserInfo::getByID(intval($p['uID']));
-						echo $ui->getUserName();
+						if (is_object($ui)) {
+							echo $ui->getUserName();
+						}
 					}else echo $p['user_name'];
 					?>
 				</span> 
@@ -93,7 +98,7 @@ foreach($posts as $p) { ?>
 	<?php  }else{ ?>	
 		<a name="guestBookForm-<?php echo $controller->bID?>"></a>
 		<div id="guestBook-formBlock-<?php echo $controller->bID?>" class="guestBook-formBlock">
-			<h5 class="guestBook-formBlock-title">Leave a Reply</h5>
+			<h5 class="guestBook-formBlock-title"><?php  echo t('Leave a Reply')?></h5>
 			<form method="post" action="<?php echo $this->action('form_save_entry', '#guestBookForm-'.$controller->bID)?>">
 			<?php  if(isset($Entry->entryID)) { ?>
 				<input type="hidden" name="entryID" value="<?php echo $Entry->entryID?>" />

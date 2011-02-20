@@ -6,6 +6,10 @@ if (!ini_get('safe_mode')) {
 	@set_time_limit(120);
 }
 define('ENABLE_CACHE', false);
+define('UPLOAD_FILE_EXTENSIONS_ALLOWED', '*.jpg;');
+define('DIR_FILES_UPLOADED', DIR_FILES_UPLOADED_STANDARD);
+define('DIR_FILES_TRASH', DIR_FILES_TRASH_STANDARD);
+
 class InstallController extends Controller {
 
 	public $helpers = array('form', 'html');
@@ -18,14 +22,15 @@ class InstallController extends Controller {
 			"DIR_BASE"=>DIR_BASE,
 			"DIR_REL"=>DIR_REL,
 			"BASE_URL"=>BASE_URL,
-			"DIR_FILES_UPLOADED"=>DIR_FILES_UPLOADED,
+			"DIR_FILES_UPLOADED"=>DIR_FILES_UPLOADED_STANDARD,
 			"DIR_FILES_UPLOADED_THUMBNAILS"=>DIR_FILES_UPLOADED_THUMBNAILS,
-			"DIR_FILES_UPLOADED_ONSTATES"=>DIR_FILES_UPLOADED_ONSTATES,
-			"DIR_FILES_TRASH"=>DIR_FILES_TRASH,
+			"DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2" => DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2,
+			"DIR_FILES_TRASH"=>DIR_FILES_TRASH_STANDARD,
 			"DIR_FILES_CACHE"=>DIR_FILES_CACHE,
 			"DIR_FILES_CACHE_CORE"=>DIR_FILES_CACHE_CORE,
 			"DIR_FILES_CACHE_DB"=>DIR_FILES_CACHE_DB,
 			"DIR_FILES_AVATARS"=>DIR_FILES_AVATARS,
+			"DIR_PACKAGES"=>DIR_PACKAGES,
 			"USER_SUPER_ID"=>USER_SUPER_ID,
 			"USER_SUPER"=>USER_SUPER,
 			"GUEST_GROUP_ID"=>GUEST_GROUP_ID,
@@ -43,6 +48,7 @@ class InstallController extends Controller {
 	}
 	
 	protected function installDB() {
+		 
 		
 		$installDirectory = $this->installData['DIR_BASE_CORE'] . '/config';
 		$file = $installDirectory . '/db.xml';
@@ -51,7 +57,9 @@ class InstallController extends Controller {
 		}
 		
 		$db = Loader::db();
+		$db->ensureEncoding();
 		$err = Package::installDB($file);		
+
 	}
 	
 	public function test_url($num1, $num2) {
@@ -74,7 +82,8 @@ class InstallController extends Controller {
 	}
 	
 	private function setOptionalItems() {
-		$this->set('searchTest', function_exists('iconv') && function_exists('mb_strtolower') && (@preg_match('/\pL/u', 'a') == 1));
+		// no longer need lucene
+		//$this->set('searchTest', function_exists('iconv') && function_exists('mb_strtolower') && (@preg_match('/\pL/u', 'a') == 1));
 		$this->set('langTest', Localization::isAvailable() && (!ini_get('safe_mode')));
 		$diffExecTest = is_executable($this->installData['DIR_FILES_BIN_HTMLDIFF']);
 		$diffSystem = (!ini_get('safe_mode'));
@@ -100,6 +109,10 @@ class InstallController extends Controller {
 
 		if (!is_writable($this->installData['DIR_FILES_UPLOADED'])) {
 			$e->add(t('Your files directory files/ does not appear to be writable by the web server.'));
+		}
+		
+		if (!is_writable($this->installData['DIR_PACKAGES'])) {
+			$e->add(t('Your packages directory packages/ does not appear to be writable by the web server.'));
 		}
 
 		$this->fileWriteErrors = $e;
@@ -155,9 +168,6 @@ class InstallController extends Controller {
 				if (!is_dir($this->installData['DIR_FILES_UPLOADED_THUMBNAILS'])) {
 					mkdir($this->installData['DIR_FILES_UPLOADED_THUMBNAILS']);
 				}
-				if (!is_dir($this->installData['DIR_FILES_UPLOADED_ONSTATES'])) {
-					mkdir($this->installData['DIR_FILES_UPLOADED_ONSTATES']);
-				}
 				if (!is_dir($this->installData['DIR_FILES_TRASH'])) {
 					mkdir($this->installData['DIR_FILES_TRASH']);
 				}
@@ -211,9 +221,9 @@ class InstallController extends Controller {
 						// create the groups our site users
 						// have to add these in the right order so their IDs get set
 						// starting at 1 w/autoincrement
-						Group::add(t("Guest"), t("The guest group represents unregistered visitors to your site."));
-						Group::add(t("Registered Users"), t("The registered users group represents all user accounts."));
-						Group::add(t("Administrators"), "");
+						$g1 = Group::add(t("Guest"), t("The guest group represents unregistered visitors to your site."));
+						$g2 = Group::add(t("Registered Users"), t("The registered users group represents all user accounts."));
+						$g3 = Group::add(t("Administrators"), "");
 						
 						// Now the default site!
 						// Add our right nav page type
@@ -274,10 +284,13 @@ class InstallController extends Controller {
 						// Add our core views
 						SinglePage::add('/login');
 						SinglePage::add('/register');
+						SinglePage::add('/profile');
+						SinglePage::add('/profile/edit');
+						SinglePage::add('/profile/avatar');
 				
 						// Install our blocks
-						BlockType::installBlockType('library_file');
 						BlockType::installBlockType('content');
+						BlockType::installBlockType('html');
 						BlockType::installBlockType('autonav');
 						BlockType::installBlockType('external_form');
 						BlockType::installBlockType('form');
@@ -305,16 +318,26 @@ class InstallController extends Controller {
 						$d0 = SinglePage::add('/dashboard');
 				
 						$d1 = SinglePage::add('/dashboard/sitemap');
-						$d2 = SinglePage::add('/dashboard/mediabrowser');
+						$d2 = SinglePage::add('/dashboard/files');
+						$d2a = SinglePage::add('/dashboard/files/search');
+						$d2b = SinglePage::add('/dashboard/files/attributes');
+						$d2c = SinglePage::add('/dashboard/files/sets');
+						$d2d = SinglePage::add('/dashboard/files/access');						
 						$d3 = SinglePage::add('/dashboard/reports');
 						$d3a = SinglePage::add('/dashboard/reports/forms');
-						$d3b = SinglePage::add('/dashboard/reports/logs');
-						$d3c = SinglePage::add('/dashboard/reports/database');
+						$d3b = SinglePage::add('/dashboard/reports/surveys');
+						$d3c = SinglePage::add('/dashboard/reports/logs');
+						$d3d = SinglePage::add('/dashboard/reports/database');
 						$d4 = SinglePage::add('/dashboard/users');
 						$d4a = SinglePage::add('/dashboard/users/search');
 						$d4b = SinglePage::add('/dashboard/users/add');
 						$d4c = SinglePage::add('/dashboard/users/groups');
 						$d4d = SinglePage::add('/dashboard/users/attributes');
+						$d4e = SinglePage::add('/dashboard/users/registration');
+						$d5 = SinglePage::add('/dashboard/scrapbook');
+						$d5a = SinglePage::add('/dashboard/scrapbook/user');
+						$d5b = SinglePage::add('/dashboard/scrapbook/global');
+						
 						$d7 = SinglePage::add('/dashboard/pages');
 						$d71 = SinglePage::add('/dashboard/pages/themes');
 						$d7a = SinglePage::add('/dashboard/pages/themes/add');
@@ -337,19 +360,22 @@ class InstallController extends Controller {
 						$d2->update(array('cName'=>t('File Manager'), 'cDescription'=>t('All documents and images.')));
 						$d3->update(array('cName'=>t('Reports'), 'cDescription'=>t('Get data from forms and logs.')));
 						$d3a->update(array('cName'=>t('Form Results'), 'cDescription'=>t('Get submission data.')));
-						$d3b->update(array('cName'=>t('Logs')));
-						$d3c->update(array('cName'=>t('Database')));						
+						$d3b->update(array('cName'=>t('Surveys')));
+						$d3c->update(array('cName'=>t('Logs')));
+						$d3d->update(array('cName'=>t('Database')));						
 						$d4->update(array('cName'=>t('Users and Groups'), 'cDescription'=>t('Add and manage people.')));
 						$d4a->update(array('cName'=>t('Find Users')));
 						$d4b->update(array('cName'=>t('Add User')));
 						$d4c->update(array('cName'=>t('Groups')));
 						$d4d->update(array('cName'=>t('User Attributes')));
+						$d4e->update(array('cName'=>t('User Registration')));
+						$d5->update(array('cName'=>t('Scrapbook'), 'cDescription'=>t('Share content across your site.')));	
 						$d7->update(array('cName'=>t('Pages and Themes'), 'cDescription'=>t('Reskin your site.')));	
 						$d71->update(array('cName'=>t('Themes'), 'cDescription'=>t('Reskin your site.')));	
 						$d7e->update(array('cName'=>t('Page Types'), 'cDescription'=>t('What goes in your site.')));	
 						$d7g->update(array('cName'=>t('Single Pages')));	
 
-						$d8->update(array('cName'=>t('Add Functionality'), 'cDescription'=>t('Install blocks to extend your site.')));
+						$d8->update(array('cName'=>t('Add Functionality'), 'cDescription'=>t('Install functionality to extend your site.')));
 						$d9->update(array('cName'=>t('Maintenance'), 'cDescription'=>t('Run common cleanup tasks.')));
 						$d10->update(array('cName'=>t('Sitewide Settings'), 'cDescription'=>t('Secure and setup your site.')));
 				
@@ -400,54 +426,41 @@ class InstallController extends Controller {
 						$b1->alias($home);
 						
 						// Add Some Imagery
-						$bt = BlockType::getByHandle('library_file');
-						$data = array();
-						$data['file'] = $pl->getThemeDirectory() . '/images/inneroptics_dot_net_aspens.jpg';
-						$data['name'] = "aspens.jpg";
-						$data['uID'] = $this->installData['USER_SUPER_ID'];
-						$image1 = $bt->add($data);
+						Loader::library("file/importer");
+
+						$fi = new FileImporter();
+						$image1 = $fi->import($pl->getThemeDirectory() . '/images/inneroptics_dot_net_aspens.jpg');
+						$image2 = $fi->import($pl->getThemeDirectory() . '/images/inneroptics_dot_net_canyonlands.jpg');
+						$image3 = $fi->import($pl->getThemeDirectory() . '/images/inneroptics_dot_net_new_zealand_sheep.jpg');
+						$image4 = $fi->import($pl->getThemeDirectory() . '/images/inneroptics_dot_net_starfish.jpg');
+						$image5 = $fi->import($pl->getThemeDirectory() . '/images/inneroptics_dot_net_portland.jpg');
 						
-						$bt2 = BlockType::getByHandle('library_file');
-						$data = array();
-						$data['file'] = $pl->getThemeDirectory() . '/images/inneroptics_dot_net_canyonlands.jpg';
-						$data['name'] = "canyonlands.jpg";
-						$data['uID'] = $this->installData['USER_SUPER_ID'];
-						$image2 = $bt2->add($data);
-
-						$bt3 = BlockType::getByHandle('library_file');
-						$data = array();
-						$data['file'] = $pl->getThemeDirectory() . '/images/inneroptics_dot_net_new_zealand_sheep.jpg';
-						$data['name'] = "sheep.jpg";
-						$data['uID'] = $this->installData['USER_SUPER_ID'];
-						$image3 = $bt3->add($data);
-
-						$bt4 = BlockType::getByHandle('library_file');
-						$data = array();
-						$data['file'] = $pl->getThemeDirectory() . '/images/inneroptics_dot_net_starfish.jpg';
-						$data['name'] = "starfish.jpg";
-						$data['uID'] = $this->installData['USER_SUPER_ID'];
-						$image4 = $bt4->add($data);
+						$image1->getFile()->setUserID($this->installData['USER_SUPER_ID']);
+						$image2->getFile()->setUserID($this->installData['USER_SUPER_ID']);
+						$image3->getFile()->setUserID($this->installData['USER_SUPER_ID']);
+						$image4->getFile()->setUserID($this->installData['USER_SUPER_ID']);
+						$image5->getFile()->setUserID($this->installData['USER_SUPER_ID']);
 						
 						// Assign this imagery to the various pages.
 						$btImage = BlockType::getByHandle('image');
 						$data = array();
-						$data['fID'] = $image1->getBlockID();
+						$data['fID'] = $image1->getFileID();
 						$data['altText'] = t('Home Header Image');
 						$data['uID'] = $this->installData['USER_SUPER_ID'];
 						$home->addBlock($btImage, 'Header', $data);
 
 						// Assign imagery to left sidebar page
-						$data['fID'] = $image2->getBlockID();
+						$data['fID'] = $image2->getFileID();
 						$data['altText'] = t('Left Sidebar Page Type Image');
 						$b1 = $detailTemplate->addBlock($btImage, 'Header', $data);
 
 						// Assign imagery to right sidebar page
-						$data['fID'] = $image3->getBlockID();
+						$data['fID'] = $image3->getFileID();
 						$data['altText'] = t('Right Sidebar Page Type Image');
 						$b2 = $rightNavTemplate->addBlock($btImage, 'Header', $data);
 						
 						// Assign imagery to full width page
-						$data['fID'] = $image3->getBlockID();
+						$data['fID'] = $image3->getFileID();
 						$data['altText'] = t('Full Width Page Type Image');
 						$b3 = $fullWidthTemplate->addBlock($btImage, 'Header', $data);
 
@@ -503,7 +516,7 @@ class InstallController extends Controller {
 						$examplesPage->addBlock($bt, "Main", $data);
 						
 						// add javascript slideshow page beneath examples
-						$data['name'] = 'Image Slideshow';
+						$data['name'] = t('Image Slideshow');
 						$example0Page = $examplesPage->add($dt, $data);
 						$data['content']  = t("<h1>Image Slideshow</h1><p>Check out the image block above. It's actually multiple images setup as a JavaScript slideshow.");
 						$example0Page->addBlock($bt, "Main", $data);
@@ -513,59 +526,69 @@ class InstallController extends Controller {
 						if (is_object($blocks[0])) {
 							$blocks[0]->deleteBlock();
 						}
-						
+
 						$jsBT = BlockType::getByHandle('slideshow');
 						$jsData['playback'] = 'ORDER';
 						$jsData['imgBIDs'] = array(
-							$image1->getBlockID(),
-							$image2->getBlockID(),
-							$image3->getBlockID(),
-							$image4->getBlockID()
+							$image1->getFileID(),
+							$image2->getFileID(),
+							$image3->getFileID(),
+							$image4->getFileID()
 						);
-						
-						$fimage1 = $image1->getInstance();
-						$fimage2 = $image2->getInstance();
-						$fimage3 = $image3->getInstance();
-						$fimage4 = $image4->getInstance();
 						
 						// this is an irritating hack.
 						if(DIR_FILES_UPLOADED != $this->installData['DIR_FILES_UPLOADED']) { // if we're calling install from another c5 install - move the file to the new install
-							rename(DIR_FILES_UPLOADED."/".$fimage1->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage1->getFilename());
-							rename(DIR_FILES_UPLOADED."/".$fimage2->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage2->getFilename());
-							rename(DIR_FILES_UPLOADED."/".$fimage3->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage3->getFilename());
-							rename(DIR_FILES_UPLOADED."/".$fimage4->getFilename(),  $this->installData['DIR_FILES_UPLOADED']."/".$fimage4->getFilename());
-							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage1->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage1->getFilename());
-							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage2->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage2->getFilename());
-							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage3->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage3->getFilename());
-							rename(DIR_FILES_UPLOADED_THUMBNAILS."/".$fimage4->getFilename(),  $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']."/".$fimage4->getFilename());
+							$cfhi = Loader::helper('concrete/file');
+							$fsrc1 = $cfhi->mapSystemPath($image1->getPrefix(), $image1->getFileName(), true, $this->installData['DIR_FILES_UPLOADED']);
+							$fsrc2 = $cfhi->mapSystemPath($image2->getPrefix(), $image2->getFileName(), true, $this->installData['DIR_FILES_UPLOADED']);
+							$fsrc3 = $cfhi->mapSystemPath($image3->getPrefix(), $image3->getFileName(), true, $this->installData['DIR_FILES_UPLOADED']);
+							$fsrc4 = $cfhi->mapSystemPath($image4->getPrefix(), $image4->getFileName(), true, $this->installData['DIR_FILES_UPLOADED']);
+							$fsrc5 = $cfhi->mapSystemPath($image5->getPrefix(), $image5->getFileName(), true, $this->installData['DIR_FILES_UPLOADED']);
+							$fsrc6 = $cfhi->mapSystemPath($image1->getPrefix(), $image1->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']);
+							$fsrc7 = $cfhi->mapSystemPath($image2->getPrefix(), $image2->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']);
+							$fsrc8 = $cfhi->mapSystemPath($image3->getPrefix(), $image3->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']);
+							$fsrc9 = $cfhi->mapSystemPath($image4->getPrefix(), $image4->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']);
+							$fsrc10 = $cfhi->mapSystemPath($image5->getPrefix(), $image5->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS']);
+							$fsrc11 = $cfhi->mapSystemPath($image1->getPrefix(), $image1->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2']);
+							$fsrc12 = $cfhi->mapSystemPath($image2->getPrefix(), $image2->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2']);
+							$fsrc13 = $cfhi->mapSystemPath($image3->getPrefix(), $image3->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2']);
+							$fsrc14 = $cfhi->mapSystemPath($image4->getPrefix(), $image4->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2']);
+							$fsrc15 = $cfhi->mapSystemPath($image5->getPrefix(), $image5->getFileName(), true, $this->installData['DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2']);
+							
+							rename($image1->getPath(), $fsrc1);
+							rename($image2->getPath(), $fsrc2);
+							rename($image3->getPath(), $fsrc3);
+							rename($image4->getPath(), $fsrc4);
+							rename($image5->getPath(), $fsrc5);
+							rename($image1->getThumbnailPath(1), $fsrc6);
+							rename($image2->getThumbnailPath(1), $fsrc7);
+							rename($image3->getThumbnailPath(1), $fsrc8);
+							rename($image4->getThumbnailPath(1), $fsrc9);
+							rename($image5->getThumbnailPath(1), $fsrc10);
+							rename($image1->getThumbnailPath(2), $fsrc11);
+							rename($image2->getThumbnailPath(2), $fsrc12);
+							rename($image3->getThumbnailPath(2), $fsrc13);
+							rename($image4->getThumbnailPath(2), $fsrc14);
+							rename($image5->getThumbnailPath(2), $fsrc15);
 						}
 						
-						$jsData['fileNames'] = array(
-							$fimage1->getFilename(),
-							$fimage2->getFilename(),
-							$fimage3->getFilename(),
-							$fimage4->getFilename()
+						$jsData['imgFIDs'] = array(
+							$image1->getFileID(),
+							$image2->getFileID(),
+							$image3->getFileID(),
+							$image4->getFileID()
 						);
-
-						$jsData['origfileNames'] = array(
-							$fimage1->getOriginalFilename(),
-							$fimage2->getOriginalFilename(),
-							$fimage3->getOriginalFilename(),
-							$fimage4->getOriginalFilename()
-						);
-
-						$jsData['thumbPaths'] = array(
-							REL_DIR_FILES_UPLOADED_THUMBNAILS . '/' . $fimage1->getFilename(),
-							REL_DIR_FILES_UPLOADED_THUMBNAILS . '/' . $fimage2->getFilename(),
-							REL_DIR_FILES_UPLOADED_THUMBNAILS . '/' . $fimage3->getFilename(),
-							REL_DIR_FILES_UPLOADED_THUMBNAILS . '/' . $fimage4->getFilename()
-						);
-
+						$jsData['type'] = 'CUSTOM';
 						$jsData['duration'] = array(3, 3, 3, 3);
 						$jsData['imgHeight'] = array(192, 192, 192, 192);
 						$jsData['fadeDuration'] = array(1, 1, 1, 1);
 						$example0Page->addBlock($jsBT, "Header", $jsData);
-
+						
+						// File permissions
+						$fs = FileSet::getGlobal();
+						$fs->setPermissions($g1, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE);
+						$fs->setPermissions($g2, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE, FilePermissions::PTYPE_NONE);
+						$fs->setPermissions($g3, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL, FilePermissions::PTYPE_ALL);
 
 						// add sitemap page beneath examples page
 						$data['name'] = t('Sitemap');
@@ -691,6 +714,7 @@ class InstallController extends Controller {
 						$configuration .= "?" . ">";
 						$res = fwrite($this->fp, $configuration);
 						fclose($this->fp);
+						chmod($this->installData['DIR_BASE'] . '/config/site.php', 0777);
 						
 						// save some options into the database
 						Config::save('SITE', $_POST['SITE']);

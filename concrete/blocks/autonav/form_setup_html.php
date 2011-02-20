@@ -1,5 +1,6 @@
 <?php 
 defined('C5_EXECUTE') or die(_("Access Denied."));
+$form = Loader::helper('form');
 ?>
 <ul id="ccm-autonav-tabs" class="ccm-dialog-tabs">
 	<li class="ccm-nav-active"><a id="ccm-autonav-tab-add" href="javascript:void(0);"><?php echo t('Edit')?></a></li>
@@ -32,7 +33,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 </select>
 <br><br>
 <strong><?php echo t('Viewing Permissions')?></strong><br/>
-<input type="checkbox" name="displayUnavailablePages" onclick="reloadPreview(this.form)" value="1" <?php  if ($info['displayUnavailablePages'] == 1) { ?> checked <?php  } ?> style="vertical-align: middle" />
+<?php echo $form->checkbox('displayUnavailablePages', 1, $info['displayUnavailablePages']); ?>
 <?php echo t('Display pages to users even when those users cannot access those pages.')?>
 <br/><br/>
 <strong><?php echo t('Display Pages')?></strong><br>
@@ -43,25 +44,15 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	<option value="above"<?php  if ($info['displayPages'] == 'above') { ?> selected<?php  } ?>><?php echo t('at the level above.')?></option>
 	<option value="current"<?php  if ($info['displayPages'] == 'current') { ?> selected<?php  } ?>><?php echo t('at the current level.')?></option>
 	<option value="below"<?php  if ($info['displayPages'] == 'below') { ?> selected<?php  } ?>><?php echo t('At the level below.')?></option>
-	<!--<option value="custom"<?php  if ($info['displayPages'] == 'custom') { ?> selected<?php  } ?>>Beneath a particular page</option>//-->
+	<option value="custom"<?php  if ($info['displayPages'] == 'custom') { ?> selected<?php  } ?>><?php echo t('Beneath a particular page')?></option>
 </select>
 
-<!--
-<div id="divInclude"<?php  if ($info['displayPages'] != 'custom') { ?> style="display: none"<?php  } ?>>
-<br><br>
-	Select Page:<br>
-	<?php  if ($info['displayPagesCID']) {
-		$dpc = Collection::getByID($info['displayPagesCID'], 'ACTIVE');
-		$niTitle = $dpc->getCollectionName();
-	} ?>
-	<div id="navigationItems" class="selectOne"><?php echo $niTitle?></div>
-	<input type="button" id="searchButton" name="search" value="search" onclick="ccmOpenWindow('<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/select_collection.php',640,500); return false">
-	<input type="hidden" name="displayPagesCID" id="cValueField" value="<?php echo $info['displayPagesCID']?>">
-	<br><br>
-	<input type="checkbox" name="displayPagesIncludeSelf" onclick="reloadPreview(this.form);" value="1"<?php  if ($info['displayPagesIncludeSelf']) { ?> checked<?php  } ?> style="vertical-align: middle">
-	Include selected page as top node in list.
+<div id="ccm-autonav-page-selector"<?php  if ($info['displayPages'] != 'custom') { ?> style="display: none"<?php  } ?>>
+<?php  $form = Loader::helper('form/page_selector');
+print $form->selectPage('displayPagesCID', $info['displayPagesCID']);
+?>
 </div>
-//-->
+
 <br><br>
 
 <strong><?php echo t('Sub Pages to Display')?></strong><br>

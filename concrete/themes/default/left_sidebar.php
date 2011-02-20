@@ -12,7 +12,8 @@ $this->inc('elements/header.php'); ?>
 		</div>
 		
 		<div id="body">	
-			<?php 			
+			<?php 
+
 			$a = new Area('Main');
 			$a->display($c);			
 			?>

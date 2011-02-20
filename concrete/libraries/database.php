@@ -36,6 +36,17 @@ class Database {
 			return $this->db->Query($q);
 		}
 	}
+	
+	public function ensureEncoding() {
+		if (APP_CHARSET == '') {
+			return false;
+		}
+		
+		$cd = $this->db->GetRow("show create database {$this->db->database}");
+		if (!preg_match('/' . DB_CHARSET . '/i', $cd[1])) {
+			$this->db->Execute("ALTER DATABASE {$this->db->database} character set " . DB_CHARSET);
+		}
+	}
 
 	/** 
 	 * Get's a Schema Object for a particular database object
@@ -69,6 +80,10 @@ class Database {
 	public function setDebug($_debug) {
 		$this->db->debug = $_debug;
 	}
+	
+	public function getDebug() {
+		return $this->db->debug;
+	}
 
 	/** 
 	 * Sets logging to true or false.
@@ -76,6 +91,8 @@ class Database {
 	 */ 
 	public function setLogging($log) {
 		$this->db->LogSQL($log);
+		global $ADODB_PERF_MIN;
+		$ADODB_PERF_MIN = 0;
 	}
 
 

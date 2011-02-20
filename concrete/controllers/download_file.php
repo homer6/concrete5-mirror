@@ -10,37 +10,52 @@ class DownloadFileController extends Controller {
 		Loader::block('file');
 	}
 
-	public function view($bID = 0) {
+	public function view($fID = 0) {
 		// get the block
-		$block = $this->getBlock($bID);
-		if (is_object($block)) {
-			$file = $block->getFileObject();
-			
-			if ($file) {
+		if ($fID > 0) {
+			$file = File::getByID($fID);			
+			if ($file) {				
+				
+				$fp = new Permissions($file);
+				if (!$fp->canRead()) {
+					return false;
+				}
 				
 				// if block password is blank download
-				if (!$block->getPassword())
+				if (!$file->getPassword()) {
 					return $this->download($file);			
-			
+				}
 				// otherwise show the form
-				$this->set('bID', $bID);
+				$this->set('fID', $fID);
 				$this->set('filename', $file->getFilename());
-				$this->set('filesize', filesize(DIR_FILES_UPLOADED."/".$file->getFilename()));
-			}
-			
+				$this->set('filesize', filesize( $file->getPath() ) );
+			}			
 		}
-
 	}
 	
-	public function submit_password($bID = 0) {
-		$block = $this->getBlock($bID);
-		$file = $block->getFileObject();
+	public function view_inline($fID) {
+		$file = File::getByID($fID);
+		$fp = new Permissions($file);
+		if (!$fp->canRead()) {
+			return false;
+		}
+		
+		$mimeType = $file->getMimeType();
+		$fc = Loader::helper('file');
+		$contents = $fc->getContents($file->getPath());
+		header("Content-type: $mimeType");
+		print $contents;
+		exit;
+	}
 	
-		if ($block->getPassword() == $_POST['password'])
-			return $this->download($file);
+	public function submit_password($fID = 0) {
+		$f = File::getByID($fID);
+
+		if ($f->getPassword() == $_POST['password'])
+			return $this->download($f);
 		
 		$this->set('error', t("Password incorrect. Please try again."));
-		$this->view($bID);
+		$this->view($fID);
 	}
 	
 	private function download($file) {
@@ -48,37 +63,11 @@ class DownloadFileController extends Controller {
 		//header('Content-type: $mime_type');
 		// everything else lets just download
 		$filename = $file->getFilename();
-	
-		header('Content-type: application/octet-stream');
-		header("Content-Disposition: attachment; filename=\"$filename\"");
-		header('Content-Length: ' . filesize(DIR_FILES_UPLOADED."/".$filename));
-		header("Pragma: public");
-		header("Expires: 0");
-		header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-		header("Cache-Control: private",false);
-		header("Content-Transfer-Encoding: binary");
-	
-		$buffer = '';
-		$chunk = 1024*1024;
-		$handle = fopen(DIR_FILES_UPLOADED."/".$filename, 'rb');
-		if ($handle === false) {
-			return false;
-		}
-		while (!feof($handle)) {
-			$buffer = fread($handle, $chunk);
-			print $buffer;
-		}
-		
-		fclose($handle);
-		exit;
+		$file->trackDownload();
+		$ci = Loader::helper('file');
+		$ci->forceDownload($file->getPath());		
 	}
 	
-	private function getBlock($bID) {
-		$b = Block::getByID($bID);
-		if (is_object($b)) {
-			return $b->getInstance();
-		}
-	}
 }
 
 ?>

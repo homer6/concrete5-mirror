@@ -1,11 +1,11 @@
 body {background: #efefef url(../images/dashboard/bg.png) repeat-y scroll; padding: 0px; margin: 0px}
 ul, li {margin: 0px; padding: 0px}
-body, ul, td, div, h1, h2, h3, h4, h5 {font-family: "Arial Rounded MT", "Helvetica Neue", Arial, Helvetica, sans-serif}
+body, ul, td, div, h1, h2, h3, h4, h5 {font-family: "Helvetica Neue", Arial, Helvetica, sans-serif}
 img {border: 0px}
 
 div#ccm-dashboard-header {background: transparent url(../images/dashboard/bg_header.png) repeat-x scroll; position: absolute; top: 0px; left: 0px; height: 53px; width: 100%; z-index: 10}
 
-div#ccm-system-nav-wrapper1 {position: absolute; border-left: 1px solid #fff; top: 0; right: 0; z-index: 15; text-align:right; width:50%; }
+div#ccm-system-nav-wrapper1 {position: absolute; top: 0; right: 0; z-index: 15; text-align:right; width:50%; }
 ul#ccm-system-nav {height: 45px; border-left: 1px solid #d7d7d7; float:right;}
 ul#ccm-system-nav li {
 	float: left;
@@ -16,21 +16,25 @@ ul#ccm-system-nav li {
 	list-style-type: none;
 }
 
+#ccm-dashboard-version{text-align:right; position:absolute; top:46px; right:0px; font-size:11px; color:#888; padding:4px; z-index:-1}
+
 ul#ccm-system-nav li a, ul#ccm-system-nav li span {display: block; padding: 15px 9px 14px 28px; text-align: center; background-repeat: no-repeat; font-size: 13px; font-weight: bold; color: #787878; text-decoration: none; border-right: 1px solid #fff}
 ul#ccm-system-nav li span {color: #cecece}
 ul#ccm-system-nav li:hover {background: #A2DAFD url(../images/bg_header_active.png) repeat-x scroll;}
 ul#ccm-system-nav a:hover {border-right: none; padding-right: 10px; color: #333}
 
+a.ccm-nav-loading {background-image: url(../images/icons/icon_header_loading.gif) !important;}
 ul#ccm-system-nav #ccm-nav-return {background-image: url(../images/dashboard/icon_return_to_website.png); background-position: 6px 14px !important}
 ul#ccm-system-nav #ccm-nav-logout {background-image: url(../images/dashboard/icon_logout.png); background-position: 5px 14px !important}
 ul#ccm-system-nav #ccm-nav-dashboard-help {background-image: url(../images/icons/icon_header_help.png); background-position: 6px 15px !important}
+ul#ccm-system-nav #ccm-nav-dashboard-help.ccm-nav-loading {background-position: 6px 14px !important}
 
 div#ccm-dashboard-nav {position: absolute; top: 45px; left: 0px; width: 200px; z-index: 2}
 div#ccm-dashboard-nav li {display: block; width: 200px; background: #ededed url(../images/dashboard/bg_nav.png) repeat-x scroll; border-bottom: 1px solid #e1e1e1}
 div#ccm-dashboard-nav li a {color: #787878; font-weight: bold; display: block; font-size: 13px; height: 40px; overflow: hidden; padding: 6px 11px 0px 12px; text-decoration: none}
 div#ccm-dashboard-nav li a:hover {background: #A2DAFD url(../images/bg_header_active.png) repeat-x scroll;}
 div#ccm-dashboard-nav li.ccm-nav-active a {background: #cdd9dd url(../images/dashboard/bg_nav_active.png) repeat-x scroll bottom right}
-div#ccm-dashboard-nav li a span {font-family: Arial, Helvetica; font-size: 11px; color: #a8a8a8; height: 12px; overflow: hidden; font-weight: normal; display: block; margin-top: 1px}
+div#ccm-dashboard-nav li a span {font-family: "Helvetica Neue", Arial, Helvetica; font-size: 11px; color: #a8a8a8; height: 12px; overflow: hidden; font-weight: normal; display: block; margin-top: 1px}
 
 /*
 div#ccm-dashboard-page{ width:auto; padding-left:225px; margin:0px; padding-right:20px; padding-top:70px; padding-bottom:30px  }
@@ -52,7 +56,7 @@ h1 {background: transparent url(../images/dashboard/header_l.png) no-repeat}
 h1 span {display: block; background: transparent url(../images/dashboard/header_r.png) repeat-x right top; padding: 4px 3px 4px 0px; margin-left: 11px}
 
 form {margin: 0px}
-a {text-decoration: none; color: #5377A9; cursor:pointer}
+a {text-decoration: none; color: #5377A9;}
 .required {color: #009}
 .error {color: #f00}
 .success {color: #666}
@@ -76,7 +80,6 @@ div#ccm-user-search span.ccm-input-time-wrapper {white-space: nowrap}
 div#ccm-user-search-advanced {margin-top: 10px; display: none;}
 div#ccm-user-search-regular {margin-top: 10px; display: none;}
 
-img.handle:hover {cursor: move}
 
 table.grid-list td.crumb {color: #777;font-size:9px;background: #efefef}
 table.grid-list td.crumb a {color: #aaa}
@@ -97,7 +100,9 @@ table.entry-form td.subheader {font-weight: bold; color: #333; font-size: 13px; 
 table.entry-form input, table.entry-form select {font-size: 13px}
 
 div.ccm-paging {margin: 10px 0px 10px 0px}
-div.ccm-paging-top {margin: 0px 0px 10px 0px}
+div.ccm-paging-top {margin: 0px 0px 10px 0px;}
+span.ccm-paging-top-content{padding-left: 10px; font-size: 10px;}
+span.ccm-paging-top-content form {padding:0px;margin:0px;}
 
 img.u-avatar {margin: 0px 10px 10px 0px; border: 2px solid #eaeaea}
 div.ccm-dashboard-inner div.ccm-buttons {padding-top: 0px !important}
@@ -153,8 +158,8 @@ div#ccm-dashboard-subnav li.nav-selected a {color: #fff; font-weight: bold}
 ul.ccm-dashboard-list li {list-style-type: none; padding-top: 10px; padding-bottom: 10px; border-bottom: 1px dotted #ccc}
 
 form#ccm-log-search {position: absolute; top: -22px; font-size: 10px; right: 10px}
-form#ccm-log-search input {font-size: 10px;}
-form#ccm-log-search input.ccm-input-text {padding: 2px}
+form#ccm-log-search input, form#ccm-log-search select {font-size: 10px;}
+form#ccm-log-search input.ccm-input-text, form#ccm-log-search input.ccm-input-select {padding: 2px}
 
 /* homepage modules */
 
@@ -250,7 +255,7 @@ div#jquery-font-panel, div#jquery-custom-panel {
 	height: 176px;
 	overflow: hidden;
 	background: url(../images/widgets/font/background.png);
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
 	display: none;
 }
 
@@ -327,3 +332,86 @@ div#jquery-font-panel div.jquery-font-panel-list div {
 }
 
 div#jquery-font-panel div.jquery-font-panel-list div.font-panel-list-selected {background-color: #E6EBED; color: #333}
+
+table.ccm-dashboard-inner-columns {width: 100%}
+td.ccm-dashboard-inner-leftcol{width:60%;}
+td.ccm-dashboard-inner-rightcol{width: 40%;}
+td.ccm-dashboard-inner-gutter div {width: 20px}
+div.ccm-dashboard-inner-leftcol table.grid-list{width:100%;}
+
+div#displayOptions {
+
+	margin: 0 0 7px 0;
+
+}
+
+
+
+div#sortOptions {
+
+	display: inline;
+
+	margin-left: 20px;
+
+}
+
+
+
+div.surveyDetails {
+
+	height: auto;
+
+	margin: 0px;
+
+	padding: 0px;
+
+	width: 100%;
+
+}
+
+
+
+div.surveyOverview {
+
+	float: left;
+
+	height: auto;
+
+	margin: 0px;
+
+	padding: 0px;
+
+	width: 60%;
+
+}
+
+
+
+div.surveySwatch {
+
+	background: #999999 none repeat scroll 0 50%;
+
+	border: 1px solid #666666;
+
+	float: left;
+
+	font-size: 1px;
+
+	height: 10px;
+
+	line-height: 1px;
+
+	margin: 3px 4px 0 0;
+
+	width: 10px;
+
+}
+
+/* addon list */
+
+div.ccm-addon-list {border-bottom: 1px solid #ddd; margin-top: 15px}
+div.ccm-addon-list:last-child {border-bottom: none}
+div.ccm-addon-list table {width: 100%; margin-bottom: 15px;}
+div.ccm-addon-list table td {vertical-align: top}
+div.ccm-addon-list h3 {margin: 0px 0px 2px 0px; padding: 0px}
+div.ccm-addon-list table td.ccm-addon-list-description {width: 100%; padding: 0px 6px 0px 10px}

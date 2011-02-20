@@ -1,5 +1,9 @@
 <?php 
 
+// This is ugly. Fix later.
+$GLOBALS['ccmRuntimeCacheEnabled'] = true;
+$GLOBALS['ccmRuntimeLocalCacheEnabled'] = true;
+
 class Cache extends CacheTemplate {
 
 	protected static $filePrefix='object_';
@@ -14,11 +18,17 @@ class Cache extends CacheTemplate {
 	
 	/** 
 	 * Inserts or updates an item to the cache
+	 * If $forceSet is true, we sidestep ENABLE_CACHE. This is for certain operations that
+	 * the cache must always be enabled for (getting remote data, etc..)
 	 */	
-	public function set($type, $id, $obj, $expire = 0){
-		if (ENABLE_CACHE == false) {
+	public function set($type, $id, $obj, $expire = 0, $forceSet = false){
+		if (!$GLOBALS['ccmRuntimeCacheEnabled']) {
 			return false;
 		}
+		if ((!defined('ENABLE_CACHE')) || (ENABLE_CACHE == false && $forceSet == false)) {
+			return false;
+		}
+		
 		//if(intval($expire)==0) return false;
 		
 		//create an object to store the data and the expiration
@@ -33,22 +43,30 @@ class Cache extends CacheTemplate {
 		fputs($fileHandle, serialize($cacheDataObject) );
 		fclose($fileHandle);
 		
-		$loc = CacheLocal::get();
-		$loc->cache[$key] = $obj;		
+		if ($GLOBALS['ccmRuntimeLocalCacheEnabled']) {
+			$loc = CacheLocal::get();
+			$loc->cache[$key] = $obj;
+		}
 	}
 	
 	/** 
 	 * Retrieves an item from the cache
+	 * If $forceGet is true, we sidestep ENABLE_CACHE. This is for certain operations that
+	 * the cache must always be enabled for (getting remote data, etc..)
 	 */	
-	public function get($type, $id, $mustBeNewerThan = false){
-		if (ENABLE_CACHE == false) {
+	public function get($type, $id, $mustBeNewerThan = false, $forceGet = false){
+		if (!$GLOBALS['ccmRuntimeCacheEnabled']) {
 			return false;
-		}		
+		}
+		if ((!defined('ENABLE_CACHE')) || (ENABLE_CACHE == false && $forceGet == false)) {
+			return false;
+		}
+
 		$key = parent::key($type, $id);
 		
 		//check the local (in memory) cache first
 		$loc = CacheLocal::get();
-		if (isset($loc->cache[$key])){
+		if (($GLOBALS['ccmRuntimeLocalCacheEnabled']) && isset($loc->cache[$key])) {
 			$value = $loc->cache[$key];
 			
 		//check the file system for a cached version	
@@ -84,7 +102,10 @@ class Cache extends CacheTemplate {
 	 * Removes an item from the cache
 	 */	
 	public function delete($type, $id){
-		if (ENABLE_CACHE == false) {
+		if (!$GLOBALS['ccmRuntimeCacheEnabled']) {
+			return false;
+		}
+		if ((!defined('ENABLE_CACHE')) || (ENABLE_CACHE == false)) {
 			return false;
 		}		
 		
@@ -92,8 +113,10 @@ class Cache extends CacheTemplate {
 		$filePath=self::getFilePath($key);
 		if (strstr($filePath,self::$filePrefix) && is_file($filePath)){
 			unlink($filePath);
-			$loc = CacheLocal::get();
-			unset($loc->cache[$key]);
+			if ($GLOBALS['ccmRuntimeLocalCacheEnabled']) {
+				$loc = CacheLocal::get();
+				unset($loc->cache[$key]);
+			}
 		}				
 	}
 	
@@ -101,6 +124,9 @@ class Cache extends CacheTemplate {
 	 * Completely flushes the cache
 	 */	
 	public function flush(){
+		if (!$GLOBALS['ccmRuntimeCacheEnabled']) {
+			return false;
+		}
 		if ($handle = opendir(DIR_FILES_CACHE_CORE) ) {		
 			while (false !== ($file = readdir($handle))){
 				$filePath=DIR_FILES_CACHE_CORE.'/'.$file; 
@@ -122,6 +148,23 @@ class Cache extends CacheTemplate {
 	protected function getFilePath($key=''){
 		return DIR_FILES_CACHE_CORE.'/'.self::$filePrefix.$key.'';
 	}
+	
+	public function disableCache() {
+		$GLOBALS['ccmRuntimeCacheEnabled'] = false;
+	}
+	
+	public function disableLocalCache() {
+		$GLOBALS['ccmRuntimeLocalCacheEnabled'] = false;
+	}
+	
+	public function enableCache() {
+		$GLOBALS['ccmRuntimeCacheEnabled'] = true;
+	}
+
+	public function enableLocalCache() {
+		$GLOBALS['ccmRuntimeLocalCacheEnabled'] = true;
+	}
+	
 }
 
 

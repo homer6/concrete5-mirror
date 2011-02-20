@@ -82,12 +82,13 @@ $ci = Loader::helper('concrete/interface');
 	
 	
 	<?php 
-	$b1 = $ci->button(t('Return to Themes'), $this->url('/dashboard/pages/themes'), 'left');
+	$b1 = $ci->button(t('Return to Add Functionality'), $this->url('/dashboard/install'), 'left');
+	$b2 = $ci->button(t('Return to Themes'), $this->url('/dashboard/pages/themes'), 'left');
 	if ($pf > 0) { 
-		$b2 = $ci->submit(t('Activate Files'), 'ccm-inspect-form'); ?>
-		<?php echo $ci->buttons($b1, $b2); ?>
+		$b3 = $ci->submit(t('Activate Files'), 'ccm-inspect-form'); ?>
+		<?php echo $ci->buttons($b1, $b2, $b3); ?>
 	<?php  } else { ?>
-		<?php echo $ci->buttons($b1); ?>
+		<?php echo $ci->buttons($b1, $b2); ?>
 	<?php  } ?>
 	</form>
 	

@@ -66,10 +66,10 @@ class PackageList extends Object {
 		return $handle;
 	}
 	
-	public static function get() {
+	public static function get($pkgIsInstalled = 1) {
 		
 		$db = Loader::db();
-		$r = $db->query("select pkgID, pkgName, pkgIsInstalled, pkgDescription, pkgHandle, pkgDateInstalled from Packages order by pkgID asc");
+		$r = $db->query("select pkgID, pkgName, pkgIsInstalled, pkgDescription, pkgVersion, pkgHandle, pkgDateInstalled from Packages where pkgIsInstalled = ? order by pkgID asc", array($pkgIsInstalled));
 		$list = new PackageList();
 		while ($row = $r->fetchRow()) {
 			$pkg = new Package;
@@ -95,10 +95,11 @@ class PackageList extends Object {
 class Package extends Object {
 
 	public function getPackageID() {return $this->pkgID;}
-	public function getPackageName() {return $this->pkgName;}
-	public function getPackageDescription() {return $this->pkgDescription;}
+	public function getPackageName() {return t($this->pkgName);}
+	public function getPackageDescription() {return t($this->pkgDescription);}
 	public function getPackageHandle() {return $this->pkgHandle;}
 	public function getPackageDateInstalled() {return $this->pkgDateInstalled;}
+	public function getPackageVersion() {return $this->pkgVersion;}
 	public function isPackageInstalled() { return $this->pkgIsInstalled;}
 	
 	protected $appVersionRequired = '5.0.0';
@@ -106,7 +107,13 @@ class Package extends Object {
 	const E_PACKAGE_NOT_FOUND = 1;
 	const E_PACKAGE_INSTALLED = 2;
 	const E_PACKAGE_VERSION = 3;
-	
+	const E_PACKAGE_DOWNLOAD = 4;
+	const E_PACKAGE_SAVE = 5;
+	const E_PACKAGE_UNZIP = 6;
+	const E_PACKAGE_INSTALL = 7;
+
+	protected $errorText = array();
+
 	public function getApplicationVersionRequired() {
 		return $this->appVersionRequired;
 	}
@@ -125,7 +132,9 @@ class Package extends Object {
 		// to find a table that doesn't exist! 
 		
 		$handler = $db->IgnoreErrors();
-		ob_start();
+		if ($db->getDebug() == false) {
+			ob_start();
+		}
 		
 		$schema = $db->getADOSChema();		
 		$sql = $schema->ParseSchema($xmlFile);
@@ -139,10 +148,12 @@ class Package extends Object {
 
 		$r = $schema->ExecuteSchema();
 
-		$dbLayerErrorMessage = ob_get_contents();
-				
-		ob_end_clean();
 
+		if ($db->getDebug() == false) {
+			$dbLayerErrorMessage = ob_get_contents();
+			ob_end_clean();
+		}
+		
 		$result = new stdClass;
 		$result->result = false;
 		
@@ -168,21 +179,26 @@ class Package extends Object {
 		$db = Loader::db();
 		$errors = array();
 		
-		// test minimum application version requirement
 		$pkg = Loader::package($package);
-		if (version_compare(APP_VERSION, $pkg->getApplicationVersionRequired(), '<')) {
-			$errors[] = array(E_PACKAGE_VERSION, $pkg->getApplicationVersionRequired());
-		}
 		
 		// Step 1 does that package exist ?
 		if ((!is_dir(DIR_PACKAGES . '/' . $package) && (!is_dir(DIR_PACKAGES_CORE . '/' . $package))) || $package == '') {
-			$errors[] = E_PACKAGE_NOT_FOUND;
+			$errors[] = Package::E_PACKAGE_NOT_FOUND;
+		} else if (!is_object($pkg)) {
+			$errors[] = Package::E_PACKAGE_NOT_FOUND;
 		}
 		
 		// Step 2 - check to see if the user has already installed a package w/this handle
 		$cnt = $db->getOne("select count(*) from Packages where pkgHandle = ?", array($package));
 		if ($cnt > 0) {
-			$errors[] = E_PACKAGE_INSTALLED;
+			$errors[] = Package::E_PACKAGE_INSTALLED;
+		}
+		
+		if (count($errors) == 0) {
+			// test minimum application version requirement
+			if (version_compare(APP_VERSION, $pkg->getApplicationVersionRequired(), '<')) {
+				$errors[] = array(Package::E_PACKAGE_VERSION, $pkg->getApplicationVersionRequired());
+			}
 		}
 		
 		if (count($errors) > 0) {
@@ -190,6 +206,30 @@ class Package extends Object {
 		} else {
 			return true;
 		}
+	}
+
+	public function mapError($testResults) {
+		$errorText[Package::E_PACKAGE_INSTALLED] = t("You've already installed that package.");
+		$errorText[Package::E_PACKAGE_NOT_FOUND] = t("Invalid Package.");
+		$errorText[Package::E_PACKAGE_VERSION] = t("This package requires Concrete version %s or greater.");
+		$errorText[Package::E_PACKAGE_DOWNLOAD] = t("An error occured while downloading the package.");
+		$errorText[Package::E_PACKAGE_SAVE] = t("Concrete was not able to save the package after download.");
+		$errorText[Package::E_PACKAGE_UNZIP] = t('An error while trying to unzip the package.');
+		$errorText[Package::E_PACKAGE_INSTALL] = t('An error while trying to install the package.');
+
+		$testResultsText = array();
+		foreach($testResults as $result) {
+			if (is_array($result)) {
+				$et = $errorText[$result[0]];
+				array_shift($result);
+				$testResultsText[] = vsprintf($et, $result);
+			} else if (is_int($result)) {
+				$testResultsText[] = $errorText[$result];
+			} else if (!empty($result)) {
+				$testResultsText[] = $result;
+			}
+		}
+		return $testResultsText;
 	}
 
 	/*
@@ -218,8 +258,8 @@ class Package extends Object {
 	protected function install() {
 		$db = Loader::db();
 		$dh = Loader::helper('date');
-		$v = array($this->getPackageName(), $this->getPackageDescription(), $this->getPackageHandle(), 1, $dh->getLocalDateTime());
-		$db->query("insert into Packages (pkgName, pkgDescription, pkgHandle, pkgIsInstalled, pkgDateInstalled) values (?, ?, ?, ?, ?)", $v);
+		$v = array($this->getPackageName(), $this->getPackageDescription(), $this->getPackageVersion(), $this->getPackageHandle(), 1, $dh->getLocalDateTime());
+		$db->query("insert into Packages (pkgName, pkgDescription, pkgVersion, pkgHandle, pkgIsInstalled, pkgDateInstalled) values (?, ?, ?, ?, ?, ?)", $v);
 		
 		$pkg = Package::getByID($db->Insert_ID());
 		Package::installDB($pkg->getPackagePath() . '/' . FILENAME_PACKAGE_DB);
@@ -227,6 +267,11 @@ class Package extends Object {
 		return $pkg;
 	}
 	
+	public static function getInstalledHandles() {
+		$db = Loader::db();
+		return $db->GetCol("select pkgHandle from Packages");
+	}
+
 	public static function getInstalledList() {
 		$db = Loader::db();
 		$r = $db->query("select * from Packages where pkgIsInstalled = 1 order by pkgDateInstalled asc");
@@ -240,13 +285,13 @@ class Package extends Object {
 	}
 	
 	public static function getAvailablePackages($filterInstalled = true) {
-		$db = Loader::db();
 		$dh = Loader::helper('file');
 		
 		$packages = $dh->getDirectoryContents(DIR_PACKAGES);
 		if ($filterInstalled) {
+			$handles = self::getInstalledHandles();
+
 			// strip out packages we've already installed
-			$handles = $db->GetCol("select pkgHandle from Packages");
 			$packagesTemp = array();
 			foreach($packages as $p) {
 				if (!in_array($p, $handles)) {
@@ -261,7 +306,9 @@ class Package extends Object {
 			// get package objects from the file system
 			foreach($packages as $p) {
 				$pkg = Loader::package($p);
-				$packagesTemp[] = $pkg;
+                if (!empty($pkg)) {
+				    $packagesTemp[] = $pkg;
+                }
 			}
 			$packages = $packagesTemp;
 		}

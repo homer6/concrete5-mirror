@@ -13,13 +13,13 @@
 		$cobj = $cArray[$i]; 
 		$title = $cobj->getCollectionName(); ?>
 	
-	<h3><a href="<?php echo $nh->getLinkToCollection($cobj)?>"><?php echo $title?></a></h3>
+	<h3 class="ccm-page-list-title"><a href="<?php echo $nh->getLinkToCollection($cobj)?>"><?php echo $title?></a></h3>
 	<div class="ccm-page-list-description">
 		<?php 
 		if(!$controller->truncateSummaries){
 			echo $cobj->getCollectionDescription();
 		}else{
-			echo $textHelper->shortText($cobj->getCollectionDescription(),$controller->truncateChars);
+			echo $textHelper->shorten($cobj->getCollectionDescription(),$controller->truncateChars);
 		}
 		?>
 	</div>
@@ -32,7 +32,7 @@
 			$rssUrl = $controller->getRssUrl($b);
 			?>
 			<div class="rssIcon">
-				<a href="<?php echo $rssUrl?>" target="_blank"><img src="<?php echo $uh->getBlockTypeAssetsURL($bt)?>/rss.png" width="14" height="14" /></a>
+				<a href="<?php echo $rssUrl?>" target="_blank"><img src="<?php echo $uh->getBlockTypeAssetsURL($bt, 'rss.png')?>" width="14" height="14" /></a>
 				
 			</div>
 			<link href="<?php echo $rssUrl?>" rel="alternate" type="application/rss+xml" title="<?php echo $controller->rssTitle?>" />
@@ -40,4 +40,10 @@
 	} 
 	?>
 </div>
-<?php  } ?>
+<?php  } 
+	
+	if ($paginate && $num > 0 && is_object($pl)) {
+		$pl->displayPaging();
+	}
+	
+?>

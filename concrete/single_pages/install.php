@@ -113,7 +113,7 @@ $(function() {
 <div class="test <?php  if ($fileWriteTest) { ?>passed<?php  } else { ?>fail<?php  } ?>"><?php echo t('Web Server Access to Files and Configuration Directories')?>
 
 <a href="javascript:void(0)" class="ccm-install-tooltip"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/tooltip.png" border="0" width="16" height="16" alt="" /></a>
-<div class="ccm-install-info"><?php echo t('The config/ and files/ directories must be writable by your web server.')?></div>
+<div class="ccm-install-info"><?php echo t('The config/, packages/ and files/ directories must be writable by your web server.')?></div>
 
 </div>
 
@@ -124,12 +124,14 @@ $(function() {
 <div class="ccm-install-info"><?php echo t('Multilingual support requires the gettext PHP extension and may not work with safe mode enabled.')?></div>
 
 </div>
+<?php  /*
 <div class="test <?php  if ($searchTest) { ?>passed<?php  } else { ?>warning<?php  } ?>"><?php echo t('Search Indexing Available')?>
 
 <a href="javascript:void(0)" class="ccm-install-tooltip"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/tooltip.png" border="0" width="16" height="16" alt="" /></a>
 <div class="ccm-install-info"><?php echo t('Search indexing requires the mbstring and iconv PHP extensions, and PCRE support.')?></div>
 
 </div>
+*/ ?>
 <div class="test <?php  if ($diffTest) { ?>passed<?php  } else { ?>warning<?php  } ?>"><?php echo t('Version Comparison Available')?>
 
 <a href="javascript:void(0)" class="ccm-install-tooltip"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/tooltip.png" border="0" width="16" height="16" alt="" /></a>

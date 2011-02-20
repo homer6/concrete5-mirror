@@ -5,8 +5,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 // we'll include this block type's class, and pass the block to it, and get
 // the content	
 $file = $controller->getFileObject();
-
-$rel_file_path=REL_DIR_FILES_UPLOADED.'/'.$file->getFilename(); ?>
+$rel_file_path=$file->getRelativePath(); ?>
 
 <div style="text-align:center">
 
@@ -24,7 +23,6 @@ if ($c->isEditMode()) { ?>
 	//echo mime_content_type(DIR_FILES_UPLOADED.'/'.$file->getFilename()).'<br>';
 	if( strstr(strtolower($file->getFilename()),'.flv') ){   ?>
 		
-		<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/swfobject.js"></script>
 		<script type="text/javascript">
 		var flashvars = {};
 		flashvars.flvfile = "<?php echo $rel_file_path?>";

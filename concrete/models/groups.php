@@ -35,13 +35,16 @@
 				while ($row = $r->FetchRow()) {
 					$g = Group::getByID($row['gID']);
 					$g->setPermissionsForObject($obj);
-					$this->gArray[] = $g;
+					if(!in_array($g,$this->gArray)) 
+						$this->gArray[] = $g;
 				}
 			} else {
 				$groups = $this->getRelevantGroups($obj, $omitRequiredGroups);
 				foreach($groups as $g) {
+					if(!$g) continue;
 					$g->setPermissionsForObject($obj);
-					$this->gArray[] = $g;
+					if(!in_array($g,$this->gArray)) 
+						$this->gArray[] = $g;
 				}
 			}
 		}
@@ -63,6 +66,24 @@
 					$cvID = $c->getVersionID();
 					$bID = $obj->getBlockID();
 					$where = "cID = '{$cID}' and cvID = '{$cvID}' and bID = '{$bID}'";
+					break;
+				case 'fileset':
+					$table = 'FileSetPermissions';
+					$fsID = $obj->getFileSetID();
+					$where = "fsID = '{$fsID}'";
+					break;
+				case 'filesetlist':
+					$table = 'FileSetPermissions';
+					$fsIDs = array();
+					foreach($obj->sets as $fs) {
+						$fsIDs[] = $fs->getFileSetID();
+					}
+					$where = "fsID in (" . implode(',', $fsIDs) . ")";
+					break;
+				case 'file':
+					$table = 'FilePermissions';
+					$fID = $obj->getFileID();
+					$where = "fID = '{$fID}'";
 					break;
 				case 'page':
 					$table = 'PagePermissions';
@@ -86,14 +107,22 @@
 
 			$groups = array();
 			if ($where) {
+				$q = "select distinct gID from $table where 1=1 and {$where} and gID > 0 order by gID asc";
+				$gs = $db->GetCol($q);
+
 				if (!$omitRequiredGroups) {
-					$groups[] = Group::getByID(GUEST_GROUP_ID);
-					$groups[] = Group::getByID(REGISTERED_GROUP_ID);
+					if (!in_array(GUEST_GROUP_ID, $gs)) {
+						$gs[] = GUEST_GROUP_ID;
+					}
+					if (!in_array(REGISTERED_GROUP_ID, $gs)) {
+						$gs[] = REGISTERED_GROUP_ID;
+					}
 				}
-				$q = "select gID from $table where gID > 2 and {$where} order by gID asc";
-				$r = $db->query($q);
-				while ($row = $r->fetchRow()) {
-					$g = Group::getByID($row['gID']);
+				
+				sort($gs);
+
+				foreach($gs as $gID) {
+					$g = Group::getByID( $gID );
 					$groups[] = $g;
 				}
 			}
@@ -132,6 +161,7 @@
 	
 		var $ctID;
 		var $permissionSet;
+		private $permissions = array(); // more advanced version of permissions
 		
 		/* 
 		 * Takes the numeric id of a group and returns a group object
@@ -210,6 +240,42 @@
 						$this->permissionSet = $permissions;
 					}
 					break;
+				case 'filesetlist':
+					$fsIDs = array();
+					foreach($obj->sets as $fs) {
+						$fsIDs[] = $fs->getFileSetID();
+					}
+					$where = "fsID in (" . implode(',', $fsIDs) . ")";
+
+					$gID = $this->gID;
+					$q = "select max(canRead) as canRead, max(canWrite) as canWrite, max(canSearch) as canSearch, max(canAdmin) as canAdmin from FileSetPermissions where {$where} and gID = '{$gID}' group by gID";
+					$p = $db->GetRow($q);
+
+					$this->permissions = $p;
+
+					break;
+				case 'fileset':
+					$fsID = $obj->getFileSetID();
+					$gID = $this->gID;
+					$q = "select canRead, canSearch, canWrite, canAdmin, canAdd from FileSetPermissions where fsID = '{$fsID}' and gID = '{$gID}'";
+					$permissions = $db->GetRow($q);
+					if ($permissions) {
+						$this->permissions = $permissions;
+					}
+					
+					$q = "select extension from FilePermissionFileTypes where fsID = '{$fsID}' and gID = '{$gID}'";
+					$extensions = $db->GetCol($q);
+					$this->permissions['canAddExtensions'] = $extensions;
+					break;
+				case 'file':
+					$fID = $obj->getFileID();
+					$gID = $this->gID;
+					$q = "select canRead, canWrite, canSearch, canAdmin from FilePermissions where fID = '{$fID}' and gID = '{$gID}'";
+					$permissions = $db->GetRow($q);
+					if ($permissions) {
+						$this->permissions = $permissions;
+					}
+					break;
 				case 'page':
 					//$cID = $obj->getCollectionID();
 					$cID = $obj->getPermissionsCollectionID();
@@ -263,6 +329,18 @@
 					}
 					break;
 			}
+			
+			// if we have a permissions array, we set the character tokens for backwards compatibility 
+			if ($this->permissions['canRead']) {
+				$this->permissionSet .= 'r:';
+			}
+			if ($this->permissions['canWrite']) {
+				$this->permissionSet .= 'wa:';
+			}
+			if ($this->permissions['canAdmin']) {
+				$this->permissionSet .= 'adm:';
+			}
+
 		}
 
 		/**
@@ -365,6 +443,36 @@
 		
 		function canAdminCollection() {
 			return strpos($this->permissionSet, 'adm') > -1;
+		}
+
+		function canAdmin() {
+			return strpos($this->permissionSet, 'adm') > -1;
+		}
+		
+		/** 
+		 * File manager permissions at the group level 
+		 */
+		public function canSearchFiles() {
+			return $this->permissions['canSearch'];
+		}
+		
+		public function getFileReadLevel() {
+			return $this->permissions['canRead'];
+		}
+		public function getFileSearchLevel() {
+			return $this->permissions['canSearch'];
+		}
+		public function getFileWriteLevel() {
+			return $this->permissions['canWrite'];
+		}
+		public function getFileAdminLevel() {
+			return $this->permissions['canAdmin'];
+		}
+		public function getFileAddLevel() {
+			return $this->permissions['canAdd'];
+		}
+		public function getAllowedFileExtensions() {
+			return $this->permissions['canAddExtensions'];
 		}
 		
 		function update($gName, $gDescription) {

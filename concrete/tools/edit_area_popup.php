@@ -13,31 +13,72 @@ $token = '&' . $valt->getParameter();
 $btl = $a->getAddBlockTypes($c, $ap );
 $blockTypes = $btl->getBlockTypeList();
 $ci = Loader::helper('concrete/urls');
+$ch = Loader::helper('concrete/interface');
 
-
-//marketplace
-if(ENABLE_MARKETPLACE_SUPPORT){
-	$marketplaceBlocksHelper = Loader::helper('concrete/marketplace/blocks'); 
-	$marketplaceBlockTypes=$marketplaceBlocksHelper->getPreviewableList();
-}else{
-	$marketplaceBlockTypes=array();
-}
 ?>
 
-<ul class="ccm-dialog-tabs" id="ccm-area-tabs">
+<script type="text/javascript">
+ccm_isRemotelyLoggedIn = '<?php echo UserInfo::isRemotelyLoggedIn()?>';
+ccm_remoteUID = <?php echo UserInfo::getRemoteAuthUserId() ?>;
+ccm_remoteUName = '<?php echo UserInfo::getRemoteAuthUserName()?>';
+ccm_loginInstallSuccessFn = function() { jQuery.fn.dialog.closeTop(); };
+
+function ccm_loginSuccess(jsObj) {
+	ccm_isRemotelyLoggedIn = true;
+	ccm_remoteUID = jsObj.uID;
+	ccm_remoteUName = jsObj.uName;
+	jQuery.fn.dialog.closeTop();
+	ccm_updateMarketplaceTab();
+	ccmAlert.notice('Marketplace Login', ccmi18n.marketplaceLoginSuccessMsg);
+}
+function ccm_logoutSuccess() {
+	ccm_isRemotelyLoggedIn = false;
+	ccm_updateMarketplaceTab();
+	ccmAlert.notice('Marketplace Logout', ccmi18n.marketplaceLogoutSuccessMsg);
+}
+function ccm_updateLoginArea() {
+	if (ccm_isRemotelyLoggedIn) {
+		$("#ccm-marketplace-logged-in").show();
+		$("#ccm-marketplace-logged-out").hide();
+	} else {
+		$("#ccm-marketplace-logged-in").hide();
+		$("#ccm-marketplace-logged-out").show();
+	}
+}
+function ccm_updateMarketplaceTab() {
+	$("#ccm-add-marketplace-tab div.ccm-block-type-list").html(ccmi18n.marketplaceLoadingMsg);
+	$.ajax({
+        url: CCM_TOOLS_PATH+'/marketplace/refresh_block',
+        type: 'POST',
+        success: function(html){
+			$("#ccm-add-marketplace-tab div.ccm-block-type-list").html(html);
+			ccm_updateLoginArea();
+			ccmLoginHelper.bindInstallLinks();
+        },
+	});
+}
+
+$(document).ready(function(){
+	ccm_updateMarketplaceTab();
+});
+</script>
+
+<ul class="ccm-dialog-tabs" id="ccm-area-tabs" style="display:<?php echo ($_REQUEST['addOnly']!=1)?'block':'none'?>">
 	<li class="ccm-nav-active"><a href="javascript:void(0)" id="ccm-add"><?php echo t('Add New')?></a></li>
+
 	<li><a href="javascript:void(0)" id="ccm-add-existing"><?php echo t('Add From Scrapbook')?></a></li>
+	
 	<?php  if(ENABLE_MARKETPLACE_SUPPORT){ ?>
 		<li><a href="javascript:void(0)" id="ccm-add-marketplace"><?php echo t('Add From Marketplace')?></a></li>
 	<?php  } ?>
+	
 	<?php  if (PERMISSIONS_MODEL != 'simple' && $cp->canAdminPage()) { ?><li><a href="javascript:void(0)" id="ccm-permissions"><?php echo t('Permissions')?></a></li><?php  } ?>
 </ul>
 
 <div id="ccm-add-tab">
 	<h1><?php echo t('Add New Block')?></h1>
 	<div id="ccm-block-type-list">
-	<?php  if (count($blockTypes) > 0) {
-
+	<?php  if (count($blockTypes) > 0) { 
 		foreach($blockTypes as $bt) { 
 			$btIcon = $ci->getBlockTypeIconURL($bt);
 			?>	
@@ -56,23 +97,8 @@ if(ENABLE_MARKETPLACE_SUPPORT){
 <?php  if(ENABLE_MARKETPLACE_SUPPORT){ ?>
 <div id="ccm-add-marketplace-tab" style="display: none">
 	<h1><?php echo t('Add From Marketplace')?></h1>
-	<div id="ccm-block-type-list">
-	<?php  if (count($marketplaceBlockTypes) > 0) {
-
-		foreach($marketplaceBlockTypes as $bt) { 
-			$btIcon = $bt->getRemoteIconURL();
-			?>	
-			<div class="ccm-block-type ccm-external-block-type">
-				<a class="ccm-block-type-help" href="<?php echo $bt->getRemoteURL()?>" target="_blank"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/help.png" width="14" height="14" /></a>
-				<div class="ccm-block-price"><?php  if ($bt->getPrice() == '0.00') { print t('Free'); } else { print '$' . $bt->getPrice(); } ?></div>
-				<a class="ccm-block-type-inner"  style="background-image: url(<?php echo $btIcon?>)"  href="<?php echo $bt->getRemoteURL()?>" target="_blank"><?php echo $bt->getBlockTypeName()?></a>
-				<div class="ccm-block-type-description"  id="ccm-bt-help<?php echo $bt->getBlockTypeHandle()?>"><?php echo $bt->getBlockTypeDescription()?></div>
-				<div class="ccm-spacer"></div>
-			</div>
-		<?php  }
-	} else { ?>
-		<p><?php echo t('Unable to connect to the marketplace.')?></p>
-	<?php  } ?>
+	<div class="ccm-block-type-list">
+		<p><?php echo t('Unable to connect to the Concrete5 Marketplace.')?></p>
 	</div>
 </div>
 <?php  } ?>
@@ -146,9 +172,44 @@ $(function() {
 			<?php 
 			$i++;
 		} 
-	}	?>
+	}	?> 
 	</div>
+	
+	<?php  
+	$globalScrapbookArea = new Area('Global Scrapbook'); 
+	$globalScrapbookC = Page::getByPath('/dashboard/scrapbook/global');
+	$globalScrapbookBlocks = $globalScrapbookArea->getAreaBlocksArray( $globalScrapbookC ); 
+	if( count($globalScrapbookBlocks) ){ ?>
+		<h1><?php echo t('Add From Global Scrapbook') ?></h1>
+		<div id="ccm-scrapbook-list">
+		<?php  foreach($globalScrapbookBlocks as $b){ 
+			$bt = BlockType::getByID( $b->getBlockTypeID() ); 
+			$btIcon = $ci->getBlockTypeIconURL($bt);
+			?>
+			<div class="ccm-scrapbook-list-item" id=""> 
+				<div class="ccm-block-type">
+					<a class="ccm-block-type-inner" style="background-image: url(<?php echo $btIcon?>)" 
+					   href="<?php echo DIR_REL?>/index.php?globalBlock=1&bID=<?php echo $b->bID ?>&add=1&processBlock=1&cID=<?php echo $c->getCollectionID()?>&arHandle=<?php echo $a->getAreaHandle()?>&btask=alias_existing_block&<?php echo $token?>">
+					   		<?php echo $bt->getBlockTypeName()?>: "<?php echo $b->getBlockName() ?>"
+					</a>
+					<div class="ccm-scrapbook-list-item-detail">	
+						<?php 	
+						try {
+							$bv = new BlockView();
+							$bv->render( $b, 'scrapbook');
+						} catch(Exception $e) {
+							print BLOCK_NOT_AVAILABLE_TEXT;
+						}	
+						?>
+					</div>
+				</div> 
+			</div> 
+		<?php  } ?> 
+		</div> 
+	<?php  } ?>
 </div>
+
+
 
 <div id="ccm-permissions-tab" style="display: none"> 
 	<h1><?php echo t('Set Area Permissions')?></h1>

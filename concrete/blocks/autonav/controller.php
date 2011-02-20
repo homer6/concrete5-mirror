@@ -26,7 +26,7 @@
 		private $level;
 		private $isActive = false;
 		private $_c;
-
+		
 		/**
 		 * Instantiates an Autonav Block Item. 
 		 * @param array $itemInfo 
@@ -173,6 +173,7 @@
 		var $displayPages, $displayPagesCID, $displayPagesIncludeSelf, $displaySubPages, $displaySubPageLevels, $displaySubPageLevelsNum, $orderBy, $displayUnavailablePages;
 		var $haveRetrievedSelf = false;
 		var $haveRetrievedSelfPlus1 = false;
+		public $displaySystemPages = false;
 
 		// private variable $displayUnapproved, used by the dashboard
 		var $displayUnapproved = false;
@@ -438,8 +439,8 @@
 							$tc = Page::getByID($row['cID'], "ACTIVE");
 						}
 						
-						if ($tc->isSystemPage()) {
-							continue;
+						if ($tc->isSystemPage() && (!$this->displaySystemPages)) { 
+							continue; 
 						}
 						
 						$tcv = $tc->getVersionObject();
@@ -513,8 +514,17 @@
 					}
 
 					$sortit=0;
-					if($this->orderBy == "alpha_desc") { arsort($navObjectNames); $sortit=1; }
-					if($this->orderBy == "alpha_asc") { asort($navObjectNames); $sortit=1; }
+					if($this->orderBy == "alpha_desc") { 
+						$navObjectNames = array_map('strtolower',$navObjectNames);
+						arsort($navObjectNames);						
+						$sortit=1; 						
+					}
+					
+					if($this->orderBy == "alpha_asc") { 
+						$navObjectNames = array_map('strtolower',$navObjectNames);
+						asort($navObjectNames); 
+						$sortit=1; 
+					}
 
 					if($sortit) {
 						foreach($navObjectNames as $sortCID => $sortnameaction) {

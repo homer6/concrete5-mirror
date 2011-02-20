@@ -2,7 +2,6 @@
 defined('C5_EXECUTE') or die(_("Access Denied."));
 $this->inc('elements/header.php'); ?>
 
-
 	<div id="central">
 		<div id="sidebar">
 			<?php 
@@ -13,7 +12,6 @@ $this->inc('elements/header.php'); ?>
 		
 		<div id="body">	
 			<?php 
-			
 			$a = new Area('Main');
 			$a->display($c);
 			

@@ -189,6 +189,18 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$this->set('controller', $this);
 		}
 		
+		public function outputAutoHeaderItems() {
+			$b = $this->getBlockObject();
+			$bvt = new BlockViewTemplate($b);
+			
+			$headers = $bvt->getTemplateHeaderItems();
+			if (count($headers) > 0) {
+				foreach($headers as $h) {
+					$this->addHeaderItem($h);
+				}
+			}
+		}
+		
 		public function setupAndRun($method) {
 			if ($method) {
 				$this->task = $method;
@@ -227,7 +239,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @return string $btName
 		 */
 		public function getBlockTypeName() {
-			return $this->btName;
+			return t($this->btName);
 		}
 		
 		/**
@@ -251,7 +263,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @return string
 		 */
 		public function getBlockTypeDescription() {
-			return $this->btDescription;
+			return t($this->btDescription);
 		}
 		
 		/**

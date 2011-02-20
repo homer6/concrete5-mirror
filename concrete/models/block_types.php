@@ -76,7 +76,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 							
 							require_once($fdir . '/' . FILENAME_BLOCK_CONTROLLER);
 							if (!class_exists($class)) {
-								throw new Exception(t("%s not found. Please check that the block controller file contains the correct class name.", $class));
+								continue;
 							}
 							$bta = new $class;
 							$bt->btName = $bta->getBlockTypeName();
@@ -241,15 +241,15 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		/**
-		 * Not a permissions call. Actually checks to see whether there are 0 instances of this block, AS well as
-		 * that this block is not an internal one.
+		 * Not a permissions call. Actually checks to see whether this block is not an internal one.
 		 */
 		public function canUnInstall() {
-			$cnt = $this->getCount();
+			/*$cnt = $this->getCount();
 			if ($cnt > 0 || $this->isBlockTypeInternal()) {
 				return false;
-			}
-			return true;
+			}*/
+			
+			return (!$this->isBlockTypeInternal());
 		}
 		
 		function getBlockTypeDescription() {
@@ -266,6 +266,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (file_exists(DIR_FILES_BLOCK_TYPES . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES)) {
 				$templates = array_merge($templates, $fh->getDirectoryContents(DIR_FILES_BLOCK_TYPES . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES));
 			}
+			
+			/*
 			if ($pkgHandle != null) {
 				if (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) {
 					$templates = array_merge($templates, $fh->getDirectoryContents(DIR_PACKAGES . "/{$pkgHandle}/" . DIRNAME_BLOCKS . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES));
@@ -273,6 +275,18 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$templates = array_merge($templates, $fh->getDirectoryContents(DIR_PACKAGES_CORE . "/{$pkgHandle}/" . DIRNAME_BLOCKS . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES));
 				}
 			}
+			*/ 
+			
+			// NOW, we check to see if this btHandle has any custom templates that have been installed as separate packages
+			$pl = PackageList::get();
+			$packages = $pl->getPackages();
+			foreach($packages as $pkg) {
+				$d = (is_dir(DIR_PACKAGES . '/' . $pkg->getPackageHandle())) ? DIR_PACKAGES . '/'. $pkg->getPackageHandle() : DIR_PACKAGES_CORE . '/'. $pkg->getPackageHandle();
+				if (is_dir($d . '/' . DIRNAME_BLOCKS . '/' . $btHandle . '/' . DIRNAME_BLOCK_TEMPLATES)) {
+					$templates = array_merge($templates, $fh->getDirectoryContents($d . '/' . DIRNAME_BLOCKS . '/' . $btHandle . '/' . DIRNAME_BLOCK_TEMPLATES));
+				}
+			}
+			
 			if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES)) {
 				$templates = array_merge($templates, $fh->getDirectoryContents(DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . DIRNAME_BLOCK_TEMPLATES));
 			}
@@ -349,6 +363,21 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return BlockType::doInstallBlockType($btHandle, $bt, $dir, $btID);
 		}
 		
+		public function refresh() {
+			if ($this->getPackageID() > 0) {
+				$pkg = Package::getByID($this->getPackageID());
+				$resp = BlockType::installBlockTypeFromPackage($this->getBlockTypeHandle(), $pkg, $this->getBlockTypeID());			
+				if ($resp != '') {
+					throw new Exception($resp);
+				}
+			} else {
+				$resp = BlockType::installBlockType($this->getBlockTypeHandle(), $this->getBlockTypeID());			
+				if ($resp != '') {
+					throw new Exception($resp);
+				}
+			}
+		}
+		
 		function installBlockType($btHandle, $btID = 0) {
 		
 			if ($btID == 0) {
@@ -382,6 +411,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$bv->render($this, $view);
 		}			
 		
+		public function getController() {
+			return $this->controller;
+		}
+		
 		private function doInstallBlockType($btHandle, $bt, $dir, $btID = 0) {
 			$db = Loader::db();
 			
@@ -395,6 +428,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				
 				Localization::setDomain($dir . '/' . $btHandle);
 
+				if (!class_exists($class)) {
+					throw new Exception(t("%s not found. Please check that the block controller file contains the correct class name.", $class));
+				}
 				$bta = new $class;
 				
 				// first run the subclass methods. If they work then we install the block
@@ -426,7 +462,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					return $db->ErrorMsg();
 				}
 			} else {
-				return t("No block found by that name in the core blocks directory.");
+				return t("No block found with the handle %s found.", $btHandle);
 			}
 		}
 		
@@ -520,7 +556,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		/** 
 		 * Removes the block type. ONLY removes the block type from the blocktypes table - doesn't do any kind of 
-		 * content deactivation. The frontend ensures that only blocks with no instances are removed.
+		 * content deactivation.
 		 */
 		public function delete() {
 			$db = Loader::db();
@@ -550,10 +586,11 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 }
 		 
 		 
-		/* new addBlock action in blocktype just adds a block to the system without adding it to a collection */
-		/* returns block object, which can then be assigned to a collection higher up */
-		
-		public function add($data) {
+		/* 
+		 * Adds a block to the system without adding it to a collection. 
+		 * Passes page and area data along if it is available, however.
+		 */
+		public function add($data, $c = false, $a = false) {
 			$db = Loader::db();
 			
 			$u = new User();
@@ -584,6 +621,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				
 				$class = $this->getBlockTypeClass();
 				$bc = new $class($nb);
+				if (is_object($c)) {
+					$bc->setCollectionObject($c);
+				}
 				$bc->save($data);
 				
 				return Block::getByID($bIDnew);

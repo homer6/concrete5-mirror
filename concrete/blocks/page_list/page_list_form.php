@@ -29,6 +29,11 @@
 
 	</div>
 	<div class="ccm-block-field-group">
+		<h2><?php echo t('Pagination')?></h2>
+		<input type="checkbox" name="paginate" value="1" <?php  if ($paginate == 1) { ?> checked <?php  } ?> />
+		<?php echo t('Display pagination interface if more items are available than are displayed.')?>
+	</div>
+	<div class="ccm-block-field-group">
 	  <h2><?php echo t('Location in Website')?></h2>
 	  <?php echo t('Display pages that are located')?>:<br/>
 	  <br/>
@@ -43,17 +48,17 @@
 			&nbsp;&nbsp;
 			<input type="radio" name="cParentID" id="cOtherField" value="OTHER" <?php  if ($isOtherPage) { ?> checked<?php  } ?>>
 			<?php echo t('beneath another page')?> </div>
-			<div id="ccm-summary-selected-page-wrapper" style=" <?php  if (!$isOtherPage) { ?>display: none;<?php  } ?> padding: 8px 0px 8px 0px">
-				<div id="ccm-summary-selected-page">
-					<b id="ccm-pageList-underCName">
-					  <?php  if ($isOtherPage) { 
-						$oc = Page::getByID($cParentID);
-						print $oc->getCollectionName();
-					} ?>
-					</b>
-				</div>
-				<a id="ccm-sitemap-select-page" class="dialog-launch" dialog-width="600" dialog-height="450" dialog-modal="false" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/sitemap_overlay.php?sitemap_mode=select_page"><?php echo t('Select Page')?></a>
-				<input type="hidden" name="cParentIDValue" id="ccm-pageList-cValueField" value="<?php echo $cParentID?>">				
+			
+			<div class="ccm-page-list-page-other" <?php  if (!$isOtherPage) { ?> style="display: none" <?php  } ?>>
+			
+			<?php  $form = Loader::helper('form/page_selector');
+			if ($isOtherPage) {
+				print $form->selectPage('cParentIDValue', $cParentID);
+			} else {
+				print $form->selectPage('cParentIDValue');
+			}
+			?>
+			
 			</div>
 	</div>
 	<div class="ccm-block-field-group">

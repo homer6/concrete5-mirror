@@ -29,8 +29,9 @@ div#ccm-mc-page h1#ccm-sitemap-title {display: none}
 	<?php  
 	
 	$args = array();
-	$args['reveal'] = $c->getCollectionID();
+	//$args['reveal'] = $c->getCollectionID();
 	$args['sitemap_mode'] = 'move_copy_delete';
+	$args['sitemap_disable_auto_open'] = true;
 	Loader::element('dashboard/sitemap', $args);
 	
 	?>

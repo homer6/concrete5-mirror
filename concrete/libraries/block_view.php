@@ -26,7 +26,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function __construct($tbl = null) {
 			if ($tbl) {
 				$this->_table = $tbl;
-				parent::__construct();
+				parent::__construct($tbl);
 			}
 		}
 		
@@ -46,7 +46,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	
 		protected $block;
 		private $area;
-		private $blockRenderObj;
+		private $blockObj;
 		
 		/**
 		 * Includes a file from the core elements directory. Used by the CMS.
@@ -98,7 +98,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		*/
 		public function getBlockPath($filename = null) {
 
-			$obj = $this->blockRenderObj;
+			$obj = $this->blockObj;
 			if ($obj->getPackageID() > 0) {
 				if (is_dir(DIR_PACKAGES . '/' . $obj->getPackageHandle())) {
 					$base = DIR_PACKAGES . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
@@ -115,17 +115,22 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		/** 
-		 * Returns a relative path to the current block's directory
+		 * Returns a relative path to the current block's directory. If a filename is specified it will be appended and searched for as well.
 		 * @return string
 		 */
-		public function getBlockURL() {
-			$obj = $this->blockRenderObj;
+		public function getBlockURL($filename = null) {
+
+			$obj = $this->blockObj;
 			if ($obj->getPackageID() > 0) {
-				$base = ASSETS_URL . '/' . DIRNAME_PACKAGES . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
-			} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle())) {
-				$base = ASSETS_URL . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
+				if (is_dir(DIR_PACKAGES_CORE . '/' . $obj->getPackageHandle())) {
+					$base = ASSETS_URL . '/' . DIRNAME_PACKAGES . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
+				} else {
+					$base = DIR_REL . '/' . DIRNAME_PACKAGES . '/' . $obj->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
+				}
+			} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $filename)) {
+				$base = DIR_REL . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
 			} else {
-				$base = DIR_REL . '/' . DIRNAME_BLOCKS . '/' . '/' . $obj->getBlockTypeHandle();
+				$base = ASSETS_URL . '/' . DIRNAME_BLOCKS . '/' . $obj->getBlockTypeHandle();
 			}
 			
 			return $base;
@@ -138,6 +143,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$this->area = $a;
 		}
 
+		public function setBlockObject($obj) {
+			$this->blockObj = $obj;
+		}
+		
 		/** 
 		 * Renders a particular view for a block or a block type
 		 * @param Block | BlockType $obj
@@ -148,7 +157,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if ($this->hasRendered) {
 				return false;
 			}
-			$this->blockRenderObj = $obj;
+			$this->blockObj = $obj;
 			$customAreaTemplates = array();
 			
 			if ($obj instanceof BlockType) {
@@ -169,15 +178,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 
 			}				
-
+			
 			$btHandle = $obj->getBlockTypeHandle();
 			Localization::setDomain($base);
 			
 			if (!isset($this->controller)) {
 				$this->controller = Loader::controller($obj);
 			}
-			
-			$this->controller->setupAndRun($view);
+			if (in_array($view, array('view', 'add', 'edit'))) {
+				$_action = $view;
+			} else {
+				$_action = 'view';
+			}
+			$this->controller->setupAndRun($_action);
 			extract($this->controller->getSets());
 			extract($this->controller->getHelperObjects());
 			extract($args);
@@ -187,11 +200,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 			
 			if ($view == 'scrapbook') {
-				if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK)) {
-					$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK;
-				} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK)) {
-					$template = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK;
-				} else {
+				$template = $this->getBlockPath(FILENAME_BLOCK_VIEW_SCRAPBOOK) . '/' . FILENAME_BLOCK_VIEW_SCRAPBOOK;
+				if (!file_exists($template)) {
 					$view = 'view';
 				}
 			}
@@ -207,30 +217,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					if (!isset($_filename)) {
 						$_filename = FILENAME_BLOCK_VIEW;
 					}
-					if ($bFilename) {
-						if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename)) {
-							$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename;
-						} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename)) {
-							$template = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . DIRNAME_BLOCK_TEMPLATES . '/' . $bFilename;
-						}
-					} else {
 					
-						if (strpos($_filename, 'templates/') === 0) {
-							if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
-								$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
-							} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
-								$template = DIR_FILES_BLOCK_TYPES_CORE . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
-							}
-						}
-						
-						if (!isset($template)) {
-							if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '.php')) {
-								$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '.php';
-							} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename)) {
-								$template = DIR_FILES_BLOCK_TYPES . '/' . $obj->getBlockTypeHandle() . '/' . $_filename;
-							}
-						}
+					$bvt = new BlockViewTemplate($obj);
+					if ($bFilename) {
+						$bvt->setBlockCustomTemplate($bFilename); // this is PROBABLY already set by the method above, but in the case that it's passed by area we have to set it here
+					} else if ($_filename != FILENAME_BLOCK_VIEW) {
+						$bvt->setBlockCustomRender($_filename); 
 					}
+					$template = $bvt->getTemplate();					
 					break;
 				case 'add':
 					if (!isset($_filename)) {

@@ -11,6 +11,10 @@ $uh = Loader::helper('concrete/urls'); ?>
 
 <input type="hidden" name="miniSurveyServices" value="<?php  echo $uh->getBlockTypeToolsURL($bt)?>/services.php" />
 
+<?php  /* these question ids have been deleted, or edited, and so shouldn't be duplicated for block versioning */ ?>
+<input type="hidden" id="ccm-ignoreQuestionIDs" name="ignoreQuestionIDs" value="" />
+<input type="hidden" id="ccm-pendingDeleteIDs" name="pendingDeleteIDs" value="" />
+
 <div id="ccm-formBlockPane-options" class="ccm-formBlockPane">
 
 	<?php  
@@ -25,7 +29,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 		<div class="fieldValues">
 			<input id="ccmSurveyName" name="surveyName" style="width: 95%" type="text" class="ccm-input-text" value="<?php  echo $miniSurveyInfo['surveyName']?>" />
 		</div>
-		<div class="spacer"></div>
+		<div class="ccm-spacer"></div>
 	</div>	
 	
 	<div class="fieldRow">
@@ -33,7 +37,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 		<div class="fieldValues"> 
 			<textarea name="thankyouMsg" cols="50" rows="2" style="width: 95%" class="ccm-input-text" ><?php  echo $this->controller->thankyouMsg ?></textarea>
 		</div>
-		<div class="spacer"></div>
+		<div class="ccm-spacer"></div>
 	</div>
 	
 	<div class="fieldRow" style="margin-top:16px">
@@ -43,8 +47,9 @@ $uh = Loader::helper('concrete/urls'); ?>
 			<div class="fieldLabel"><?php  echo t('Recipient Email')?>:</div>
 			<div class="fieldValues">
 			 <input name="recipientEmail" value="<?php  echo $miniSurveyInfo['recipientEmail']?>" type="text" size="20" maxlength="128" />
+			<div class="ccm-note"><?php echo  t('(Seperate multiple emails with a comma)')?></div>
 			</div>
-			<div class="spacer"></div>
+			<div class="ccm-spacer"></div>
 		</div>
 	</div> 
 	
@@ -71,7 +76,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 			<div class="fieldValues">
 				<input id="question" name="question" type="text" style="width: 265px" class="ccm-input-text" />
 			</div>
-			<div class="spacer"></div>
+			<div class="ccm-spacer"></div>
 		</div>	
 		
 		<div class="fieldRow">
@@ -81,7 +86,8 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<input name="answerType" type="radio" value="text" /> <?php  echo t('Text Area')?> &nbsp; <br>
 				<input name="answerType" type="radio" value="radios" /> <?php  echo t('Radio Buttons ')?> &nbsp; <br>
 				<input name="answerType" type="radio" value="select" /> <?php  echo t('Select Box')?> &nbsp; <br>
-				<input name="answerType" type="radio" value="checkboxlist" /> <?php  echo t('Checkbox List')?> &nbsp;
+				<input name="answerType" type="radio" value="checkboxlist" /> <?php  echo t('Checkbox List')?> &nbsp; <br>
+				<input name="answerType" type="radio" value="fileupload" /> <?php  echo t('File Upload')?>
 			</div>
 			<div class="spacer"></div>
 		</div>
@@ -92,8 +98,9 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<textarea id="answerOptions" name="answerOptions" cols="50" rows="4" style="width:90%"></textarea><br />
 				<?php  echo t('Put each answer options on a new line')?>
 			</div>
-			<div class="spacer"></div>
-		</div>	
+			<div class="ccm-spacer"></div>
+		</div>
+		
 		
 		<div class="fieldRow" id="answerSettings">
 			<div class="fieldLabel"><?php  echo t('Settings')?>: </div>
@@ -101,18 +108,31 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<?php  echo t('Text Area Width')?>: <input id="width" name="width" type="text" value="50" size="3"/> <br />
 				<?php  echo t('Text Area Height')?>: <input id="height" name="height" type="text" value="3" size="2"/>
 			</div>
-			<div class="spacer"></div>
-		</div>	
+			<div class="ccm-spacer"></div>
+		</div>
+		
+		
+		<div class="fieldRow" id="questionRequired">
+			<div class="fieldLabel">&nbsp;</div>
+			<div class="fieldValues"> 
+				<input id="required" name="required" type="checkbox" value="1" />
+				<?php  echo t('This question is required.')?> 
+			</div>
+			<div class="ccm-spacer"></div>
+		</div>		
+		
 		
 		<div class="fieldRow" >
 			<div class="fieldLabel">&nbsp; </div>
 			<div class="fieldValues">
+				<input type="hidden" id="position" name="position" type="text" value="1000" />
 				<input id="refreshButton" name="refresh" type="button" value="Refresh" style="display:none" /> 
 				<input id="addQuestion" name="add" type="button" value="<?php  echo t('Add Question')?> &raquo;" />
 			</div>
 		</div>
 		
-		<div class="spacer"></div>
+		
+		<div class="ccm-spacer"></div>
 		
 	</div> 
 </div> 
@@ -129,7 +149,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 			<div class="fieldValues">
 				<input id="questionEdit" name="question" type="text" style="width: 265px" class="ccm-input-text" />
 			</div>
-			<div class="spacer"></div>
+			<div class="ccm-spacer"></div>
 		</div>	
 		
 		<div class="fieldRow">
@@ -139,9 +159,10 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<input name="answerTypeEdit" type="radio" value="text" /> <?php  echo t('Text Area')?> &nbsp; <br>
 				<input name="answerTypeEdit" type="radio" value="radios" /> <?php  echo t('Radio Buttons')?> &nbsp; <br>
 				<input name="answerTypeEdit" type="radio" value="select" /> <?php  echo t('Select Box')?> &nbsp; <br>
-				<input name="answerTypeEdit" type="radio" value="checkboxlist" /> <?php  echo t('Checkbox List')?> &nbsp;
+				<input name="answerTypeEdit" type="radio" value="checkboxlist" /> <?php  echo t('Checkbox List')?> &nbsp; <br>
+				<input name="answerTypeEdit" type="radio" value="fileupload" /> <?php  echo t('File Upload')?>
 			</div>
-			<div class="spacer"></div>
+			<div class="ccm-spacer"></div>
 		</div>
 		
 		<div class="fieldRow" id="answerOptionsAreaEdit">
@@ -150,7 +171,7 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<textarea id="answerOptionsEdit" name="answerOptionsEdit" cols="50" rows="4" style="width:90%"></textarea><br />
 				<?php  echo t('Put each answer options on a new line')?>			
 			</div>
-			<div class="spacer"></div>
+			<div class="ccm-spacer"></div>
 		</div>
 			
 		<div class="fieldRow" id="answerSettingsEdit">
@@ -159,9 +180,19 @@ $uh = Loader::helper('concrete/urls'); ?>
 				<?php  echo t('Text Area Width')?>: <input id="widthEdit" name="width" type="text" value="50" size="3"/> <br />
 				<?php  echo t('Text Area Height')?>: <input id="heightEdit" name="height" type="text" value="3" size="2"/>
 			</div>
-			<div class="spacer"></div>
-		</div>	
+			<div class="ccm-spacer"></div>
+		</div>
 		
+		<div class="fieldRow" id="questionRequired">
+			<div class="fieldLabel">&nbsp;</div>
+			<div class="fieldValues"> 
+				<input id="requiredEdit" name="required" type="checkbox" value="1" />
+				<?php  echo t('This question is required.')?> 
+			</div>
+			<div class="ccm-spacer"></div>
+		</div>		
+		
+		<input type="hidden" id="positionEdit" name="position" type="text" value="1000" />
 		<input id="cancelEditQuestion" name="cancelEdit" type="button" value="Cancel"/>
 		<input id="editQuestion" name="edit" type="button" value="Save Changes &raquo;"/>
 	</div>

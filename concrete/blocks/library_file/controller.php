@@ -12,6 +12,7 @@
  * The library file block is an internal block type used by external block types to reference files. Basically, any file in Concrete maps to an instance of the library file block.
  *
  * @package Blocks
+ * @access private
  * @author Andrew Embler <andrew@concrete5.org>
  * @category Concrete
  * @copyright  Copyright (c) 2003-2008 Concrete5. <http://www.concrete5.org>
@@ -34,19 +35,37 @@
 		public function getBlockTypeName() {
 			return t("Library File");
 		}		
-		
+
 		function getFile($fID) {
-			$db = Loader::db();
-			$r = $db->query("select bID, filename, origfilename, url, type, generictype from btFile where bID = ?", array($fID));
-			$obj = $r->fetchRow();
-			
+			Loader::model('file');
+			$mf = new File();
+
+			$file_obj = $mf->getByID($fID);
+			$fileversion_obj = $file_obj->getVersion();
+				
 			$bf = new LibraryFileBlockController;
-			$bf->bID 			= $obj['bID'];
-			$bf->filename 		= $obj['filename'];
-			$bf->origfilename 	= $obj['origfilename'];
-			$bf->generictype 	= $obj['generictype'];
-			$bf->type 			= $obj['type'];
-			$bf->url 			= $obj['url'];
+
+			$ftype = FileTypeList::getType($fileversion_obj->getExtension());
+			$this->generictype = strtolower($ftype->getGenericTypeText($ftype->getGenericType()));
+			$this->filename = $fileversion_obj->getFileName();
+			$this->type = $fileversion_obj->getType();
+			$this->url = $fileversion_obj->getURL();
+			$this->filepath = $fileversion_obj->getPath();
+			$this->relpath = $fileversion_obj->getRelativePath();
+			$this->origfilename = $fileversion_obj->getRelativePath();
+			$this->filesize = $fileversion_obj->getFullSize();
+			
+			$len = strlen(REL_DIR_FILES_UPLOADED);
+			$fh = Loader::helper('concrete/file');
+			
+			$bf->bID 			= $fileversion_obj->getFileID();
+			$bf->generictype 	= $this->generictype;
+			$bf->type 			= $this->type;
+			$bf->url 			= $this->url;
+			$bf->filepath  		= $this->filepath;
+			$bf->relpath  		= $this->relpath;
+			$bf->filename 		= substr($this->relpath, $len); // for backwards compatibility this must include the prefixes
+			$bf->filesize		= $this->filesize;
 			return $bf;
 		}
 
@@ -89,14 +108,17 @@
 		function getURL() {return $this->url;}
 		function getType() {return $this->type;}
 		function getGenericType() {return $this->generictype;}
+
 		public function getFilePath() {
-			return DIR_FILES_UPLOADED . '/' . $this->filename;
+			return $this->filepath;
 		}
+
 		public function getFileRelativePath() {
-			return REL_DIR_FILES_UPLOADED . '/' . $this->filename;
+			return $this->relpath;
 		}
+
 		public function getFileFullURL() {
-			return BASE_URL . REL_DIR_FILES_UPLOADED . '/' . $this->filename;
+			return BASE_URL . $this->url;
 		}
 		
 		
@@ -106,7 +128,7 @@
 		 * @return array $dimensions
 		 */
 		function getDimensions() {
-			$r = @getimagesize(DIR_FILES_UPLOADED . '/' . $this->filename);
+			$r = @getimagesize($this->filepath);
 			if ($r) {
 				return $r;
 			}
@@ -131,72 +153,8 @@
 		 * @return void
 		 */		
 		public function createImage($originalPath, $newPath, $width, $height) {
-			// first, we grab the original image. We shouldn't ever get to this function unless the image is valid
-			$imageSize = getimagesize($originalPath);
-			$oWidth = $imageSize[0];
-			$oHeight = $imageSize[1];
-			$finalWidth = 0;
-			$finalHeight = 0;
-			
-			// first, if what we're uploading is actually smaller than width and height, we do nothing
-			if ($oWidth < $width && $oHeight < $height) {
-				$finalWidth = $oWidth;
-				$finalHeight = $oHeight;
-			} else {
-				// otherwise, we do some complicated stuff
-				// first, we subtract width and height from original width and height, and find which difference is greater
-				$wDiff = $oWidth - $width;
-				$hDiff = $oHeight - $height;
-//				if ($wDiff > $hDiff) {
-				if ($wDiff > $hDiff && (($oHeight / ($oWidth / $width)) < $height)) { // check to ensure that the finalHeight won't be too large still
-					// there's more of a difference between width than height, so if we constrain to width, we should be safe
-					$finalWidth = $width;
-					$finalHeight = $oHeight / ($oWidth / $width);
-				} else {
-					// more of a difference in height, so we do the opposite
-					$finalWidth = $oWidth / ($oHeight / $height);
-					$finalHeight = $height;
-				}
-			}
-		
-			$image = imageCreateTrueColor($finalWidth, $finalHeight);
-			switch($imageSize[2]) {
-				case IMAGETYPE_GIF:
-					$im = imageCreateFromGIF($originalPath);
-					break;
-				case IMAGETYPE_JPEG:
-					$im = imageCreateFromJPEG($originalPath);
-					break;
-				case IMAGETYPE_PNG:
-					$im = imageCreateFromPNG($originalPath);
-					break;
-			}
-			
-			if ($im) {
-				$res = imageCopyResampled($image, $im, 0, 0, 0, 0, $finalWidth, $finalHeight, $oWidth, $oHeight);
-				if ($res) {
-					/*
-					switch($imageSize[2]) {
-						case IMAGETYPE_GIF:
-							if (function_exists("imageGIF")) {
-								$res2 = imageGIF($image, $newPath);
-							} else {
-								$res2 = imagePNG($image, $newPath);						
-							}
-							break;
-						case IMAGETYPE_JPEG:
-							$res2 = imageJPEG($image, $newPath, 80);
-							break;
-						case IMAGETYPE_PNG:
-							$res2 = imagePNG($image, $newPath, 80);
-							break;
-					}
-					*/
-					
-					$res2 = imageJPEG($image, $newPath, 80);
-				}
-			}
-			
+			$fi = Loader::helper('image');
+			$fi->create($originalPath, $newPath, $width, $height);
 		}
 
 		/** 
@@ -223,18 +181,7 @@
 		 * @return string $path
 		 */
 		function getThumbnailAbsolutePath($filename = null) {
-			if (!$filename) {
-				$db = Loader::db();
-				$q = "select filename from btFile where bID = '{$this->bID}'";
-				$filename = $db->getOne($q);
-				if ($filename) {
-					$newFileName = substr($filename, 0, strrpos($filename, '.')) . '.jpg';
-					return DIR_FILES_UPLOADED_THUMBNAILS . '/' . $newFileName;
-				}
-			} else {
-				$newFileName = substr($filename, 0, strrpos($filename, '.')) . '.jpg';
-				return DIR_FILES_UPLOADED_THUMBNAILS . '/' . $newFileName;
-			}
+			
 		}
 		
 		/** 
@@ -254,10 +201,8 @@
 				$pi = pathinfo($this->filename);
 				$filename = $pi['filename'] . '_' . $maxWidth . 'x' . $maxHeight . '.jpg';
 				if (!file_exists(DIR_FILES_CACHE . '/' . $filename)) {
-					// create image there
 					LibraryFileBlockController::createImage(DIR_FILES_UPLOADED . '/' . $this->filename, DIR_FILES_CACHE . '/' . $filename, $maxWidth, $maxHeight);
 				}
-				
 				$src = REL_DIR_FILES_CACHE . '/' . $filename;
 				$abspath = DIR_FILES_CACHE . '/' . $filename;
 			}
@@ -278,18 +223,12 @@
 		public function outputThumbnail($maxWidth = null, $maxHeight = null) {
 			$thumb = $this->getThumbnail($maxWidth, $maxHeight);
 			if (is_object($thumb)) {
-				print '<img class="ccm-output-thumbnail" alt="' . htmlentities($thumb->alt, ENT_QUOTES) . '" src="' . $thumb->src . '" width="' . $thumb->width . '" height="' . $thumb->height . '" />';
+				print '<img class="ccm-output-thumbnail" alt="' . htmlentities($thumb->alt, ENT_QUOTES, APP_CHARSET) . '" src="' . $thumb->src . '" width="' . $thumb->width . '" height="' . $thumb->height . '" />';
 			}
 		}
 
-		function getFileSize($filename = null) {
-			if (!$filename) {
-				$filename = $this->filename;
-				$path = DIR_FILES_UPLOADED . '/' . $filename;
-			} else {
-				$path = $filename;
-			}
-			return filesize($path) / 1048; // return kilobytes
+		function getFileSize() {
+			return $this->filesize;
 		}
 
 		function delete() {
@@ -337,8 +276,23 @@
 		function duplicate($newBID) {
 			// nothing
 		}
+
 		
 		function save($data) {
+			Loader::library("file/importer");
+
+
+			if (file_exists($data['file'])) {
+				$fi = new FileImporter();
+           		$resp = $fi->import($data['file'], $data['name']);
+
+				$lbc = new LibraryFileBlockController();
+				return $lbc->getFile($resp->getFileID());				
+			}
+		}
+
+/*
+		function save_OLD($data) {
 			
 			if (file_exists($data['file'])) {
 				// copy the file into the files directory
@@ -382,7 +336,7 @@
 				$ret = Events::fire('on_file_upload', $bf);
 			}
 		}
-		
+		*/	
 	}
 
 ?>

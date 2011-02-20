@@ -7,7 +7,6 @@ table#themesGrid td .desc{ margin-bottom:4px; line-height: 16px; }
 <h1><span><?php echo t('Available Themes')?></span></h1>
 
 <div class="ccm-dashboard-inner">
-		
 	<?php  if( !count($availableThemes) ){ ?>
 		<div><?php echo t('Unable to connect to the marketplace.')?></div>
 	<?php  }else{ ?>
@@ -23,12 +22,12 @@ table#themesGrid td .desc{ margin-bottom:4px; line-height: 16px; }
 				}
 				?>
 				<td valign="top" width="<?php echo round(100/$numCols)?>%"> 
-					<a href="<?php echo $availableTheme->getThemeURL() ?>"><img src="<?php echo $availableTheme->getThemeThumbnail() ?>" /></a>		
+					<a href="<?php echo $availableTheme->getThemeURL() ?>" class="do-default" target="_blank"><img src="<?php echo $availableTheme->getThemeThumbnail() ?>" /></a>		
 					<div class="name"><a href="<?php echo $availableTheme->getThemeURL() ?>"><?php echo $availableTheme->getThemeName() ?></a>
 					<a title="<?php echo t('Preview')?>" onclick="ccm_previewMarketplaceTheme(1, <?php echo intval($availableTheme->getRemoteCollectionID())?>,'<?php echo addslashes($availableTheme->getThemeName()) ?>','<?php echo addslashes($availableTheme->getThemeHandle()) ?>')" 
-						href="javascript:void(0)" class="preview"><img src="<?php echo DIR_REL?>/concrete/images/icons/magnifying.png" alt="<?php echo t('Preview')?>" /></a></div>
+						href="javascript:void(0)" class="preview"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/magnifying.png" alt="<?php echo t('Preview')?>" /></a></div>
 					<div class="desc"><?php echo $availableTheme->getThemeDescription() ?></div>
-					<a href="<?php echo $availableTheme->getThemeURL() ?>"><?php echo t('Get Theme')?> &raquo;</a>
+					<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED.'/package_install?type=theme&install=1&cID='.$availableTheme->getRemoteCollectionID() ?>"><?php echo t('Install Theme')?> &raquo;</a>
 				</td>
 			<?php   $colCount++;
 			}

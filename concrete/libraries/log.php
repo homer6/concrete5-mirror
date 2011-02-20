@@ -81,8 +81,7 @@ class DatabaseLogEntry extends LogEntry {
 			$dle = new DatabaseLogEntry();
 			$dle->setPropertiesFromArray($row);
 			$entries[] = $dle;
-		}
-		
+		}		
 		return $entries;
 	}
 	
@@ -190,7 +189,7 @@ class Log {
 		}
 		if ($type != false) {
 			$v = array($type);
-			$r = $db->Execute('select logID from Logs where logType = ? and ' . $kw . ' order by timestamp desc limit ' . $limit, $v);
+			$r = $db->Execute('select logID from Logs where logType = ? ' . $kw . ' order by timestamp desc limit ' . $limit, $v);
 		} else {
 			$r = $db->Execute('select logID from Logs where 1=1 ' . $kw . ' order by timestamp desc limit ' . $limit);
 		}
@@ -200,6 +199,18 @@ class Log {
 			$entries[] = LogEntry::getByID($row['logID']);
 		}
 		return $entries;
+	}
+	
+	/** 
+	 * Returns an array of distinct log types
+	 */
+	public static function getTypeList() {
+		$db = Loader::db();
+		$lt = $db->GetCol("select distinct logType from Logs");
+		if (!is_array($lt)) {
+			$lt = array();
+		}
+		return $lt;
 	}
 	
 	public function getName() { return $this->name;}

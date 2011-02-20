@@ -2,6 +2,7 @@
 defined('C5_EXECUTE') or die(_("Access Denied."));
 global $c;
 global $cp;
+global $cvID;
 
 if (is_object($c)) {
 	$pageTitle = (!$pageTitle) ? $c->getCollectionName() : $pageTitle;
@@ -15,42 +16,34 @@ if (is_object($c)) {
 }
 ?>
 
+<meta http-equiv="content-type" content="text/html; charset=<?php echo APP_CHARSET?>" />
 <?php 
 $akt = $c->getCollectionAttributeValue('meta_title'); 
 $akd = $c->getCollectionAttributeValue('meta_description');
 $akk = $c->getCollectionAttributeValue('meta_keywords');
+
 if ($akt) { 
-	$pageTitle = $akt; ?>
-	<title><?php echo $akt?></title>
+	$pageTitle = $akt; 
+	?><title><?php echo $akt?></title>
 <?php  } else { 
 	$pageTitle = $c->getCollectionName();
-	?>
-	<title><?php echo SITE . ' :: ' . $pageTitle?></title>
+	?><title><?php echo sprintf(PAGE_TITLE_FORMAT, SITE, $pageTitle)?></title>
 <?php  } 
 
-if ($akd) { ?>
-	<meta name="description" content="<?php echo htmlspecialchars($akd)?>" />
-<?php  } else { ?>	
-	<meta name="description" content="<?php echo htmlspecialchars($pageDescription)?>" />
+if ($akd) { 
+?><meta name="description" content="<?php echo htmlspecialchars($akd)?>" />
+<?php  } else { 
+?><meta name="description" content="<?php echo htmlspecialchars($pageDescription)?>" />
 <?php  }
-
-if ($akk) { ?>
-	<meta name="keywords" content="<?php echo htmlspecialchars($akk)?>" />
+if ($akk) { ?><meta name="keywords" content="<?php echo htmlspecialchars($akk)?>" />
 <?php  } ?>
-
-<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" />
-<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="concrete5 - <?php echo APP_VERSION ?>" />
 
 <?php  $u = new User(); ?>
 <script type="text/javascript">
 <?php 
-	if ($u->config('UI_BREADCRUMB')) { 
-		echo("var CCM_ENABLE_BREADCRUMB = true;\r");
-	} else {
-		echo("var CCM_ENABLE_BREADCRUMB = false;\r");
-	}
 	echo("var CCM_DISPATCHER_FILENAME = '" . DIR_REL . '/' . DISPATCHER_FILENAME . "';\r");
-	echo("var CCM_CID = {$cID};\r");
+	echo("var CCM_CID = ".($cID?$cID:0).";\r");
 	if (MENU_FEEDBACK_DISPLAY) {
 		echo("var CCM_FEEDBACK = true;\r");
 	} else {
@@ -71,22 +64,20 @@ var CCM_REL = "<?php echo DIR_REL?>";
 
 <?php 
 $html = Loader::helper('html');
-$this->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_REQUIRED . '/i18n_js"></script>'); 
-
-$this->addHeaderItem($html->javascript('jquery1.2.6.js'));
-$this->addHeaderItem($html->javascript('swfobject2.1.js'));
-$this->addHeaderItem($html->javascript('ccm.base.js'));
-$this->addHeaderItem($html->css('ccm.base.css'));
+$this->addHeaderItem($html->css('ccm.base.css'), 'CORE');
+$this->addHeaderItem($html->javascript('jquery.js', 'CORE'));
+$this->addHeaderItem($html->javascript('ccm.base.js', 'CORE'));
 
 $favIconFID=intval(Config::get('FAVICON_FID'));
-if($favIconFID && file_exists(DIR_BASE.'/favicon.ico')){
-	Loader::block('library_file');
-	$fileBlock=LibraryFileBlockController::getFile( $favIconFID ); ?> 
-	<link rel="shortcut icon" href="<?php echo $fileBlock->getFileFullURL()?>" type="image/x-icon" />
-	<link rel="icon" href="<?php echo $fileBlock->getFileFullURL()?>" type="image/x-icon" />
+
+
+if($favIconFID) {
+	$f = File::getByID($favIconFID); ?>
+	<link rel="shortcut icon" href="<?php echo $f->getRelativePath()?>" type="image/x-icon" />
+	<link rel="icon" href="<?php echo $f->getRelativePath()?>" type="image/x-icon" />
 <?php  } ?>
 
-<?php  
+<?php   
 if (is_object($cp)) {
 
 	if ($this->editingEnabled()) {
@@ -94,19 +85,9 @@ if (is_object($cp)) {
 	}
 	
 	if ($this->areLinksDisabled()) { 
-		$this->addHeaderItem('<script type="text/javascript">$(function() { ccm_disableLinks(); })</script>');
+		$this->addHeaderItem('<script type="text/javascript">window.onload = function() {ccm_disableLinks()}</script>', 'CORE');
 	}
 
 }
 
-// Finally, we output all header CSS and JavaScript
 print $this->controller->outputHeaderItems();
-
-if (is_object($cp)) {
-
-	if ($this->editingEnabled()) {
-		Loader::element('page_controls_menu', array('cp' => $cp, 'c' => $c));
-	}
-}
-
-?>

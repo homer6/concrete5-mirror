@@ -5,8 +5,8 @@
 <head>
 	
 <!-- Site Header Content //-->
-<style type="text/css">@import "<?php echo $this->getStyleSheet('main.css')?>";</style>
-<style type="text/css">@import "<?php echo $this->getStyleSheet('typography.css')?>";</style>
+<link rel="stylesheet" media="screen" type="text/css" href="<?php echo $this->getStyleSheet('main.css')?>" />
+<link rel="stylesheet" media="screen" type="text/css" href="<?php echo $this->getStyleSheet('typography.css')?>" />
 
 <?php  Loader::element('header_required'); ?>	
 

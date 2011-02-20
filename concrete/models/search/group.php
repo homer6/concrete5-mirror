@@ -17,15 +17,28 @@ class GroupSearch extends DatabaseItemList {
 	
 	
 	protected $itemsPerPage = 10;
+	protected $minimumGroupID = REGISTERED_GROUP_ID;
+	
+	public function includeAllGroups() {
+		$this->minimumGroupID = -1;
+	}
 	
 	public function filterByKeywords($kw) {
 		$db = Loader::db();
 		$this->filter(false, "(Groups.gName like " . $db->qstr('%' . $kw . '%') . " or Groups.gDescription like " . $db->qstr('%' . $kw . '%') . ")");
 	}
 	
+	public function updateItemsPerPage( $num ) {
+		$this->itemsPerPage = $num;
+	}
+	
 	function __construct() {
 		$this->setQuery("select Groups.gID, Groups.gName, Groups.gDescription from Groups");
-		$this->filter('gID', REGISTERED_GROUP_ID, '>');
 		$this->sortBy('gName');
+	}
+	
+	public function getPage() {
+		$this->filter('gID', $this->minimumGroupID, '>');
+		return parent::getPage();
 	}
 }

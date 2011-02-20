@@ -54,6 +54,93 @@ class FileHelper {
 		return substr($txt->unhandle($filename), 0, strrpos($filename, '.'));
 	}
 	
+	/** 
+	 * Recursively copies all items in the source directory to the target directory
+	 * @param string $source
+	 * @param string $target
+	 */
+	public function copyAll($source, $target, $mode = 0777) {
+		if (is_dir($source)) {
+			@mkdir($target, $mode);
+			chmod($target, $mode);
+			
+			$d = dir($source);
+			while (FALSE !== ($entry = $d->read())) {
+				if ( $entry == '.' || $entry == '..' ) {
+					continue;
+				}
+			
+				$Entry = $source . '/' . $entry;            
+				if (is_dir($Entry)) {
+					$this->copyAll($Entry, $target . '/' . $entry, $mode);
+					continue;
+				}
+				
+				copy($Entry, $target . '/' . $entry);
+				chmod($target . '/' . $entry, $mode);
+			}
+			
+			$d->close();
+		} else {
+			copy($source, $target);
+			chmod($target, $mode);
+		}
+	}
+	
+	/** 
+	 * Takes a path to a file and sends it to the browser, streaming it, and closing the HTTP connection afterwards. Basically a force download method
+	 */
+	public function forceDownload($file) {
+		
+		header('Content-type: application/octet-stream');
+		$filename = basename($file);
+		header("Content-Disposition: attachment; filename=\"$filename\"");
+		header('Content-Length: ' . filesize($file));
+		header("Pragma: public");
+		header("Expires: 0");
+		header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+		header("Cache-Control: private",false);
+		header("Content-Transfer-Encoding: binary");
+	
+		$buffer = '';
+		$chunk = 1024*1024;
+		$handle = fopen($file, 'rb');
+		if ($handle === false) {
+			return false;
+		}
+		while (!feof($handle)) {
+			$buffer = fread($handle, $chunk);
+			print $buffer;
+		}
+		
+		fclose($handle);
+		exit;		
+	}
+	
+	/** 
+	 * Returns the full path to the temporary directory
+	 */
+	public function getTemporaryDirectory() {
+		if (function_exists('sys_get_temp_dir') && (ini_get('open_basedir') == '')) {
+			$path = sys_get_temp_dir();
+		} else {
+			if (!empty($_ENV['TMP'])) { $path =  realpath($_ENV['TMP']); }
+			elseif (!empty($_ENV['TMPDIR'])) { $path =  realpath( $_ENV['TMPDIR']); }
+			elseif (!empty($_ENV['TEMP'])) { $path =  realpath( $_ENV['TEMP']); }
+			else{
+				$tempfile=tempnam(uniqid(rand(),TRUE),'');
+				if (file_exists($tempfile)) {
+					unlink($tempfile);
+					$path = realpath(dirname($tempfile));
+				}
+			}
+		}
+		$trailingChar=substr($path,strlen($path)-1);
+		if($trailingChar!='/' && $trailingChar!="\\") $path.='/';		
+		return $path;
+	}
+
+
 	
 	/**
 	 * Adds content to a new line in a file. If a file is not there it will be created
@@ -109,6 +196,15 @@ class FileHelper {
 	
 	
 	/** 
+	 * Cleans up a filename and returns the cleaned up version
+	 */
+	public function sanitize($file) {
+		//return preg_replace(array("/[^0-9A-Za-z-.]/","/[\s]/"),"", $file);
+		$file = preg_replace("/[^0-9A-Z_a-z-.\s]/","", $file);
+		return trim($file);
+	}
+	
+	/** 
 	* Returns the extension for a file name
 	* @param $filename
 	*/
@@ -116,25 +212,14 @@ class FileHelper {
 		$extension = end(explode(".",$filename));
 		return $extension;
 	}
-
+	
 	/** 
-	* Parses the file extension for a given file name, checks it to see if it's in the the extension array if provided
-	* if not, it checks to see if it's in the UPLOAD_FILE_EXTENSIONS_ALLOWED constant
-	* @param string $filename
-	* @param array $extensions
-	* @return boolean
-	*/
-
-	public function hasAllowedExtension($filename, $extensions = NULL) {
-		$ext = strtolower($this->getExtension($filename));
-		if(isset($extensions) && is_array($extensions) && count($extensions)) {
-			$allowed_extensions = $extensions;
-		} else { // pull from constants
-			$extensions_string = strtolower(str_replace(array("*","."),"",UPLOAD_FILE_EXTENSIONS_ALLOWED));
-			$allowed_extensions = explode(";",$extensions_string);
-		}
-		return in_array($ext,$allowed_extensions);
+	 * Takes a path and replaces the files extension in that path with the specified extension
+	 */
+	public function replaceExtension($filename, $extension) {
+		$newFileName = substr($filename, 0, strrpos($filename, '.')) . '.' . $extension;
+		return $newFileName;
 	}
-
+		
 }
 ?>

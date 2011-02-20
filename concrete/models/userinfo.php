@@ -19,7 +19,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
  *
  */
 
-	class UserInfo extends Object {
+	class UserInfo extends Object { 
 	
 		/* magic method for user attributes. This is db expensive but pretty damn cool */
 		
@@ -47,6 +47,14 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public static function getByEmail($uEmail, $userPermissionsArray = null) {
 			return UserInfo::get('where uEmail = ?', $uEmail, $userPermissionsArray);
 		}
+
+		/** 
+		 * Returns a user object by open ID. Does not log a user in.
+		 */
+		public function getByOpenID($uOpenID) {
+			return UserInfo::get('inner join UserOpenIDs on Users.uID = UserOpenIDs.uID where uOpenID = ?', $uOpenID);
+		}
+		
 		
 		public static function getByValidationHash($uHash, $unredeemedHashesOnly = true) {
 			$db = Loader::db();
@@ -74,21 +82,40 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 			if (is_object($ui)) {
 				if ($userPermissionsArray) {
-					$ui->permissionSet = $userPermissionsArray['permissionSet'];
-					$ui->upStartDate = $userPermissionsArray['upStartDate'];
-					$ui->upEndDate = $userPermissionsArray['upEndDate'];
+					if (isset($userPermissionsArray['permissions'])) {
+						$ui->permissions = $userPermissionsArray['permissions'];
+						if ($ui->permissions['canRead']) {
+							$ui->permissionSet .= 'r:';
+						}
+						if ($ui->permissions['canWrite']) {
+							$ui->permissionSet .= 'wa:';
+						}
+						if ($ui->permissions['canAdmin']) {
+							$ui->permissionSet .= 'adm:';
+						}
+
+					} else {
+						$ui->permissionSet = $userPermissionsArray['permissionSet'];
+						$ui->upStartDate = $userPermissionsArray['upStartDate'];
+						$ui->upEndDate = $userPermissionsArray['upEndDate'];
+					}
 				}
 
 				return $ui;
 			}
 		}
 		
-		public static function add($data) {
+		const ADD_OPTIONS_NOHASH		= 0;
+		const ADD_OPTIONS_SKIP_CALLBACK	= 1;
+		public static function add($data,$options=false) {
+			$options = is_array($options) ? $options : array();
 			$db = Loader::db();
 			$dh = Loader::helper('date');
 			$uDateAdded = $dh->getLocalDateTime();
 			
-			if (isset($data['uIsValidated']) && $data['uIsValidated'] == 0) {
+			if ($data['uIsValidated'] == 1) {
+				$uIsValidated = 1;
+			} else if (isset($data['uIsValidated']) && $data['uIsValidated'] == 0) {
 				$uIsValidated = 0;
 			} else {
 				$uIsValidated = -1;
@@ -100,14 +127,18 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				$uIsFullRecord = 1;
 			}
 			
-			$v = array($data['uName'], $data['uEmail'], User::encryptPassword($data['uPassword']), $uIsValidated, $uDateAdded, $uIsFullRecord, 1);
+			$password_to_insert = $data['uPassword'];
+			if (!in_array(self::ADD_OPTIONS_NOHASH, $options)) {
+				$password_to_insert = User::encryptPassword($password_to_insert);			
+			}	
+			$v = array($data['uName'], $data['uEmail'], $password_to_insert, $uIsValidated, $uDateAdded, $uIsFullRecord, 1);
 			$r = $db->prepare("insert into Users (uName, uEmail, uPassword, uIsValidated, uDateAdded, uIsFullRecord, uIsActive) values (?, ?, ?, ?, ?, ?, ?)");
 			$res = $db->execute($r, $v);
 			if ($res) {
 				$newUID = $db->Insert_ID();
 				$ui = UserInfo::getByID($newUID);
 				
-				if (is_object($ui)) {
+				if (is_object($ui) && !in_array(self::ADD_OPTIONS_SKIP_CALLBACK,$options)) {
 					// run any internal event we have for user add
 					Events::fire('on_user_add', $ui);
 				}
@@ -476,6 +507,35 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return strpos($this->permissionSet, 'adm') > -1;
 		}
 
+		function canAdmin() {
+			return strpos($this->permissionSet, 'adm') > -1;
+		}
+
+		/** 
+		 * File manager permissions at the user level 
+		 */
+		public function canSearchFiles() {
+			return $this->permissions['canSearch'];
+		}
+		public function getFileReadLevel() {
+			return $this->permissions['canRead'];
+		}
+		public function getFileSearchLevel() {
+			return $this->permissions['canSearch'];
+		}
+		public function getFileWriteLevel() {
+			return $this->permissions['canWrite'];
+		}
+		public function getFileAdminLevel() {
+			return $this->permissions['canAdmin'];
+		}
+		public function getFileAddLevel() {
+			return $this->permissions['canAdd'];
+		}
+		public function getAllowedFileExtensions() {
+			return $this->permissions['canAddExtensions'];
+		}
+
 		function getUserStartDate() {
 			// time-release permissions for users
 			return $this->upStartDate;
@@ -488,6 +548,79 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		function getUserEndDate() {
 			return $this->upEndDate;
 		}
+		
+		
+		
+		
+		//Remote Authentication Stuff
+		//****************************
+		
+		static function setRemoteAuthToken($token=''){ $_SESSION['remote_auth_token']=$token; }
+		static function getRemoteAuthToken(){ return $_SESSION['remote_auth_token']; }		
+		
+		static function setRemoteAuthTimestamp($timestamp=0){ $_SESSION['remote_auth_timestamp']=intval($timestamp); }		
+		static function getRemoteAuthTimestamp(){ return $_SESSION['remote_auth_timestamp']; }		
+		
+		static function setRemoteAuthUserName($uname=''){ $_SESSION['remote_auth_uname']=$uname; }		
+		static function getRemoteAuthUserName(){ return $_SESSION['remote_auth_uname'];	}
+		
+		static function setRemoteAuthUserId($uid=0){ $_SESSION['remote_auth_uid']=intval($uid); }		
+		static function getRemoteAuthUserId(){ return intval($_SESSION['remote_auth_uid']);	}
+		
+		static function setRemoteAuthInSupportGroup($in_support_group=0){ //boolean 
+			$_SESSION['remote_auth_support_group']=intval($in_support_group); 
+		}		
+		static function getRemoteAuthInSupportGroup(){ return intval($_SESSION['remote_auth_support_group']);	}				
+		
+		static function endRemoteAuthSession(){
+			unset($_SESSION['remote_auth_token']);
+			unset($_SESSION['remote_auth_uname']);
+			unset($_SESSION['remote_auth_timestamp']);
+			unset($_SESSION['remote_auth_support_group']);
+		}
+		
+		//necessary name value pair for remote authentication
+		static function getAuthData(){
+			$authData=array();
+			$authData['auth_token']=UserInfo::getRemoteAuthToken();
+			$authData['auth_timestamp']=UserInfo::getRemoteAuthTimestamp();
+			$authData['auth_uname']=UserInfo::getRemoteAuthUserName();
+			return $authData;
+		}		
+		
+		static function generateAuthToken( $uname='', $timestamp=0){
+			if( !intval($timestamp) ) $timestamp=time();
+			$raw_identifier = intval($timestamp).trim(strtolower($uname));
+			//echo intval($timestamp).' '.$uname;
+			return User::encryptPassword( $raw_identifier, PASSWORD_SALT);
+		}
+		
+		//c5 install checks with c5org to see if this user is logged in
+		static function isRemotelyLoggedIn(){ 
+			$authData = UserInfo::getAuthData();
+			if( strlen($authData['auth_token']) && intval($authData['auth_timestamp']) && strlen($authData['auth_uname']) ){
+				Loader::helper('json');
+				$qStr = http_build_query( $authData, '', '&');
+				$authURL=KNOWLEDGE_BASE_AUTH_URL.'?'.$qStr; 
+				
+				//echo $authURL;
+				
+				if (function_exists('curl_init')) {
+					$curl_handle = curl_init();
+					curl_setopt($curl_handle, CURLOPT_URL, $authURL);
+					curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 15);
+					curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+					$response = curl_exec($curl_handle); 
+					if( !$response || !strstr($response,'logged') ) return false;
+					$responseData = JsonHelper::decode($response);
+					if($responseData->logged==1) return true; 
+				} 
+				return false;
+			}else{
+				UserInfo::endRemoteAuthSession();
+				return false;			
+			}
+		}	
 
 	}
 
@@ -539,7 +672,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$cID = $c->getCollectionID();
 					$cvID = $c->getVersionID();
 					$bID = $obj->getBlockID();
-					$gID = $this->gID;
 					$q = "select uID, cbgPermissions from CollectionVersionBlockPermissions where cID = '{$cID}' and cvID = '{$cvID}' and bID = '{$bID}' and uID > 0";
 					$r = $db->query($q);
 					if ($r) {
@@ -549,11 +681,55 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 						}
 					}
 					break;
+				case 'filesetlist':
+					$fsIDs = array();
+					foreach($obj->sets as $fs) {
+						$fsIDs[] = $fs->getFileSetID();
+					}
+					$where = "fsID in (" . implode(',', $fsIDs) . ")";
+
+					$gID = $this->gID;
+					$q = "select uID, MAX(canRead) as canRead, MAX(canSearch) as canSearch, max(canWrite) as canWrite, max(canAdmin) as canAdmin from FileSetPermissions where {$where} and uID > 0 group by uID";
+					$r = $db->Execute($q);
+					while ($row = $r->fetchRow()) {
+						$userPermissionsArray['permissions'] = $row;
+						$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+					}
+
+					break;
+				
+					break;
+				case 'fileset':
+					$fsID = $obj->getFileSetID();
+					$q = "select uID, canSearch, canRead, canWrite, canAdmin, canAdd from FileSetPermissions where fsID = '{$fsID}' and uID > 0";
+					$r = $db->query($q);
+					if ($r) {
+						while ($row = $r->fetchRow()) {
+							$userPermissionsArray['permissions'] = $row;
+							if ($row['canAdd'] == FilePermissions::PTYPE_CUSTOM) {
+								$userPermissionsArray['permissions']['canAddExtensions'] = $db->GetCol("select extension from FilePermissionFileTypes where uID = {$row['uID']} and fsID = {$fsID}");
+							}
+							$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+						}
+					}
+
+					break;
+				case 'file':
+					$fID = $obj->getFileID();
+					$q = "select uID, canRead, canWrite, canSearch, canAdmin from FilePermissions where fID = '{$fID}' and uID > 0";
+					$r = $db->query($q);
+					if ($r) {
+						while ($row = $r->fetchRow()) {
+							$userPermissionsArray['permissions'] = $row;
+							$this->uiArray[] = UserInfo::getByID($row['uID'], $userPermissionsArray);
+						}
+					}
+
+					break;
 				case 'area':
 					
 					$c = $obj->getAreaCollectionObject();
 					$cID = ($obj->getAreaCollectionInheritID() > 0) ? $obj->getAreaCollectionInheritID() : $c->getCollectionID();
-					$gID = $this->gID;
 					$v = array($cID, $obj->getAreaHandle());
 					$q = "select uID, agPermissions from AreaGroups where cID =  ? and arHandle = ? and uID > 0";
 					$r = $db->query($q, $v);
@@ -574,4 +750,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		function getUserInfoList() {
 			return $this->uiArray;
 		}
+		
+				
+		
 	}

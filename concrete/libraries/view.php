@@ -109,23 +109,66 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * @access private
 		 */
 		public function outputHeaderItems() {
-			$items = array();
-			if (is_array($this->headerItems['VIEW'])) {
-				foreach($this->headerItems['VIEW'] as $hi) {
-					if (!in_array($hi, $items)) {
-						print $hi . "\n";
-						$items[] = $hi;
+			
+			$a1 = (is_array($this->headerItems['CORE'])) ? $this->headerItems['CORE'] : array();
+			$a2 = (is_array($this->headerItems['VIEW'])) ? $this->headerItems['VIEW'] : array();
+			$a3 = (is_array($this->headerItems['CONTROLLER'])) ? $this->headerItems['CONTROLLER'] : array();
+			
+			$items = array_merge($a1, $a2, $a3);
+			$items = array_unique($items);
+			
+			// Loop through all items
+			// If it is a header output object, place each item in a separate array for its container directory
+			// Otherwise, put it in the outputPost array
+			
+			$outputPost = array();
+			$output = array();
+			
+			/*
+			if (ENABLE_ASSET_COMPRESSION == true) {
+				foreach($items as $item) {
+					if (is_a($item, 'JavaScriptOutputObject')) {
+						$output['JAVASCRIPT'][dirname($item->file)][] = $item;
+					} else if (is_a($item, 'CSSOutputObject')) {
+						$output['CSS'][dirname($item->file)][] = $item;
+					} else {
+						$outputPost[] = $item;
 					}
 				}
-			}
-			if (is_array($this->headerItems['CONTROLLER'])) {
-				foreach($this->headerItems['CONTROLLER'] as $hi) {
-					if (!in_array($hi, $items)) {
-						print $hi . "\n";
-						$items[] = $hi;
+	
+				$html = Loader::helper("html");
+				foreach($output as $type => $item) {
+					switch($type) {
+						case 'JAVASCRIPT':
+							foreach($item as $base => $ind) {
+								$src = REL_DIR_FILES_TOOLS_REQUIRED . '/minify?b=' . trim($base, '/') . '&f=';
+								foreach($ind as $i) {
+									$src .= basename($i->file) . ',';
+								}
+								print $html->javascript(trim($src, ',')) . "\n";
+							}
+							break;
+						case 'CSS':
+							foreach($item as $base => $ind) {
+								$src = REL_DIR_FILES_TOOLS_REQUIRED . '/minify?b=' . trim($base, '/') . '&f=';
+								foreach($ind as $i) {
+									$src .= basename($i->file) . ',';
+								}
+								print $html->css(trim($src, ',')) . "\n";
+							}
+							break;					
 					}
 				}
+			} else {
+				$outputPost = $items;
 			}
+			*/
+			
+			foreach($items as $hi) {
+				print $hi . "\n";
+			}
+			
+			
 		}
 		
 		/** 
@@ -375,7 +418,27 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $ret;
 		}
 
-
+		/**
+		 * Formats seconds in 8m23s format
+		 *
+		 * Multi Line Description
+		 * @author Alan Storm <alan.storm@alanstorm.com>
+		 * @package SkyVibe
+		 * @var type $varName
+		 * @param type $var_name
+		 * @return type $var_name
+		 */
+		public function formatTimestampAsMinutesSeconds($seconds){
+			if ($seconds == 0) {
+				return t('Never');
+			}
+			else{
+				$seconds = $seconds-time();
+				return floor($seconds / 60) . 'm' . $seconds % 60 . 's';
+			}
+			
+		}
+		
 		/**
 		 * render's a fata error using the built-in view. This is currently only
 		 * used when the database connection fails
@@ -589,6 +652,15 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					// if we're passing a view but our render override is not null, that means that we're passing 
 					// a new view from within a controller. If that's the case, then we DON'T override the viewPath, we want to keep it
 					
+					$db = Loader::db();
+					// In order to enable editable 404 pages, other editable pages that we render without actually visiting
+					if (is_object($db) && $view == '/page_not_found') {
+						$pp = Page::getByPath($view);
+						if (!$pp->isError()) {
+							$this->c = $pp;
+						}
+					}
+					
 					$viewPath = $view;
 					if ($this->controller->getRenderOverride() != '' && $this->getCollectionObject() != null) {
 						// we are INSIDE a collection renderring a view. Which means we want to keep the viewPath that of the collection
@@ -639,6 +711,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$blocks = $view->getBlocks();
 					foreach($blocks as $b1) {
 						$btc = Loader::controller($b1);
+						// now we inject any custom template CSS and JavaScript into the header
+						if('Controller' != get_class($btc)){
+							$btc->outputAutoHeaderItems();
+						}
 						$btc->runTask('on_page_view', $view);
 					}
 				}
@@ -651,7 +727,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 
 				$innerContent = ob_get_contents();
 				
-				if (ob_get_level() == (OB_INITIAL_LEVEL + 1)) {
+				if (ob_get_level() > OB_INITIAL_LEVEL) {
 					ob_end_clean();
 				}
 				

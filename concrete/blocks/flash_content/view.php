@@ -1,7 +1,7 @@
 <?php 
 	defined('C5_EXECUTE') or die(_("Access Denied."));
 	$file = $controller->getFileObject();
-	$dimensions = $file->getDimensions();
+	$dimensions = @getimagesize($file->getPath());
 	if (is_array($dimensions)) {
 		$w = $dimensions[0];
 		$h = $dimensions[1];
@@ -31,7 +31,7 @@ if ($c->isEditMode()) { ?>
 		quality:  "<?php echo $controller->quality?>"
 	};
 	flashvars = {};
-	swfobject.embedSWF("<?php echo REL_DIR_FILES_UPLOADED?>/<?php echo $file->getFilename()?>", "swfcontent<?php echo $bID?>", "<?php echo $w?>", "<?php echo $h?>", "<?php echo $controller->minVersion?>", false, flashvars, params);
+	swfobject.embedSWF("<?php echo $file->getRelativePath()?>", "swfcontent<?php echo $bID?>", "<?php echo $w?>", "<?php echo $h?>", "<?php echo $controller->minVersion?>", false, flashvars, params);
 	</script>
 	
 <?php  } ?>

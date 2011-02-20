@@ -3,18 +3,47 @@
         "http://www.w3.org/TR/2000/REC-xhtml1-20000126/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=<?php echo APP_CHARSET?>">
 <?php 
+$html = Loader::helper('html');
 $v = View::getInstance();
 $v->disableEditing();
-require(DIR_FILES_ELEMENTS_CORE . '/header_required.php'); ?>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.dashboard.css";</style>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.colorpicker.css";</style>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.menus.css";</style>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.forms.css";</style>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.calendar.css";</style>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.dialog.css";</style>
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.asset.library.css";</style>
+
+// Required JavaScript
+
+$v->addHeaderItem($html->javascript('jquery.js'));
+$v->addHeaderItem($html->javascript('ccm.dialog.js'));
+$v->addHeaderItem($html->javascript('ccm.base.js'));
+$v->addHeaderItem('<script type="text/javascript" src="' . REL_DIR_FILES_TOOLS_REQUIRED . '/i18n_js"></script>'); 
+
+$v->addHeaderItem($html->javascript('jquery.rating.js'));
+$v->addHeaderItem($html->javascript('jquery.form.js'));
+$v->addHeaderItem($html->javascript('ccm.ui.js'));
+$v->addHeaderItem($html->javascript('ccm.filemanager.js'));
+$v->addHeaderItem($html->javascript('ccm.themes.js'));
+$v->addHeaderItem($html->javascript('jquery.ui.js'));
+$v->addHeaderItem($html->javascript('jquery.colorpicker.js'));
+$v->addHeaderItem($html->javascript('ccm.popup_login.js'));
+
+if (LANGUAGE != 'en') {
+	$v->addHeaderItem($html->javascript('i18n/ui.datepicker-<?php echo LANGUAGE?>.js'));
+}
+
+// Require CSS
+$v->addHeaderItem($html->css('ccm.dashboard.css'));
+$v->addHeaderItem($html->css('ccm.colorpicker.css'));
+$v->addHeaderItem($html->css('ccm.menus.css'));
+$v->addHeaderItem($html->css('ccm.forms.css'));
+$v->addHeaderItem($html->css('ccm.filemanager.css'));
+$v->addHeaderItem($html->css('ccm.calendar.css'));
+$v->addHeaderItem($html->css('ccm.dialog.css'));
+$v->addHeaderItem($html->css('jquery.rating.css'));
+$v->addHeaderItem($html->css('jquery.ui.css'));
+$v->addHeaderItem($html->css('ccm.popup_login.css'));
+
+require(DIR_FILES_ELEMENTS_CORE . '/header_required.php'); 
+
+?>
 
 <script type="text/javascript">
 <?php 
@@ -24,24 +53,13 @@ print "var CCM_SECURITY_TOKEN = '" . $valt->generate() . "';";
 
 </script>
 
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery.form.2.0.2.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.ui.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.themes.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery.ui.1.5.2.no_datepicker.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery.ui.datepicker.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery.colorpicker.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.dialog.js"></script>
-
-<?php  if (LANGUAGE != 'en') { ?>
-	<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/i18n/ui.datepicker-<?php echo LANGUAGE?>.js"></script>
-<?php  } ?>
-
-
 <script type="text/javascript">
 $(function() {
 	$("div.message").show('highlight', {
 		color: '#ffffff'
 	});
+	
+	ccm_setupDashboardHeaderMenu();
 });
 </script>
 </head>
@@ -50,26 +68,26 @@ $(function() {
 <div id="ccm-dashboard-page">
 
 <div id="ccm-dashboard-header">
-<a href="<?php echo $this->url('/dashboard/')?>"><img src="<?php echo ASSETS_URL_IMAGES?>/dashboard/logo.png" height="45" width="48" alt="Concrete5" /></a>
+<a href="<?php echo $this->url('/dashboard/')?>"><img src="<?php echo ASSETS_URL_IMAGES?>/logo_menu.png" height="49" width="49" alt="Concrete5" /></a>
 </div>
 
+<?php  
+Loader::block('autonav');
+$supportHelper=Loader::helper('concrete/support'); 
+$nh = Loader::helper('navigation');
+$dashboard = Page::getByPath("/dashboard");
+$nav = AutonavBlockController::getChildPages($dashboard);
+?>
 
 <div id="ccm-system-nav-wrapper1">
 <div id="ccm-system-nav-wrapper2">
 <ul id="ccm-system-nav">
 <li><a id="ccm-nav-return" href="<?php echo $this->url('/')?>"><?php echo t('Return to Website')?></a></li>
-<li><a id="ccm-nav-dashboard-help" href="<?php echo MENU_HELP_URL?>"><?php echo t('Help')?></a></li>
+<li><a id="ccm-nav-dashboard-help" href="<?php echo MENU_HELP_URL?>"  helpwaiting="<?php echo (ConcreteSupportHelper::hasNewHelpResponse())?1:0 ?>"><?php echo t('Help')?></a></li>
 <li class="ccm-last"><a id="ccm-nav-logout" href="<?php echo $this->url('/login/', 'logout')?>"><?php echo t('Sign Out')?></a></li>
 </ul>
 </div>
 </div>
-
-<?php  
-Loader::block('autonav');
-$nh = Loader::helper('navigation');
-$dashboard = Page::getByPath("/dashboard");
-$nav = AutonavBlockController::getChildPages($dashboard);
-?>
 
 <div id="ccm-dashboard-nav">
 <ul>
@@ -106,12 +124,20 @@ foreach($nav as $n2) {
 	} else {
 		$parent = $pcs[2];
 	}
-
+	
 	$subpages = AutonavBlockController::getChildPages($parent);
-	if (count($subpages) > 0) { 
+	$subpagesP = array();
+	foreach($subpages as $sc) {
+		$cp = new Permissions($sc);
+		if ($cp->canRead()) { 
+			$subpagesP[] = $sc;
+		}
+	}
+	
+	if (count($subpagesP) > 0) { 
 	?>	
 		<div id="ccm-dashboard-subnav">
-		<ul><?php  foreach($subpages as $sc) { ?><li <?php  if ($sc->getCollectionID() == $c->getCollectionID()) { ?> class="nav-selected" <?php  } ?>><a href="<?php echo $nh->getLinkToCollection($sc, false, true)?>"><?php echo t($sc->getCollectionName())?></a></li><?php  } ?></ul>
+		<ul><?php  foreach($subpagesP as $sc) { ?><li <?php  if ($sc->getCollectionID() == $c->getCollectionID()) { ?> class="nav-selected" <?php  } ?>><a href="<?php echo $nh->getLinkToCollection($sc, false, true)?>"><?php echo t($sc->getCollectionName())?></a></li><?php  } ?></ul>
 		<br/><div class="ccm-spacer">&nbsp;</div>
 		</div>
 	
@@ -125,6 +151,12 @@ foreach($nav as $n2) {
 		print Loader::element('dashboard/notification_update', array('latest_version' => $latest_version));
 	}
 ?>
+
+<?php  if(strlen(APP_VERSION)){ ?>
+<div id="ccm-dashboard-version">
+	<?php echo  t('Version') ?>: <?php echo APP_VERSION ?>
+</div>
+<?php  } ?>
 
 <div id="ccm-dashboard-content">
 

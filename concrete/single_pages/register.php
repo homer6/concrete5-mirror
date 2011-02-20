@@ -2,23 +2,33 @@
 <h1><?php echo t('Site Registration')?></h1>
 <div class="ccm-form">
 
-<?php  if ($registered) { ?>
-	
-	<p><strong><?php echo t('Your account has been created, and you are now logged in.')?></strong><br/><br/>
-	<a href="<?php echo $this->url('/')?>"><?php echo t('Return to Home')?></a>
-	
-
-<?php  } else if ($validate) { ?>
-
-	<p><?php echo t('You are registered but you need to validate your email address. Some or all functionality on this site will be limited until you do so.')?></p>
-	<p><?php echo t('An email has been sent to your email address. Click on the URL contained in the email to validate your email address.')?></p>
-	<p><a href="<?php echo $this->url('/')?>"><?php echo t('Return to Home')?></a></p>
-
-
-<?php  } else { ?>
+<?php  
+if($success) { 
+	switch($success) { 
+		case "registered": 
+			?>
+			<p><strong><?php echo $successMsg ?></strong><br/><br/>
+			<a href="<?php echo $this->url('/')?>"><?php echo t('Return to Home')?></a>
+			<?php  
+		break;
+		case "validate": 
+			?>
+			<p><?php echo $successMsg[0] ?></p>
+			<p><?php echo $successMsg[1] ?></p>
+			<p><a href="<?php echo $this->url('/')?>"><?php echo t('Return to Home')?></a></p>
+			<?php 
+		break;
+		case "pending":
+			?>
+			<p><?php echo $successMsg ?></p>
+			<p><a href="<?php echo $this->url('/')?>"><?php echo t('Return to Home')?></a></p>
+            <?php 
+		break;
+	}
+		
+} else { ?>
 
 <form method="post" action="<?php echo $this->url('/register', 'do_register')?>">
-
 
 	<?php  if ($displayUserName) { ?>
 		<div>
@@ -68,7 +78,6 @@
 	</div>
 
 </form>
-
 <?php  } ?>
 
 </div>

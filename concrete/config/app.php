@@ -9,18 +9,16 @@
  **/
 defined('C5_EXECUTE') or die(_("Access Denied.")); 
 
-// We define these here because we want to be able to turn them off during installation
 if (!defined('ENABLE_CACHE')) {
-	define('ENABLE_CACHE', true);
+	Config::getOrDefine('ENABLE_CACHE', true); 
 }
-
 # permissions model - valid options are 'advanced' or 'simple'
 if (!defined('PERMISSIONS_MODEL')) {
 	Config::getOrDefine('PERMISSIONS_MODEL', 'simple');
 }
 
 if (!defined('SITE')) {
-	Config::getOrDefine('SITE', 'Concrete5');
+	Config::getOrDefine('SITE', 'concrete5');
 }
 
 if (!defined('ENABLE_LOG_EMAILS')) {
@@ -70,3 +68,91 @@ if (URL_REWRITING_ALL == true) {
 
 define('REL_DIR_FILES_TOOLS_BLOCKS', REL_DIR_FILES_TOOLS . '/blocks'); // this maps to the /tools/ directory in the blocks subdir
 define('REL_DIR_FILES_TOOLS_PACKAGES', REL_DIR_FILES_TOOLS . '/packages'); 
+
+# File settings
+if (!defined('DIR_FILES_UPLOADED')) {
+	Config::getOrDefine('DIR_FILES_UPLOADED', DIR_BASE . '/files');
+}
+
+define('DIR_FILES_TRASH', DIR_FILES_UPLOADED . '/trash');
+define('DIR_FILES_INCOMING', DIR_FILES_UPLOADED . '/incoming');
+define('DIR_FILES_AVATARS_STOCK', DIR_FILES_UPLOADED . '/stock_avatars');
+
+if (DIR_FILES_UPLOADED != DIR_BASE . '/files') {
+	define('ENABLE_ALTERNATE_DEFAULT_STORAGE', true);
+} else {
+	define('ENABLE_ALTERNATE_DEFAULT_STORAGE', false);
+}
+
+# User & Registration Settings
+
+if (!defined('ENABLE_OPENID_AUTHENTICATION')) { 
+	Config::getOrDefine('ENABLE_OPENID_AUTHENTICATION', false);
+}
+if (!defined('ENABLE_USER_PROFILES')) { 
+	Config::getOrDefine('ENABLE_USER_PROFILES', false);
+}
+
+# If user registration with email address is true we don't use username's - we just use uEmail and we populate uName with the email address
+if (!defined('USER_REGISTRATION_WITH_EMAIL_ADDRESS')) {
+	Config::getOrDefine('USER_REGISTRATION_WITH_EMAIL_ADDRESS', false);
+}
+
+if (!defined('USER_VALIDATE_EMAIL')) {
+	Config::getOrDefine('USER_VALIDATE_EMAIL', false);	
+}
+
+if (!defined('USER_VALIDATE_EMAIL_REQUIRED')) {
+	Config::getOrDefine('USER_VALIDATE_EMAIL_REQUIRED', false);	
+}
+
+if (!defined('USER_REGISTRATION_APPROVAL_REQUIRED')) {
+	Config::getOrDefine('USER_REGISTRATION_APPROVAL_REQUIRED', false);
+}
+
+if (!defined('REGISTRATION_TYPE')) {
+	Config::getOrDefine('REGISTRATION_TYPE', 'disabled');	
+}
+
+if (!defined('ENABLE_REGISTRATION')) {
+	Config::getOrDefine('ENABLE_REGISTRATION', false);	
+}
+
+
+if (!defined('UPLOAD_FILE_EXTENSIONS_ALLOWED')) {
+	Config::getOrDefine('UPLOAD_FILE_EXTENSIONS_ALLOWED','*.flv;*.jpg;*.gif;*.jpeg;*.ico;*.docx;*.xla;*.png;*.psd;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt;*.kml');
+}
+
+# User & Registration Settings
+
+if (!defined('ENABLE_OPENID_AUTHENTICATION')) { 
+	Config::getOrDefine('ENABLE_OPENID_AUTHENTICATION', false);
+}
+if (!defined('ENABLE_USER_PROFILES')) { 
+	Config::getOrDefine('ENABLE_USER_PROFILES', false);
+}
+
+# If user registration with email address is true we don't use username's - we just use uEmail and we populate uName with the email address
+if (!defined('USER_REGISTRATION_WITH_EMAIL_ADDRESS')) {
+	Config::getOrDefine('USER_REGISTRATION_WITH_EMAIL_ADDRESS', false);
+}
+
+if (!defined('USER_VALIDATE_EMAIL')) {
+	Config::getOrDefine('USER_VALIDATE_EMAIL', false);	
+}
+
+if (!defined('USER_VALIDATE_EMAIL_REQUIRED')) {
+	Config::getOrDefine('USER_VALIDATE_EMAIL_REQUIRED', false);	
+}
+
+if (!defined('USER_REGISTRATION_APPROVAL_REQUIRED')) {
+	Config::getOrDefine('USER_REGISTRATION_APPROVAL_REQUIRED', false);
+}
+
+if (!defined('REGISTRATION_TYPE')) {
+	Config::getOrDefine('REGISTRATION_TYPE', 'disabled');	
+}
+
+if (!defined('ENABLE_REGISTRATION')) {
+	Config::getOrDefine('ENABLE_REGISTRATION', false);	
+}

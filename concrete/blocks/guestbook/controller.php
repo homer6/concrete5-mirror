@@ -22,9 +22,7 @@
  *
  */
 	defined('C5_EXECUTE') or die(_("Access Denied."));
-	class GuestbookBlockController extends BlockController {
-		
-		  
+	class GuestbookBlockController extends BlockController {		
 		protected $btTable = 'btGuestBook';
 		protected $btInterfaceWidth = "300";
 		protected $btInterfaceHeight = "260";	
@@ -43,6 +41,11 @@
 		}			
 			
 		function delete() {
+			$ip = Loader::helper('validation/ip');
+			if (!$ip->check()) {
+				$this->set('invalidIP', $ip->getErrorMessage());			
+				return;
+			}
 			$E = new GuestBookBlockEntry($this->bID);
 			$bo = $this->getBlockObject();
 			global $c;
@@ -80,7 +83,13 @@
 		 * Handles the form post for adding a new guest book entry
 		 *
 		*/	
-		function action_form_save_entry() {			
+		function action_form_save_entry() {	
+			$ip = Loader::helper('validation/ip');
+			if (!$ip->check()) {
+				$this->set('invalidIP', $ip->getErrorMessage());			
+				return;
+			}
+
 			// get the cID from the block Object
 			$bo = $this->getBlockObject();
 			global $c;
@@ -199,6 +208,11 @@
 		 *
 		*/
 		function action_removeEntry() {
+			$ip = Loader::helper('validation/ip');
+			if (!$ip->check()) {
+				$this->set('invalidIP', $ip->getErrorMessage());			
+				return;
+			}
 			$bp = $this->getPermissionsObject(); 
 			if($bp->canWrite()) {
 				$Entry = new GuestBookBlockEntry($this->bID);
@@ -214,6 +228,12 @@
 		 *
 		*/
 		function action_approveEntry() {
+			$ip = Loader::helper('validation/ip');
+			if (!$ip->check()) {
+				$this->set('invalidIP', $ip->getErrorMessage());			
+				return;
+			}
+
 			$bp = $this->getPermissionsObject(); 
 			if($bp->canWrite()) {
 				$Entry = new GuestBookBlockEntry($this->bID);
@@ -227,6 +247,12 @@
 		 *
 		*/
 		function action_unApproveEntry() {
+			$ip = Loader::helper('validation/ip');
+			if (!$ip->check()) {
+				$this->set('invalidIP', $ip->getErrorMessage());			
+				return;
+			}
+
 			$bp = $this->getPermissionsObject(); 
 			if($bp->canWrite()) {
 				$Entry = new GuestBookBlockEntry($this->bID);
@@ -306,8 +332,35 @@
 			$db = Loader::db();
 			$query = "INSERT INTO btGuestBookEntries (bID, cID, uID, user_name, user_email, commentText, approved) VALUES (?, ?, ?, ?, ?, ?, ?)";
 			$res = $db->query($query, array($this->bID, $cID, intval($uID), $txt->sanitize($name), $txt->sanitize($email), $txt->sanitize($comment), $approved) );
+
+			$this->adjustCountCache(1);
 		}
-		
+
+		/**
+		* Adjusts cache of count bynumber specified, 
+		*
+		* Refreshes from db if cache is invalidated or
+		* false is called in
+		*/		
+		private function adjustCountCache($number=false){
+			$ca 	= new Cache();
+			$db 	= Loader::db();			
+			$count = $ca->get('GuestBookCount',$this->bID);
+			if($count && $number){
+				$count += $number;				
+			}
+			else{
+				$q = 'SELECT count(bID) as count
+				FROM btGuestBookEntries
+				WHERE bID = ?
+				AND approved=1';				
+				$v = Array($this->bID);
+				$rs = $db->query($q,$v);
+				$row = $rs->FetchRow();
+				$count = $row['count'];
+			}			
+			$ca->set('GuestBookCount',$this->bID,$count);
+		}
 		
 		/** 
 		 * Updates the given guestbook entry for the current block
@@ -332,18 +385,21 @@
 			$db = Loader::db();
 			$query = "DELETE FROM btGuestBookEntries WHERE entryID=? AND bID=?";
 			$res = $db->query($query, array($entryID,$this->bID));
+			$this->adjustCountCache(-1);
 		}
 		
 		function approveEntry($entryID) {
 			$db = Loader::db();
 			$query = "UPDATE btGuestBookEntries SET approved = 1 WHERE entryID=? AND bID=?";
 			$res = $db->query($query, array($entryID,$this->bID));
+			$this->adjustCountCache(1);
 		}
 	
 		function unApproveEntry($entryID) {
 			$db = Loader::db();
 			$query = "UPDATE btGuestBookEntries SET approved = 0 WHERE entryID=? AND bID=?";
 			$res = $db->query($query, array($entryID,$this->bID));
+			$this->adjustCountCache(-1);
 		}
 		
 		/** 
@@ -353,6 +409,7 @@
 			$db = Loader::db();
 			$query = "DELETE FROM btGuestBookEntries WHERE bID=? AND cID = ?";
 			$res = $db->query($query, array($this->bID, $cID));	
+			$this->adjustCountCache(false);
 		}
 		
 		/** 

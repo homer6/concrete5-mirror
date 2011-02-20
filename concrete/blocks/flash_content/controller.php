@@ -25,14 +25,13 @@
 		
 		function getFileID() {return $this->fID;}
 		function getFileObject() {
-			return LibraryFileBlockController::getFile($this->fID);
+			return File::getByID($this->fID);
 		}		
 		function getLinkText() {return $this->fileLinkText;}
 		
-		function delete() {
-			LibraryFileBlockController::delete($this->fID);
-			parent::delete();
+		public function on_page_view() {
+			$html = Loader::helper('html');
+			$this->addHeaderItem($html->javascript('swfobject.js'));
 		}
-		
 	}
 ?>

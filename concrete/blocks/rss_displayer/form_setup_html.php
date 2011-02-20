@@ -8,11 +8,11 @@ table#rssDisplayerSetup td{ font-size:12px }
 <table id="rssDisplayerSetup" width="100%">
 	<tr>
 		<th><?php echo t('Feed URL')?>:</th>
-		<td width="100%"><input id="ccm_rss_displayer_url" name="url" value="<?php echo $rssObj->url?>" maxlength="255" type="text" style="width:100%"></td>
+		<td width="100%"><input id="ccm_rss_displayer_url" name="url" value="<?php echo $rssObj->url?>" maxlength="255" type="text" style="width:95%"></td>
 	</tr>
 	<tr>
 		<th><?php echo t('Feed Title')?>: (<?php echo t('Optional')?>)</th>
-		<td><input id="ccm_rss_displayer_title" name="title" value="<?php echo $rssObj->title?>" maxlength="255" type="text" style="width:100%"></td>
+		<td><input id="ccm_rss_displayer_title" name="title" value="<?php echo $rssObj->title?>" maxlength="255" type="text" style="width:95%"></td>
 	</tr>	
 	<tr>
 		<th><?php echo t('Number of items to display')?>:</th>

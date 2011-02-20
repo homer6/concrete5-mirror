@@ -2,8 +2,8 @@
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
 
-// Block ID = $bID
-// get the block and 
+// File ID = $fID
+// get the file and 
 
 
 // Find out where to take the user once they're done.
@@ -26,7 +26,7 @@ $returnURL = ($_POST['returnURL']) ? $_POST['returnURL'] : $_SERVER['HTTP_REFERE
 		<div class="ccm-error-response"><?php echo $error?></div>
 	<?php  } ?>
 	
-	<form action="<?php echo  View::url('/download_file', 'submit_password', $bID) ?>" method="post">
+	<form action="<?php echo  View::url('/download_file', 'submit_password', $fID) ?>" method="post">
 		<input type="hidden" value="<?php echo $returnURL?>" name="returnURL" />
 		<label for="password"><?php echo t('Password')?>: <input type="text" name="password" /></label>
 		<br /><br />

@@ -1,10 +1,12 @@
 <?php 
 
 defined('C5_EXECUTE') or die(_("Access Denied."));
-class LoginController extends Controller {
+Loader::library('authentication/open_id');
+
+class LoginController extends Controller { 
 	
 	public $helpers = array('form');
-	
+	private $openIDReturnTo;
 	public function on_start() {
 		$this->error = Loader::helper('validation/error');
 		if (USER_REGISTRATION_WITH_EMAIL_ADDRESS == true) {
@@ -12,9 +14,11 @@ class LoginController extends Controller {
 		} else {
 			$this->set('uNameLabel', t('Username'));
 		}
-		if(strlen($_GET['uName'])) { // pre-populate the username if supplied
+		if (strlen($_GET['uName'])) { // pre-populate the username if supplied
 			$this->set("uName",$_GET['uName']);
 		}
+		
+		$this->openIDReturnTo = BASE_URL . View::url("/login", "complete_openid"); 
 	}
 	
 	/* automagically run by the controller once we're done with the current method */
@@ -25,10 +29,97 @@ class LoginController extends Controller {
 		}
 	}
 	
-	public function do_login() { 
+	public function complete_openid_email() {
+		$email = $this->post('uEmail');
+		$vals = Loader::helper('validation/strings');
+		$valc = Loader::helper('concrete/validation');
+		if (!$vals->email($email)) {
+			$this->error->add(t('Invalid email address provided.'));
+		} else if (!$valc->isUniqueEmail($email)) {
+			$this->error->add(t("The email address %s is already in use. Please choose another.", $_POST['uEmail']));
+		}	
 	
+		if (!$this->error->has()) {
+			// complete the openid record with the provided email
+			if (isset($_SESSION['uOpenIDRequested'])) {
+				$oa = new OpenIDAuth();
+				$ui = $oa->registerUser($_SESSION['uOpenIDRequested'], $email);
+				User::loginByUserID($ui->getUserID());
+				$this->finishLogin();
+			}
+		}
+	}
+	
+	public function view() {
+		$this->clearOpenIDSession();
+	}
+	
+	private function clearOpenIDSession() {
+		unset($_SESSION['uOpenIDError']);
+		unset($_SESSION['uOpenIDRequested']);
+		unset($_SESSION['uOpenIDExistingUser']);
+	}
+	
+	public function complete_openid() {
+		$v = Loader::helper('validation/numbers');
+		$oa = new OpenIDAuth();
+		$oa->setReturnURL($this->openIDReturnTo);
+		$oa->complete();
+		$response = $oa->getResponse();
+		if ($response->code == OpenIDAuth::E_CANCEL) {
+        	$this->error->add(t('OpenID Verification Cancelled'));
+        	$this->clearOpenIDSession();
+        } else if ($response->code == OpenIDAuth::E_FAILURE) {
+        	$this->error->add(t('OpenID Authentication Failed: %s', $response->message));
+        	$this->clearOpenIDSession();
+        } else {
+        	switch($response->code) {
+        		case OpenIDAuth::S_USER_CREATED:
+        		case OpenIDAuth::S_USER_AUTHENTICATED:
+					if ($v->integer($response->message)) {
+						User::loginByUserID($response->message);
+						$this->finishLogin();
+					}
+        			break;
+        		case OpenIDAuth::E_REGISTRATION_EMAIL_INCOMPLETE:
+        			// we don't have an email address, but the account is valid
+					// valid display identifier comes back in message
+					$_SESSION['uOpenIDRequested'] = $response->message;
+					$_SESSION['uOpenIDError'] = OpenIDAuth::E_REGISTRATION_EMAIL_INCOMPLETE;
+					break; 
+				case OpenIDAuth::E_REGISTRATION_EMAIL_EXISTS:
+					// an email address came back with us from the openid server
+					// but that email already exists
+					$_SESSION['uOpenIDRequested'] = $response->openid;
+					$_SESSION['uOpenIDExistingUser'] = $response->user;
+					$_SESSION['uOpenIDError'] = OpenIDAuth::E_REGISTRATION_EMAIL_EXISTS;
+					break;
+        	}
+		}
+		$this->set('oa', $oa);		
+	}
+	
+
+	public function do_login() { 
+		$ip = Loader::helper('validation/ip');
 		$vs = Loader::helper('validation/strings');
+		
+		$loginData['success']=0;
+		
 		try {
+			if (!$ip->check()) {				
+				throw new Exception($ip->getErrorMessage());
+			}
+			if (OpenIDAuth::isEnabled() && $vs->notempty($this->post('uOpenID'))) {
+				$oa = new OpenIDAuth();
+				$oa->setReturnURL($this->openIDReturnTo);
+				$return = $oa->request($this->post('uOpenID'));
+				$resp = $oa->getResponse();
+				if ($resp->code == OpenIDAuth::E_INVALID_OPENID) {
+					throw new Exception(t('Invalid OpenID.'));
+				}
+			}
+			
 			if ((!$vs->notempty($this->post('uName'))) || (!$vs->notempty($this->post('uPassword')))) {
 				if (USER_REGISTRATION_WITH_EMAIL_ADDRESS) {
 					throw new Exception(t('An email address and password are required.'));
@@ -36,10 +127,13 @@ class LoginController extends Controller {
 					throw new Exception(t('A username and password are required.'));
 				}
 			}
-
+			
 			$u = new User($this->post('uName'), $this->post('uPassword'));
 			if ($u->isError()) {
 				switch($u->getError()) {
+					case USER_NON_VALIDATED:
+						throw new Exception(t('This account has not yet been validated. Please check the email associated with this account and follow the link it contains.'));
+						break;
 					case USER_INVALID:
 						if (USER_REGISTRATION_WITH_EMAIL_ADDRESS) {
 							throw new Exception(t('Invalid email address or password.'));
@@ -51,35 +145,111 @@ class LoginController extends Controller {
 						throw new Exception(t('This user is inactive. Please contact us regarding this account.'));
 						break;
 				}
-			}
-
-			if ($this->post('uMaintainLogin')) {
-				$u->setUserForeverCookie();
-			}
-			
-			$rcID = $this->post('rcID');
-			$nh = Loader::helper('validation/numbers');
-			if ($nh->integer($rcID)) {
-				header('Location: ' . BASE_URL . DIR_REL . '/index.php?cID=' . $rcID);
-				exit;
-			}
-
-			$dash = Page::getByPath("/dashboard", "RECENT");
-			$dbp = new Permissions($dash);
-			if ($dbp->canRead()) {
-				$this->redirect('/dashboard');
 			} else {
-				$this->redirect('/');
-			}
 			
+				if (OpenIDAuth::isEnabled() && $_SESSION['uOpenIDExistingUser'] > 0) {
+					$oa = new OpenIDAuth();
+					if ($_SESSION['uOpenIDExistingUser'] == $u->getUserID()) {
+						// the account we logged in with is the same as the existing user from the open id. that means
+						// we link the account to open id and keep the user logged in.
+						$oa->linkUser($_SESSION['uOpenIDRequested'], $u);
+					} else {
+						// The user HAS logged in. But the account they logged into is NOT the same as the one
+						// that links to their OpenID. So we log them out and tell them so.
+						$u->logout();
+						throw new Exception(t('This account does not match the email address provided.'));
+					}
+				}
+				
+				$loginData['success']=1;
+				$loginData['msg']=t('Login Successful');	
+				$loginData['uID'] = intval($u->getUserID());
+				if($_REQUEST['remote'] && intval($_REQUEST['timestamp'])){ 
+					$loginData['auth_token'] = 	UserInfo::generateAuthToken( $u->getUserName(), intval($_REQUEST['timestamp']) );
+					//is this user in a support group? 
+					foreach( RemoteMarketplaceHelper::getSupportGroups() as $group){
+						if($u->inGroup($group)){
+							$inValidSupportGroup=1;
+							break;
+						}
+					}
+					$loginData['in_support_group'] = intval($inValidSupportGroup);
+				}
+			}
+
+			$loginData = $this->finishLogin($loginData);
 			
 		} catch(Exception $e) {
+			$ip->logSignupRequest();
+			if ($ip->signupRequestThreshholdReached()) {
+				$ip->createIPBan();
+			}
 			$this->error->add($e);
+			$loginData['error']=$e->getMessage();
+		}
+		
+		if( $_REQUEST['format']=='JSON' ){
+			$jsonHelper=Loader::helper('json'); 
+			echo $jsonHelper->encode($loginData);
+			die;
+		}	
+	}
+
+	protected function finishLogin( $loginData=array() ) {
+		$u = new User();
+		if ($this->post('uMaintainLogin')) {
+			$u->setUserForeverCookie();
+		}
+		$rcID = $this->post('rcID');
+		$nh = Loader::helper('validation/numbers');
+
+		//set redirect url
+		if ($nh->integer($rcID)) {
+			$loginData['redirectURL'] = BASE_URL . DIR_REL . '/index.php?cID=' . $rcID;
+		}elseif( strlen($rcID) ){
+			$loginData['redirectURL'] = $rcID;
+		}
+		
+		//full page login redirect (non-ajax login)
+		if( strlen($loginData['redirectURL']) && $_REQUEST['format']!='JSON' ){ 
+			header('Location: ' . $loginData['redirectURL']);
+			exit;	
+		}
+		
+		//not sure why there's this second redirect approach, but oh well...
+		if ($this->post('redirect') != '' && $this->isValidExternalUrl($this->post('redirect'))) {
+			$loginData['redirectURL']=$this->post('redirect');
+		}
+		
+		$dash = Page::getByPath("/dashboard", "RECENT");
+		$dbp = new Permissions($dash);		
+		
+		Events::fire('on_user_login',$this);
+		
+		//End JSON Login
+		if($_REQUEST['format']=='JSON') 
+			return $loginData;		
+		
+		//Full page login, standard redirection
+		if ($loginData['redirectURL']) {
+			//make double secretly sure there's no caching going on
+			header("Cache-Control: no-store, no-cache, must-revalidate");
+			header("Pragma: no-cache");
+			header('Expires: Fri, 30 Oct 1998 14:19:41 GMT'); //in the past		
+			$this->externalRedirect( $loginData['redirectURL'] );
+		}else if ($dbp->canRead()) {
+			$this->redirect('/dashboard');
+		} else {
+			$this->redirect('/');
 		}
 	}
-	
+
 	public function password_sent() {
-		$this->set('intro_msg', t('An email containing your password has been sent to your account address.'));
+		$this->set('intro_msg', $this->getPasswordSentMsg() );
+	}
+	
+	public function getPasswordSentMsg(){
+		return t('An email containing your password has been sent to your account address.');
 	}
 	
 	public function logout() {
@@ -103,6 +273,8 @@ class LoginController extends Controller {
 	}
 	
 	public function forgot_password() {
+		$loginData['success']=0;
+	
 		$vs = Loader::helper('validation/strings');
 		$em = $this->post('uEmail');
 		try {
@@ -130,13 +302,24 @@ class LoginController extends Controller {
 				}
 			}
 			$mh->load('forgot_password');
-			$mh->sendMail();
+			@$mh->sendMail();
 			
-			$this->redirect('/login', 'password_sent');
+			$loginData['success']=1;
+			$loginData['msg']=$this->getPasswordSentMsg();
 
 		} catch(Exception $e) {
 			$this->error->add($e);
+			$loginData['error']=$e->getMessage();
 		}
+		
+		if( $_REQUEST['format']=='JSON' ){
+			$jsonHelper=Loader::helper('json'); 
+			echo $jsonHelper->encode($loginData);
+			die;
+		}		
+		
+		if($loginData['success']==1)
+			$this->redirect('/login', 'password_sent');	
 	}
 	
 }

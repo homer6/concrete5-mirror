@@ -2,18 +2,18 @@
 
 	## This constant ensures that we're operating inside dispatcher.php. There is a LATER check to ensure that dispatcher.php is being called correctly. ##
 	define('C5_EXECUTE', true);
-	
+
 	## Startup check ##	
-	require('startup/config_check.php');
+	require(dirname(__FILE__) . '/startup/config_check.php');
 
 	## Load the base config file ##
-	require('config/base.php');
+	require(dirname(__FILE__) . '/config/base.php');
 
 	## First we ensure that dispatcher is not being called directly
-	require('startup/file_access_check.php');
+	require(dirname(__FILE__) . '/startup/file_access_check.php');
 	
 	## Check host for redirection ##	
-	require('startup/url_check.php');
+	require(dirname(__FILE__) . '/startup/url_check.php');
 	
 	## Load the database ##
 	Loader::database();
@@ -28,15 +28,19 @@
 	Loader::library('item_list');
 	Loader::library('view');
 	Loader::library('controller');
+	Loader::library('file/types');
 	Loader::library('block_view');
+	Loader::library('block_view_template');
 	Loader::library('block_controller');
 
 	## Autoload settings
-	require('startup/autoload.php');
+	require(dirname(__FILE__) . '/startup/autoload.php');
 	
 	## Load required models ##
 	Loader::model('area');
 	Loader::model('block');
+	Loader::model('file');
+	Loader::model('file_version');
 	Loader::model('block_types');
 	Loader::model('collection');
 	Loader::model('collection_version');
@@ -55,19 +59,25 @@
 	Cache::startup();
 	
 	## Startup check, install ##	
-	require('startup/magic_quotes_gpc_check.php');
+	require(dirname(__FILE__) . '/startup/magic_quotes_gpc_check.php');
 
 	## Default routes for various content items ##
-	require('config/theme_paths.php');
+	require(dirname(__FILE__) . '/config/theme_paths.php');
 
 	## Load session handlers
-	require('startup/session.php');
+	require(dirname(__FILE__) . '/startup/session.php');
+
+	## Startup check ##	
+	require(dirname(__FILE__) . '/startup/encoding_check.php');
+
+	## File types ##
+	require(dirname(__FILE__) . '/config/file_types.php');
 
 	## Startup check, install ##	
-	require('startup/config_check_complete.php');
+	require(dirname(__FILE__) . '/startup/config_check_complete.php');
 	
 	## User level config ##	
-	require('config/app.php');
+	require(dirname(__FILE__) . '/config/app.php');
 	
 	## Site-level config POST user/app config ##
 	if (file_exists(DIR_BASE . '/config/site_post.php')) {
@@ -75,10 +85,17 @@
 	}
 
 	## Set debug-related and logging activities
-	require('startup/debug_logging.php');
+	require(dirname(__FILE__) . '/startup/debug_logging.php');
 
 	## Specific site routes for various content items (if they exist) ##
 	@include('config/site_theme_paths.php');
+
+	## Specific site routes for various content items (if they exist) ##
+	@include('config/site_file_types.php');
+
+	// Now we check to see if we're including CSS, Javascript, etc...
+	// Include Tools. Format: index.php?task=include_frontend&fType=TOOL&filename=test.php
+	require(dirname(__FILE__) . '/startup/tools.php');
 
 	## Specific site/app events if they are enabled ##
 	## This must come before packages ##
@@ -87,15 +104,11 @@
 	}
 	
 	## Package events
-	require('startup/packages.php');
+	require(dirname(__FILE__) . '/startup/packages.php');
 	
 	## Check online, user-related startup routines
-	require('startup/user.php');
+	require(dirname(__FILE__) . '/startup/user.php');
 
-	// Now we check to see if we're including CSS, Javascript, etc...
-	// Include Tools. Format: index.php?task=include_frontend&fType=TOOL&filename=test.php
-	require('startup/tools.php');
-	
 	// figure out where we need to go
 	$req = Request::get();
 	if ($req->getRequestCollectionPath() != '') {
@@ -116,10 +129,10 @@
 	}
 
 	## Check maintenance mode
-	require('startup/maintenance_mode_check.php');
+	require(dirname(__FILE__) . '/startup/maintenance_mode_check.php');
 	
 	## Check to see whether this is an external alias. If so we go there.
-	include('startup/external_link.php');
+	include(dirname(__FILE__) . '/startup/external_link.php');
 	
 	## Get a permissions object for this particular collection.
 	$cp = new Permissions($c);
@@ -170,7 +183,7 @@
 	
 	## Make sure that any submitted forms, etc... are handled correctly
 	## This is legacy cms specific stuff, like adding pages
-	require('startup/process.php');
+	require(dirname(__FILE__) . '/startup/process.php');
 	
 	## Record the view
 	if (STATISTICS_TRACK_PAGE_VIEWS == true) {

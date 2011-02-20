@@ -7,7 +7,7 @@
 .rssSummaryList .rssSummaryListTitle{font-weight:bold}
 </style>
 
-<div id="rssSummaryList<?php echo intval($survey->questionSetId)?>" class="rssSummaryList">
+<div id="rssSummaryList<?php echo intval($bID)?>" class="rssSummaryList">
 
 <?php  if( strlen($title)>0 ){ ?>
 	<div class="rssSummaryListTitle" style="margin-bottom:8px"><?php echo $title?></div>

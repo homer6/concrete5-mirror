@@ -17,14 +17,24 @@ if ($config_check_failed) {
 	define('URL_REWRITING', false);
 }
 
-if (!defined('UPLOAD_FILE_EXTENSIONS_ALLOWED')) {
-	define('UPLOAD_FILE_EXTENSIONS_ALLOWED', '*.flv;*.jpg;*.gif;*.jpeg;*.ico;*.docx;*.xla;*.png;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt;*.kml');
-}
+// AS: moved to concrete/config/app.php Wednesday; February 4, 2009
+// if (!defined('UPLOAD_FILE_EXTENSIONS_ALLOWED')) {
+// 	define('UPLOAD_FILE_EXTENSIONS_ALLOWED', '*.flv;*.jpg;*.gif;*.jpeg;*.ico;*.docx;*.xla;*.png;*.psd;*.swf;*.doc;*.txt;*.xls;*.csv;*.pdf;*.tiff;*.rtf;*.m4a;*.mov;*.wmv;*.mpeg;*.mpg;*.wav;*.avi;*.mp4;*.mp3;*.qt;*.ppt;*.kml');
+// }
 
 if (!defined('REDIRECT_TO_BASE_URL')) {
 	define('REDIRECT_TO_BASE_URL', true);
 }
 
+if (!defined('ENABLE_DEVELOPER_OPTIONS')) {
+	define("ENABLE_DEVELOPER_OPTIONS", false);
+}
+
+/*
+if (!defined('ENABLE_OPENID_AUTHENTICATION')) { 
+	define('ENABLE_OPENID_AUTHENTICATION', false);
+}
+*/
 if (!defined('ENABLE_EMAILS')) {
 	define('ENABLE_EMAILS', true);
 }
@@ -41,6 +51,29 @@ if (!defined('STATISTICS_TRACK_PAGE_VIEWS')) {
 	define('STATISTICS_TRACK_PAGE_VIEWS', true);
 }
 
+if (!defined("PAGE_TITLE_FORMAT")) {
+	define('PAGE_TITLE_FORMAT', '%1$s :: %2$s');
+}
+
+if (!defined('ENABLE_ASSET_COMPRESSION')) {
+	define('ENABLE_ASSET_COMPRESSION', false);
+}
+
+/** 
+ * Character support
+ */
+
+if (!defined('APP_CHARSET')) {
+	define('APP_CHARSET', 'UTF-8'); // pages, etc...
+}
+
+if (!defined('DB_CHARSET')) {
+	define('DB_CHARSET', 'utf8'); // pages, etc...
+}
+
+if (!defined("DB_COLLATE")) {
+	define('DB_COLLATE', '');
+}
 
 if (!defined('LOCALE')) {
 	define("LOCALE", 'en_US');
@@ -92,7 +125,6 @@ define('OB_INITIAL_LEVEL', ob_get_level());
 
 # Sessions/TMP directories
 define('DIR_SESSIONS', '/tmp');
-define('DIR_TMP', '/tmp');
 define('DISPATCHER_FILENAME_CORE', 'dispatcher.php');
 
 # Used by the loader to load core libraries
@@ -185,6 +217,7 @@ define('DIR_FILES_COLLECTION_TYPE_ICONS', DIR_BASE_CORE . '/images/icons/page_ty
 define('REL_DIR_FILES_COLLECTION_TYPE_ICONS', ASSETS_URL_IMAGES . '/icons/page_types');
 define('DIR_FILES_CONTENT', DIR_BASE . '/single_pages');
 define('DIR_FILES_CONTENT_REQUIRED', DIR_BASE_CORE . '/single_pages');
+define("FILENAME_LOCAL_DB", 'site_db.xml');
 
 # Block Types
 define('BLOCK_TYPE_GENERIC_ICON', ASSETS_URL_IMAGES . '/icons/icon_block_type_generic.png');
@@ -227,39 +260,52 @@ define('DIR_FILES_BLOCK_TYPES_FORMS_EXTERNAL_PROCESS', DIR_FILES_BLOCK_TYPES . '
 define('DIR_FILES_BLOCK_TYPES_FORMS_EXTERNAL_CORE', DIR_FILES_BLOCK_TYPES_CORE . '/external_form/forms');
 define('DIR_FILES_BLOCK_TYPES_FORMS_EXTERNAL_PROCESS_CORE', DIR_FILES_BLOCK_TYPES_CORE . '/external_form/forms/controllers');
 
-# Uploaded files 
-define('DIR_FILES_UPLOADED', DIR_BASE . '/files');
+define('DIR_FILES_UPLOADED_STANDARD', DIR_BASE . '/files');
+define('DIR_FILES_TRASH_STANDARD', DIR_BASE . '/files/trash');
 define('REL_DIR_FILES_UPLOADED', DIR_REL . '/files');
+
 define('DIR_FILES_UPLOADED_THUMBNAILS', DIR_BASE . '/files/thumbnails');
 define('REL_DIR_FILES_UPLOADED_THUMBNAILS', DIR_REL . '/files/thumbnails');
-define('DIR_FILES_UPLOADED_ONSTATES', DIR_BASE . '/files/onstates');
-define('REL_DIR_FILES_UPLOADED_ONSTATES', DIR_REL . '/files/onstates');
-define('DIR_FILES_ORIGINALS', DIR_FILES_UPLOADED . '/originals');
-define('REL_DIR_FILES_ORIGINALS', DIR_REL . '/files/originals');
-define('DIR_FILES_ORIGINALS_ONSTATES', DIR_FILES_ORIGINALS . '/onstates');
-define('DIR_FILES_TRASH', DIR_FILES_UPLOADED . '/trash');
-
-# Cache
-define('DIR_FILES_CACHE', DIR_FILES_UPLOADED . '/cache');
-define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
-define('DIR_FILES_CACHE_CORE', DIR_FILES_UPLOADED . '/cache_objects');
-define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
+define('DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2', DIR_BASE . '/files/thumbnails/level2');
+define('REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL2', DIR_REL . '/files/thumbnails/level2');
+define('DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3', DIR_BASE . '/files/thumbnails/level3');
+define('REL_DIR_FILES_UPLOADED_THUMBNAILS_LEVEL3', DIR_REL . '/files/thumbnails/level3');
 define('REL_DIR_FILES_CACHE', REL_DIR_FILES_UPLOADED . '/cache');
+
+#Cache
+define('DIR_FILES_CACHE', DIR_BASE . '/files/cache');
+define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
+define('DIR_FILES_CACHE_CORE', DIR_BASE . '/files/cache_objects');
+define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
+define('ON_WINDOWS', intval(substr(PHP_OS,0,3)=='WIN') );
 
 # Binaries used by the system
 # Currently unused
 # define('DIR_FILES_BIN', DIR_BASE_CORE . '/bin');
 define('DIR_FILES_BIN_HTMLDIFF', DIR_LIBRARIES_3RDPARTY_CORE . '/htmldiff.py');
-define('DIR_FILES_BIN_UNZIP', '/usr/bin/unzip');
+if (!defined('DIR_FILES_BIN_UNZIP')) {
+	 define('DIR_FILES_BIN_UNZIP', '/usr/bin/unzip');
+}
+define('DIR_FILES_BIN_COMPRESS_ASSETS', DIR_LIBRARIES_3RDPARTY_CORE . '/minify_2.1.2/index.php');
+
+if (!defined('DIR_FILES_BIN_ZIP')) {
+	 define('DIR_FILES_BIN_ZIP', '/usr/bin/zip');
+}
 if(!defined('DIR_FILES_BIN_ASPELL')) define('DIR_FILES_BIN_ASPELL', '/usr/bin/aspell'); // spellchecker
 
 # Asset library constants 
-define('AL_THUMBNAIL_WIDTH', '80');
-define('AL_THUMBNAIL_HEIGHT', '80');
+define('AL_THUMBNAIL_WIDTH', '60');
+define('AL_THUMBNAIL_HEIGHT', '60');
+define('AL_THUMBNAIL_WIDTH_LEVEL1', '60'); // level1 duplicated here for internal functions
+define('AL_THUMBNAIL_HEIGHT_LEVEL1', '60');
+define('AL_THUMBNAIL_WIDTH_LEVEL2', '250');
+define('AL_THUMBNAIL_HEIGHT_LEVEL2', '250');
+
 define('AL_ICON_WIDTH', 24);
 define('AL_ICON_HEIGHT', 24);
 define('DIR_AL_ICONS', DIR_BASE_CORE . '/images/icons/filetypes');
 define('REL_DIR_AL_ICONS', ASSETS_URL_IMAGES . '/icons/filetypes');
+define('AL_ICON_DEFAULT', ASSETS_URL_IMAGES . '/icons/filetypes/default.png');
 
 # This is the max size of any image in the system
 define('IMAGE_MAX_WIDTH','1200'); // this is the max - can't be any higher, this overrides area settings
@@ -280,27 +326,13 @@ define('ADMIN_GROUP_ID', '3');
 define('ADMIN_GROUP_NAME', 'Admin');
 define('SESSION_MAX_LIFETIME', 7200); // 2 hours
 
-# If user registration with email address is true we don't use username's - we just use uEmail and we populate uName with the email address
-if (!defined('USER_REGISTRATION_WITH_EMAIL_ADDRESS')) {
-	define('USER_REGISTRATION_WITH_EMAIL_ADDRESS', false);
-}
-
-if (!defined('USER_VALIDATE_EMAIL')) {
-	define('USER_VALIDATE_EMAIL', false);	
-}
-
-if (!defined('USER_VALIDATE_EMAIL_REQUIRED')) {
-	define('USER_VALIDATE_EMAIL_REQUIRED', false);	
-}
-
-
 # Default search size
 define('SEARCH_CHUNK_SIZE','20'); /* number of entries retrieved per page */
 
 # Versioning/Editing defaults 
 define('CHECKOUT_TIMEOUT', 300); // # in seconds.
 define('VERSION_INITIAL_COMMENT', 'Initial Version');
-define('ONLINE_NOW_TIMEOUT', 600);
+define('ONLINE_NOW_TIMEOUT', 300);
 
 # Information for the home page in the system (used by the installation program)
 define("HOME_CID", 1);
@@ -315,12 +347,11 @@ if (!defined('AVATAR_WIDTH') && !defined('AVATAR_HEIGHT')) {
 	define('AVATAR_HEIGHT', 80);
 }
 
-define('DIR_FILES_AVATARS', DIR_FILES_UPLOADED . '/avatars');
+define('DIR_FILES_AVATARS', DIR_BASE . '/files/avatars');
 define('REL_DIR_FILES_AVATARS', REL_DIR_FILES_UPLOADED . '/avatars');
 if (!defined('AVATAR_NONE')) {
 	define('AVATAR_NONE', ASSETS_URL_IMAGES . '/spacer.gif');
 }
-define('DIR_FILES_AVATARS_STOCK', DIR_FILES_UPLOADED . '/stock_avatars');
 define('REL_DIR_FILES_AVATARS_STOCK', REL_DIR_FILES_UPLOADED . '/stock_avatars');
 
 # CMS errors - this is legacy
@@ -352,31 +383,59 @@ define('DB_TYPE', 'mysql');
 if (!defined('DB_USE_CACHE')) {
 	define('DB_USE_CACHE', true);
 }
+
+if (!defined("API_KEY_PICNIK")) {
+	define('API_KEY_PICNIK', '184f46c36757c7f060ed319eaf7337ac-' . urlencode(BASE_URL . DIR_REL . '/'));
+}
+
 $ADODB_ASSOC_CASE =  2;
 $ADODB_ACTIVE_CACHESECS = 300;
 $ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
-define('APP_VERSION', '5.2.1');
+define('APP_VERSION', '5.3.1.1');
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)
 define('APP_VERSION_LATEST_WS', 'http://www.concrete5.org/tools/get_latest_version_number');
 define('APP_VERSION_LATEST_DOWNLOAD', 'http://www.concrete5.org/download/');
 
+//Main Concrete Site - For Marketplace, Knowledge Base, etc.
+if (!defined('CONCRETE5_ORG_URL')) {
+	define('CONCRETE5_ORG_URL', 'http://www.concrete5.org');
+}
+
 # Marketplace Vars
-/* if (!defined('ENABLE_MARKETPLACE_SUPPORT')) {
-	define('ENABLE_MARKETPLACE_SUPPORT', true);
-} */
+if (!defined("MARKETPLACE_URL_LANDING")) {
+	define('MARKETPLACE_URL_LANDING', CONCRETE5_ORG_URL.'/marketplace/');
+}
 if (!defined('MARKETPLACE_BLOCK_LIST_WS')) {
-	define('MARKETPLACE_BLOCK_LIST_WS', 'http://www.concrete5.org/tools/get_marketplace_block_list/');
+	define('MARKETPLACE_BLOCK_LIST_WS', CONCRETE5_ORG_URL.'/marketplace/addons/-/get_remote_list');
 }
 if (!defined('MARKETPLACE_THEME_LIST_WS')) {
-	define('MARKETPLACE_THEME_LIST_WS', 'http://www.concrete5.org/tools/get_marketplace_theme_list/');
+	define('MARKETPLACE_THEME_LIST_WS', CONCRETE5_ORG_URL.'/marketplace/themes/-/get_remote_list/');
 }
 if (!defined('MARKETPLACE_THEME_PREVIEW_URL')) {
-	define('MARKETPLACE_THEME_PREVIEW_URL', 'http://www.concrete5.org/tools/preview_theme/');
+	define('MARKETPLACE_THEME_PREVIEW_URL', CONCRETE5_ORG_URL.'/tools/preview_theme/');
 }
-
+if (!defined('MARKETPLACE_PURCHASES_LIST_WS')) {
+	define('MARKETPLACE_PURCHASES_LIST_WS', CONCRETE5_ORG_URL.'/tools/get_purchased_block_list/');
+}
 define('MARKETPLACE_CONTENT_LATEST_THRESHOLD', 10800); // every three hours
-
 define('MARKETPLACE_DIRNAME_THEME_PREVIEW', 'previewable_themes');
-define('MARKETPLACE_THEME_PREVIEW_ASSETS_URL', 'http://www.concrete5.org/' . MARKETPLACE_DIRNAME_THEME_PREVIEW);
+define('MARKETPLACE_THEME_PREVIEW_ASSETS_URL', CONCRETE5_ORG_URL ."/". MARKETPLACE_DIRNAME_THEME_PREVIEW);
+
+# Knowledge Base Vars
+if (!defined('KNOWLEDGE_BASE_URL')){
+	define('KNOWLEDGE_BASE_URL', CONCRETE5_ORG_URL.'/help/kb/');
+}
+if (!defined('KNOWLEDGE_BASE_POST_URL')) {
+	define('KNOWLEDGE_BASE_POST_URL', CONCRETE5_ORG_URL.'/tools/open_support_ticket/');
+}
+if (!defined('KNOWLEDGE_BASE_TICKET_LIST_URL')) {
+	define('KNOWLEDGE_BASE_TICKET_LIST_URL', CONCRETE5_ORG_URL.'/tools/get_support_ticket_list/');
+}
+if (!defined('KNOWLEDGE_BASE_AUTH_URL')) {
+	define('KNOWLEDGE_BASE_AUTH_URL', CONCRETE5_ORG_URL.'/tools/authenticate_user/');
+}
+if (!defined('KNOWLEDGE_BASE_SUPPORT_LEARN_MORE_URL')) {
+	define('KNOWLEDGE_BASE_SUPPORT_LEARN_MORE_URL', CONCRETE5_ORG_URL.'/support/owner_support/');
+}
 
 require_once(DIR_LIBRARIES_CORE . '/loader.php');

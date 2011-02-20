@@ -4,6 +4,9 @@ body {/* customize_background */ background-color: #ffffff; /* customize_backgro
 img {border: 0px}
 a { cursor:pointer}
 
+label { font-weight:bold; display:block; padding-top: 10px; }
+fieldset { border:1px solid #ccc;}
+
 /* error text class optionally provided by theme */
 div.ccm-error-response {color: #f00; margin-bottom: 12px}
 
@@ -57,6 +60,7 @@ div.ccm-error-response {color: #f00; margin-bottom: 12px}
 #page #footer{ padding-top:24px; clear:both; padding-bottom:16px; color:#999; font-size:10px }
 #page #footer a{ text-decoration:none }
 #page #footer span.sign-in {margin-left: 20px}
+#page #footer span.powered-by { float:right; }
 
 /* Page Elements */
 

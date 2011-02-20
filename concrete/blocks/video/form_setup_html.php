@@ -9,12 +9,12 @@ table#videoBlockSetup .note{ font-size:10px; color:#999999; font-weight:normal }
 <table id="videoBlockSetup"> 
 	<tr>
 		<th><?php echo t("Width")?></th>
-		<td><input type="text" style="width: 40px" name="width" value="<?php echo $bObj->width?>"/></td>
+		<td><input type="text" style="width: 40px" id="ccm-block-video-width" name="width" value="<?php echo $width?>"/></td>
 	</tr>	
 	<tr>
 		<th><?php echo t("Height")?></th>
 		<td>
-			<input type="text" style="width: 40px" name="height" value="<?php echo $bObj->height?>" />
+			<input type="text" style="width: 40px" id="ccm-block-video-height" name="height" value="<?php echo $height?>" />
 		</td>
 	</tr>	
 </table>
