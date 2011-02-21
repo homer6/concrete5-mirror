@@ -325,8 +325,9 @@ if (is_object($uo)) {
 
 		<div class="ccm-buttons">
 		
-		<a href="<?php echo $this->url('/dashboard/users/search?uID=' . intval($_GET['uID']))?>" class="ccm-button-left cancel"><span><?php echo t('Back')?></span></a>
-		<a href="javascript:void(0)" onclick="$('#ccm-user-form').get(0).submit()" class="ccm-button-right accept"><span><?php echo t('Update User')?></span></a>
+		<?php echo Loader::helper('concrete/interface')->button(t('Back'), $this->url('/dashboard/users/search?uID=' . intval($_GET['uID'])), 'left')?>
+		<?php echo Loader::helper('concrete/interface')->submit(t('Update User'))?>
+
 		</div>	
 
 		<div class="ccm-spacer">&nbsp;</div>
@@ -571,6 +572,10 @@ ccm_submitEditableProperty = function(trow) {
 	trow.find('.ccm-attribute-editable-field-save-button').hide();
 	trow.find('.ccm-attribute-editable-field-clear-button').hide();
 	trow.find('.ccm-attribute-editable-field-loading').show();
+	try {
+		tinyMCE.triggerSave(true, true);
+	} catch(e) { }
+	
 	trow.find('form').ajaxSubmit(function(resp) {
 		// resp is new HTML to display in the div
 		trow.find('.ccm-attribute-editable-field-loading').hide();

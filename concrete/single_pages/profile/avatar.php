@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <div id="ccm-profile-wrapper">
     <?php  Loader::element('profile/sidebar', array('profile'=> $ui)); ?>    
     <div id="ccm-profile-body">	
@@ -21,7 +21,12 @@
         
             <div class="spacer"></div>
             
-            <script>
+            <script type="text/javascript">
+           	ThumbnailBuilder_onSaveCompleted = function() { 
+				alert("<?php echo t('User Profile picture saved.')?>");
+				window.location.href="<?php echo $this->url('/profile/avatar')?>";
+			}
+			
             $(function(){   
                 var params = { 
                     bgcolor: "#ffffff",
@@ -36,23 +41,6 @@
                 };
 				swfobject.embedSWF ("<?php echo DIR_REL?>/concrete/flash/thumbnail_editor_2.swf", "profile-avatar", "500", "400", "10,0,0,0", "includes/expressInstall.swf", flashvars, params);
         
-       			/*
-                //SWF OBJECT 2.0 Method
-                var params = { 
-                    bgcolor: "#ffffff",
-                    wmode:  "transparent",
-                    quality:  "high" 
-                };
-                var flashvars = { 
-                    bgcolor: "#ffffff",
-                    base_url: "<?php echo BASE_URL?>",
-                    session: "<?php echo session_id()?>",
-                    "export": "<?php echo $this->url($c->getCollectionPath(), 'save_thumb')?>" 
-                };
-                swfobject.embedSWF("<?php echo DIR_REL?>/concrete/flash/thumbnail_editor.swf", "discussion-profile-avatar", "450", "500", "8.0", false, flashvars, params);
-           		
-           		*/
-           		
            		
            });
             </script>

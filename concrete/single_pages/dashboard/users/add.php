@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $u = new User();
 $uh = Loader::helper('concrete/user');
 $txt = Loader::helper('text');
@@ -195,7 +195,8 @@ if ($_POST['create']) {
 
 	<div class="ccm-buttons">
 		<input type="hidden" name="create" value="1" />
-		<a href="javascript:void(0)" onclick="$('#ccm-user-form').get(0).submit()" class="ccm-button-right accept"><span><?php echo t('Create User')?></span></a>
+		<?php echo $ih->submit(t('Create User'))?>
+
 	</div>	
 
 	<div class="ccm-spacer">&nbsp;</div>

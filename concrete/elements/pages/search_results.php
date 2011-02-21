@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <?php 
 if ($_REQUEST['searchDialog'] == 1) {
 	$searchDialog = true;
@@ -9,6 +9,11 @@ if (!isset($sitemap_select_mode)) {
 	}
 }
 
+if (!isset($sitemap_select_callback)) {
+	if (isset($_REQUEST['sitemap_select_callback'])) {
+		$sitemap_select_callback = $_REQUEST['sitemap_select_callback'];
+	}
+}
 if (isset($_REQUEST['searchInstance'])) {
 	$searchInstance = $_REQUEST['searchInstance'];
 }
@@ -37,6 +42,7 @@ if (isset($_REQUEST['searchInstance'])) {
 	$soargs = array();
 	$soargs['searchInstance'] = $searchInstance;
 	$soargs['sitemap_select_mode'] = $sitemap_select_mode;
+	$soargs['sitemap_select_callback'] = $sitemap_select_callback;
 	$soargs['searchDialog'] = $searchDialog;
 	$bu = REL_DIR_FILES_TOOLS_REQUIRED . '/pages/search_results';
 	
@@ -71,10 +77,10 @@ if (isset($_REQUEST['searchInstance'])) {
 			}
 
 			?>
-			<tr class="ccm-list-record <?php echo $striped?>" cName="<?php echo htmlentities($cobj->getCollectionName(), ENT_QUOTES, APP_CHARSET)?>" cID="<?php echo $cobj->getCollectionID()?>" sitemap-select-mode="<?php echo $sitemap_select_mode?>" sitemap-display-mode="search" canWrite="<?php echo $cpobj->canWrite()?>" cNumChildren="<?php echo $cobj->getNumChildren()?>" cAlias="false">
+			<tr class="ccm-list-record <?php echo $striped?>" cName="<?php echo htmlentities($cobj->getCollectionName(), ENT_QUOTES, APP_CHARSET)?>" cID="<?php echo $cobj->getCollectionID()?>" sitemap-select-callback="<?php echo $sitemap_select_callback?>" sitemap-select-mode="<?php echo $sitemap_select_mode?>" sitemap-display-mode="search" canWrite="<?php echo $cpobj->canWrite()?>" cNumChildren="<?php echo $cobj->getNumChildren()?>" cAlias="false">
 			<?php  if (!$searchDialog) { ?><td class="ccm-<?php echo $searchInstance?>-list-cb" style="vertical-align: middle !important"><input type="checkbox" value="<?php echo $cobj->getCollectionID()?>" /></td><?php  } ?>
 			<td><?php echo $cobj->getCollectionTypeName()?></td>
-			<td class="ccm-page-list-name"><?php echo $txt->highlightSearch(wordwrap($cobj->getCollectionName(), 15, "\n", true), $keywords)?></td>
+			<td class="ccm-page-list-name"><div style="max-width: 150px; word-wrap: break-word"><?php echo $txt->highlightSearch($cobj->getCollectionName(), $keywords)?></div></td>
 			<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_PAGES, strtotime($cobj->getCollectionDatePublic()))?></td>
 			<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_PAGES, strtotime($cobj->getCollectionDateLastModified()))?></td>
 			<td><?php 

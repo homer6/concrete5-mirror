@@ -21,12 +21,11 @@
  * @license    http://www.concrete5.org/license/     MIT License
  *
  */
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	class GuestbookBlockController extends BlockController {		
 		protected $btTable = 'btGuestBook';
 		protected $btInterfaceWidth = "300";
 		protected $btInterfaceHeight = "260";	
-		
 		protected $btIncludeAll = 1;
 		
 		/** 
@@ -46,9 +45,9 @@
 				$this->set('invalidIP', $ip->getErrorMessage());			
 				return;
 			}
-			$E = new GuestBookBlockEntry($this->bID);
-			$bo = $this->getBlockObject();
 			$c = Page::getCurrentPage();
+			$E = new GuestBookBlockEntry($this->bID, $c->getCollectionID());
+			$bo = $this->getBlockObject();
 			$E->removeAllEntries( $c->getCollectionID() );
 			parent::delete();
 		}
@@ -124,10 +123,12 @@
 			}
 			
 			if(count($errors)){
-				$E = new GuestBookBlockEntry($this->bID);
-				$E->user_name = $_POST['name'].'';
-				$E->user_email = $_POST['email'].'';
-				$E->commentText = $_POST['commentText'];
+				$txt = Loader::helper('text');
+
+				$E = new GuestBookBlockEntry($this->bID, $c->getCollectionID());
+				$E->user_name = $txt->sanitize($_POST['name']).'';
+				$E->user_email = $txt->sanitize($_POST['email']).'';
+				$E->commentText = $txt->sanitize($_POST['commentText']);
 				$E->uID			= $uID;
 				
 				$E->entryID = ($_POST['entryID']?$_POST['entryID']:NULL);
@@ -136,7 +137,7 @@
 				$this->set('errors',$errors);
 				$this->set('Entry',$E);	
 			} else {
-				$E = new GuestBookBlockEntry($this->bID);
+				$E = new GuestBookBlockEntry($this->bID, $c->getCollectionID());
 				if($_POST['entryID']) { // update
 					$bp = $this->getPermissionsObject(); 
 					if($bp->canWrite()) {
@@ -260,7 +261,27 @@
 				$this->set('response', t('The comment has been unapproved.') );
 			}
 		}
-	
+		
+		
+		
+		public function getEntryCount($cID = NULL) {
+			$ca = new Cache();
+			$cID = (isset($cID)?$cID:$this->cID);
+			$count = $ca->get('GuestBookCount',$cID."-".$this->bID);
+			if(!isset($count) || $count === false) {
+				$db = Loader::db();
+				$q = 'SELECT count(bID) as count
+				FROM btGuestBookEntries
+				WHERE bID = ?
+				AND cID = ?
+				AND approved=1';				
+				$v = array($this->bID, $cID);
+				$count = $db->getOne($q,$v);
+			}
+			return $count;
+		}
+		
+		
 	} // end class def
 	
 	
@@ -272,36 +293,47 @@
 		 * blocks bID
 		 * @var integer
 		*/
-		var $bID;
+		public $bID;
+		
+		/**
+		 * page collectionID
+		 * @var integer
+		 */
+		public $cID;
 		
 		/**
 		 * blocks uID user id
 		 * @var integer
 		*/
-		var $uID;		
+		public $uID;		
+		
 		/**
 		 * the entry id
 		 * @var integer
 		*/
-		var $entryID;
+		public $entryID;
+		
 		/**
 		 * the user's name
 		 * @var string
 		*/
-		var $user_name;
+		public $user_name;
+		
 		/**
 		 * the user's email address
 		 * @var string
-		*/var $user_email;
+		*/
+		public $user_email;
 		
 		/**
 		 * the text for the comment
 		 * @var string
 		*/
-		var $commentText;
+		public $commentText;
 		
-		function __construct($bID) {
+		function __construct($bID, $cID = NULL) {
 			$this->bID = $bID;
+			$this->cID = $cID;
 		}
 		
 		/** 
@@ -345,21 +377,21 @@
 		private function adjustCountCache($number=false){
 			$ca 	= new Cache();
 			$db 	= Loader::db();			
-			$count = $ca->get('GuestBookCount',$this->bID);
+			$count = $ca->get('GuestBookCount',$this->cID."-".$this->bID);
 			if($count && $number){
 				$count += $number;				
-			}
-			else{
+			} else{
 				$q = 'SELECT count(bID) as count
 				FROM btGuestBookEntries
 				WHERE bID = ?
+				AND cID = ?
 				AND approved=1';				
-				$v = Array($this->bID);
+				$v = Array($this->bID, $this->cID);
 				$rs = $db->query($q,$v);
 				$row = $rs->FetchRow();
 				$count = $row['count'];
-			}			
-			$ca->set('GuestBookCount',$this->bID,$count);
+			}
+			$ca->set('GuestBookCount',$this->cID."-".$this->bID,$count);
 		}
 		
 		/** 

@@ -1,4 +1,4 @@
-<?php 
+<?php
 global $err_count;
 $err_count = 0;
 

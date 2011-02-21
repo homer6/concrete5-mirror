@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <h1><?php echo t('Upgrade Concrete5')?></h1>
 <p>
 <?php echo $message?>

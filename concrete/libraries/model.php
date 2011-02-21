@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
 * Concrete Model Class
@@ -15,7 +15,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 class Model extends ADOdb_Active_Record {
 
 
-
+	public function __construct() {
+	 	$db = Loader::db();
+	 	parent::__construct();
+	}		 
 
 
 }

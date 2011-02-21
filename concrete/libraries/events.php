@@ -19,7 +19,7 @@
  *
  */
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class Events {
 	
 	const EVENT_TYPE_PAGETYPE = "page_type";
@@ -63,6 +63,7 @@ class Events {
 			Events::extendPageType($ctHandle, 'on_page_duplicate', $params);
 			Events::extendPageType($ctHandle, 'on_page_move', $params);
 			Events::extendPageType($ctHandle, 'on_page_view', $params);
+			Events::extendPageType($ctHandle, 'on_page_version_approve', $params);
 			Events::extendPageType($ctHandle, 'on_page_delete', $params);
 		} else {
 			$ce = Events::getInstance();
@@ -125,6 +126,8 @@ class Events {
 
 		$ce = Events::getInstance();
 		$events = $ce->registeredEvents[$event];
+		$eventReturn = false;
+		
 		if (is_array($events)) {
 			foreach($events as $ev) {
 				$type = $ev[0];
@@ -157,11 +160,13 @@ class Events {
 					$params = array_merge($args, $params);
 	
 					if (method_exists($ev[1], $ev[2])) {
-						return call_user_func_array(array($ev[1], $ev[2]), $params);
-					}				
+						// Note: DO NOT DO RETURN HERE BECAUSE THEN MULTIPLE EVENTS WON'T WORK
+						$eventReturn = call_user_func_array(array($ev[1], $ev[2]), $params);
+					}
 				}
 			}
-		}
+		}		
+		return $eventReturn;
 	}
 }
 

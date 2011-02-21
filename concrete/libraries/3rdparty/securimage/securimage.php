@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Project:     Securimage: A PHP class for creating and managing form CAPTCHA images<br />
@@ -427,7 +427,7 @@ class Securimage {
    * Generate a code and output the image to the browser.
    *
    * <code>
-   *   <?php 
+   *   <?php
    *   include 'securimage.php';
    *   $securimage = new Securimage();
    *   $securimage->show('bg.jpg');

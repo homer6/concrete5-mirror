@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * Contains the config class.
@@ -51,9 +51,8 @@ class Config extends Object {
 			$pkgID = $this->pkg->getPackageID();
 		}
 		
-		if ($cfKey != 'ENABLE_CACHE') {
-			$cv = $ca->get('config_option' . $pkgID, $cfKey);
-		}
+		$cv = $ca->get('config_option' . $pkgID, $cfKey);
+		
 		if ((!isset($cv)) || (!($cv instanceof ConfigValue))) {
 			$db = Loader::db();
 			$v = array($cfKey);
@@ -86,7 +85,9 @@ class Config extends Object {
 		}
 
 		if (!$getFullObject) {
-			return $cv->value;
+			$value = $cv->value;
+			unset($cv);
+			return $value;
 		} else {
 			return $cv;
 		}

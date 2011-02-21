@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Yadis service manager to be used during yadis-driven authentication

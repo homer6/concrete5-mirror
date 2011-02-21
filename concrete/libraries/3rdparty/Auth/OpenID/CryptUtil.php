@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * CryptUtil: A suite of wrapper utility functions for the OpenID

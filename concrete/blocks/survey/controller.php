@@ -20,7 +20,7 @@
  *
  */
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class SurveyBlockController extends BlockController {
 	 
 	protected $btTable = 'btSurvey';
@@ -43,7 +43,8 @@ class SurveyBlockController extends BlockController {
 	
 	function __construct($obj = NULL) {
 		parent::__construct($obj);
-		$c = Page::getCurrentPage();
+		$c = $this->getCollectionObject();
+		
 		if (is_object($c)) {
 			$this->cID = $c->getCollectionID();
 		}
@@ -57,6 +58,7 @@ class SurveyBlockController extends BlockController {
 				while ($row = $r->fetchRow()) {
 					$opt = new BlockPollOption;
 					$opt->optionID = $row['optionID'];
+					$opt->cID = $this->cID;
 					$opt->optionName = $row['optionName'];
 					$opt->displayOrder = $row['displayOrder'];
 					$this->options[] = $opt;
@@ -102,7 +104,7 @@ class SurveyBlockController extends BlockController {
 		$u = new User();
 		$db = Loader::db();
 		$bo = $this->getBlockObject();
-		$c = Page::getCurrentPage();
+		$c = $this->getCollectionObject();
 		if ($this->requiresRegistration()) {
 			if (!$u->isRegistered()) {
 				$this->redirect('/login');
@@ -119,7 +121,7 @@ class SurveyBlockController extends BlockController {
 			$q = "insert into btSurveyResults (optionID, bID, uID, ipAddress, cID) values (?, ?, ?, ?, ?)";
 			$db->query($q, $v);
 			setcookie("ccmPoll" . $this->bID.'-'.$this->cID, "voted", time() + 1296000, DIR_REL . '/');
-			$this->redirect($c->getCollectionPath());
+			$this->redirect($c->getCollectionPath() . '?survey_voted=1');
 		}
 	}		
 
@@ -283,9 +285,8 @@ class BlockPollOption {
 	function getOptionDisplayOrder() {return $this->displayOrder;}
 	
 	function getResults() {
-		$c = Page::getCurrentPage();
 		$db = Loader::db();
-		$v = array($this->optionID, intval($c->getCollectionID()) );
+		$v = array($this->optionID, intval($this->cID));
 		$q = "select count(resultID) from btSurveyResults where optionID = ? AND cID=?";
 		$result = $db->getOne($q, $v);
 		if ($result > 0) {

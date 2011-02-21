@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * Contains the blocktype object, the block type list (which is just a wrapper for querying the system for block types, and the block type
@@ -157,7 +157,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		function getBlockTypeAddAction(&$a) {
 			$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
-			$arHandle = $a->getAreaHandle();
+			$arHandle = urlencode($a->getAreaHandle());
 			$c = $a->getAreaCollectionObject();
 			$cID = $c->getCollectionID();
 			$valt = Loader::helper('validation/token');
@@ -167,7 +167,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		function getBlockTypeAliasAction(&$a) {
 			$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
-			$arHandle = $a->getAreaHandle();
+			$arHandle = urlencode($a->getAreaHandle());
 			$c = $a->getAreaCollectionObject();
 			$cID = $c->getCollectionID();
 			$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;areaName={$arHandle}&amp;mode=edit&amp;btask=alias" . $step . '&' . $valt->getParameter();
@@ -550,18 +550,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		private function _getClass() {
 			$btHandle = $this->btHandle;
 			$pkgHandle = $this->getPackageHandle();
-			if ($pkgHandle == null) {
-				if (file_exists(DIR_FILES_BLOCK_TYPES . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER)) {
-					$classfile = DIR_FILES_BLOCK_TYPES . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER;
-				} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER)) {
-					$classfile = DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER;
-				}
-
-			} else {
+			if (file_exists(DIR_FILES_BLOCK_TYPES . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER)) {
+				$classfile = DIR_FILES_BLOCK_TYPES . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER;
+			} else if ($pkgHandle != null) {
 				if (file_exists(DIR_PACKAGES . "/{$pkgHandle}/" . DIRNAME_BLOCKS . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER)) {
 					$classfile = DIR_PACKAGES . "/{$pkgHandle}/" . DIRNAME_BLOCKS . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER;
 				} else if (file_exists(DIR_PACKAGES_CORE . "/{$pkgHandle}/" . DIRNAME_BLOCKS . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER)) {
 					$classfile = DIR_PACKAGES_CORE . "/{$pkgHandle}/" . DIRNAME_BLOCKS . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER;
+				}
+			} else {			
+				if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER)) {
+					$classfile = DIR_FILES_BLOCK_TYPES_CORE . "/{$btHandle}/" . FILENAME_BLOCK_CONTROLLER;
 				}
 			}
 			
@@ -718,7 +717,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';			
 			$c = $a->getAreaCollectionObject();
 			$cID = $c->getCollectionID();
-			$arHandle = $a->getAreaHandle();
+			$arHandle = urlencode($a->getAreaHandle());
 			$valt = Loader::helper('validation/token');
 			
 			

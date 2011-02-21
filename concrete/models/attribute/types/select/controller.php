@@ -1,5 +1,4 @@
-<?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+<?php  defined('C5_EXECUTE') or die("Access Denied.");
 
 class SelectAttributeTypeController extends AttributeTypeController  {
 
@@ -94,7 +93,9 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 		$selectedOptions = array();
 		foreach($options as $opt) {
 			$selectedOptions[] = $opt->getSelectAttributeOptionID();
+			$selectedOptionValues[$opt->getSelectAttributeOptionID()] = $opt->getSelectAttributeOptionValue();
 		}
+		$this->set('selectedOptionValues',$selectedOptionValues);
 		$this->set('selectedOptions', $selectedOptions);
 	}
 	
@@ -124,14 +125,31 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 
 	public function saveForm($data) {
 		$this->load();
-
+		
 		if ($this->akSelectAllowOtherValues && is_array($data['atSelectNewOption'])) {
+			$options = $this->getOptions();
+						
 			foreach($data['atSelectNewOption'] as $newoption) {
-				$optobj = SelectAttributeTypeOption::add($this->attributeKey, $newoption, 1);
-				$data['atSelectOptionID'][] = $optobj->getSelectAttributeOptionID();
+				// check for duplicates
+				$existing = false;
+				foreach($options as $opt) {
+					if(strtolower(trim($newoption)) == strtolower(trim($opt->getSelectAttributeOptionValue()))) {
+						$existing = $opt;
+						break;
+					}
+				}
+				if($existing instanceof SelectAttributeTypeOption) {
+					$data['atSelectOptionID'][] = $existing->getSelectAttributeOptionID();
+				} else {
+					$optobj = SelectAttributeTypeOption::add($this->attributeKey, $newoption, 1);
+					$data['atSelectOptionID'][] = $optobj->getSelectAttributeOptionID();
+				}
 			}
 		}
 
+		if(is_array($data['atSelectOptionID'])) {
+			$data['atSelectOptionID'] = array_unique($data['atSelectOptionID']);
+		}		
 		$db = Loader::db();
 		$db->Execute('delete from atSelectOptionsSelected where avID = ?', array($this->getAttributeValueID()));
 		if (is_array($data['atSelectOptionID'])) {
@@ -218,7 +236,8 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 		foreach($options as $id) {
 			if ($id > 0) {
 				$opt = SelectAttributeTypeOption::getByID($id);
-				$optionText[] = $opt->getSelectAttributeOptionValue();
+				$optionText[] = $opt->getSelectAttributeOptionValue(true);
+				$optionQuery[] = $opt->getSelectAttributeOptionValue(false);
 			}
 		}
 		if (count($optionText) == 0) {
@@ -226,10 +245,10 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 		}
 		
 		$i = 0;
-		foreach($optionText as $val) {
+		foreach($optionQuery as $val) {
 			$val = $db->quote('%||' . $val . '||%');
 			$multiString .= 'REPLACE(' . $tbl . '.ak_' . $this->attributeKey->getAttributeKeyHandle() . ', "\n", "||") like ' . $val . ' ';
-			if (($i + 1) < count($optionText)) {
+			if (($i + 1) < count($optionQuery)) {
 				$multiString .= 'OR ';
 			}
 			$i++;
@@ -240,20 +259,18 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 	
 	public function getValue() {
 		$list = $this->getSelectedOptions();
-		if ($list->count() == 1) {
-			return $list->get(0);
-		}
 		return $list;	
 	}
 	
-	public function getSearchIndexValue() {
-		$str = "\n";
-		$list = $this->getSelectedOptions();
-		foreach($list as $l) {
-			$str .= $l . "\n";
-		}
-		return $str;
-	}
+    public function getSearchIndexValue() {
+        $str = "\n";
+        $list = $this->getSelectedOptions();
+        foreach($list as $l) {
+            $l = (is_object($l) && method_exists($l,'__toString')) ? $l->__toString() : $l;
+            $str .= $l . "\n";
+        }
+        return $str;
+    }
 	
 	public function getSelectedOptions() {
 		if (!isset($this->akSelectOptionDisplayOrder)) {
@@ -277,6 +294,26 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 			$opt = new SelectAttributeTypeOption($row['ID'], $row['value'], $row['displayOrder']);
 			$list->add($opt);
 		}
+		return $list;
+	}
+	
+	public function getOptionUsageArray($parentPage = false) {
+		$db = Loader::db();
+		$q = "select atSelectOptions.value, atSelectOptionID, count(atSelectOptionID) as total from Pages inner join CollectionVersions on (Pages.cID = CollectionVersions.cID and CollectionVersions.cvIsApproved = 1) inner join CollectionAttributeValues on (CollectionVersions.cID = CollectionAttributeValues.cID and CollectionVersions.cvID = CollectionAttributeValues.cvID) inner join atSelectOptionsSelected on (atSelectOptionsSelected.avID = CollectionAttributeValues.avID) inner join atSelectOptions on atSelectOptionsSelected.atSelectOptionID = atSelectOptions.ID where CollectionAttributeValues.akID = ? ";
+		$v = array($this->attributeKey->getAttributeKeyID());
+		if (is_object($parentPage)) {
+			$v[] = $parentPage->getCollectionID();
+			$q .= "and cParentID = ?";
+		}
+		$q .= " group by atSelectOptionID order by total desc";
+		$r = $db->Execute($q, $v);
+		$list = new SelectAttributeTypeOptionList();
+		$i = 0;
+		while ($row = $r->FetchRow()) {
+			$opt = new SelectAttributeTypeOption($row['atSelectOptionID'], $row['value'], $i, $row['total']);
+			$list->add($opt);
+			$i++;
+		}		
 		return $list;
 	}
 	
@@ -325,20 +362,6 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 		return $options;
 	}
 		
-	public function validateKey($args) {
-		$e = parent::validateKey($args);
-		
-		// additional validation for select type
-		
-		$vals = $this->getSelectValuesFromPost();
-
-		if ($vals->count() < 2 && $this->post('akSelectAllowOtherValues') == 0) {
-			$e->add(t('A select attribute type must have at least two values, or must allow users to add to it.'));
-		}
-		
-		return $e;
-	}
-
 	public function saveKey($data) {
 		$ak = $this->getAttributeKey();
 		
@@ -394,14 +417,23 @@ class SelectAttributeTypeController extends AttributeTypeController  {
 
 class SelectAttributeTypeOption extends Object {
 
-	public function __construct($ID, $value, $displayOrder) {
+	public function __construct($ID, $value, $displayOrder, $usageCount = false) {
 		$this->ID = $ID;
 		$this->value = $value;
+		$this->th = Loader::helper('text');
 		$this->displayOrder = $displayOrder;	
+		$this->usageCount = $usageCount;	
 	}
 	
 	public function getSelectAttributeOptionID() {return $this->ID;}
-	public function getSelectAttributeOptionValue() {return $this->value;}
+	public function getSelectAttributeOptionUsageCount() {return $this->usageCount;}
+	public function getSelectAttributeOptionValue($sanitize = true) {
+		if (!$sanitize) {
+			return $this->value;
+		} else {
+			return $this->th->entities($this->value);
+		}
+	}
 	public function getSelectAttributeOptionDisplayOrder() {return $this->displayOrder;}
 	public function getSelectAttributeOptionTemporaryID() {return $this->tempID;}
 	

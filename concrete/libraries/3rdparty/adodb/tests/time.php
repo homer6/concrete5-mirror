@@ -1,9 +1,9 @@
-<?php 
+<?php
 
 include_once('../adodb-time.inc.php');
 adodb_date_test();
 ?>
-<?php  
+<?php 
 //require("adodb-time.inc.php"); 
 
 $datestring = "2063-12-24"; // string normally from mySQL 

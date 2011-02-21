@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 //Permissions Check
 if($_GET['bID']) {
@@ -25,7 +25,7 @@ if($_GET['bID']) {
 		<rss version="2.0">
 		  <channel>
 			<title><?php echo $controller->rssTitle?></title>
-			<link><?php echo BASE_URL.DIR_REL.htmlspecialchars($rssUrl)?></link>
+			<link><?php echo BASE_URL.$rssUrl?></link>
 			<description><?php echo $controller->rssDescription?></description> 
 <?php 
 		for ($i = 0; $i < count($cArray); $i++ ) {

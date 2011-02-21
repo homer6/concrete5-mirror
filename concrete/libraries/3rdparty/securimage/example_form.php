@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Project:     Securimage: A PHP class for creating and managing form CAPTCHA images<br />
@@ -48,7 +48,7 @@
 
 <body>
 
-<?php 
+<?php
 if (empty($_POST)) { ?>
 <form method="POST">
 Username:<br />
@@ -57,13 +57,13 @@ Password:<br />
 <input type="text" name="password" /><br />
 
 <!-- pass a session id to the query string of the script to prevent ie caching -->
-<img src="securimage_show.php?sid=<?php  echo md5(uniqid(time())); ?>"><br />
+<img src="securimage_show.php?sid=<?php echo md5(uniqid(time())); ?>"><br />
 <input type="text" name="code" /><br />
 
 <input type="submit" value="Submit Form" />
 </form>
 
-<?php 
+<?php
 } else { //form is posted
   include("securimage.php");
   $img = new Securimage();

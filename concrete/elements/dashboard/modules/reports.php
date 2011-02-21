@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <div id="dashboard-reports"><?php echo t('You must install Adobe Flash to view this content.')?></div>
 
 <script type="text/javascript">

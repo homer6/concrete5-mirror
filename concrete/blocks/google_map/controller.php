@@ -1,5 +1,5 @@
 <?php 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	class GoogleMapBlockController extends BlockController {
 		
 		var $pobj;
@@ -7,7 +7,11 @@
 		protected $btTable = 'btGoogleMap';
 		protected $btInterfaceWidth = "400";
 		protected $btInterfaceHeight = "220";
-		
+		protected $btCacheBlockRecord = true;
+		protected $btCacheBlockOutput = true;
+		protected $btCacheBlockOutputOnPost = true;
+		protected $btCacheBlockOutputForRegisteredUsers = true;
+
 		public $title = "";
 		public $api_key = "";
 		public $location = "";
@@ -98,8 +102,10 @@
 			$xml = $fh->getContents($url);
 			// Parse the returned XML file
 			//echo htmlspecialchars($xml); 
-			$enc = mb_detect_encoding($xml);
-			$xml = mb_convert_encoding($xml, APP_CHARSET, $enc);
+			if(function_exists('mb_detect_encoding')) {
+				$enc = mb_detect_encoding($xml);
+				$xml = mb_convert_encoding($xml, APP_CHARSET, $enc);
+			}
 			try {
 				$this->xmlObj = new SimpleXMLElement($xml);
 			} catch (Exception $e) {

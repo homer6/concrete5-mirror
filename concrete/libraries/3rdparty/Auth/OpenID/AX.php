@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Implements the OpenID attribute exchange specification, version 1.0

@@ -7,7 +7,7 @@
  * 2. Item saved in database? Then it will be used.
  * 3. Otherwise, we setup the defaults below.
  **/
-defined('C5_EXECUTE') or die(_("Access Denied.")); 
+defined('C5_EXECUTE') or die("Access Denied."); 
 
 if (!defined('ENABLE_CACHE')) {
 	Config::getOrDefine('ENABLE_CACHE', true); 
@@ -15,6 +15,17 @@ if (!defined('ENABLE_CACHE')) {
 if (!ENABLE_CACHE) {
 	Cache::disableCache();
 }
+
+if (ENABLE_CACHE) {
+	Config::getOrDefine('FULL_PAGE_CACHE_GLOBAL', 'blocks');	
+}
+
+if (!defined('STATISTICS_TRACK_PAGE_VIEWS')) {
+	Config::getOrDefine('STATISTICS_TRACK_PAGE_VIEWS', true);
+}
+
+Config::getOrDefine('FULL_PAGE_CACHE_LIFETIME', 'default');		
+
 # permissions model - valid options are 'advanced' or 'simple'
 if (!defined('PERMISSIONS_MODEL')) {
 	Config::getOrDefine('PERMISSIONS_MODEL', 'simple');
@@ -44,6 +55,10 @@ if (!defined('DATE_APP_GENERIC_MDYT_FULL')) {
 
 if (!defined('DATE_APP_GENERIC_MDYT')) {
 	define('DATE_APP_GENERIC_MDYT', t('n/j/Y \a\t g:i A'));
+}
+
+if (LOCALE != 'en_US') {
+	define('DATE_APP_GENERIC_MDY', 'Y-m-d');
 }
 
 if (!defined('DATE_APP_GENERIC_MDY')) {

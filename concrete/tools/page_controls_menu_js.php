@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 header('Content-type: text/javascript');?>
 
 var menuHTML = '';
@@ -82,6 +82,20 @@ menuHTML += '<div id="ccm-logo-wrapper"><img src="<?php echo ASSETS_URL_IMAGES?>
 menuHTML += '<div id="ccm-system-nav-wrapper1">';
 menuHTML += '<div id="ccm-system-nav-wrapper2">';
 menuHTML += '<ul id="ccm-system-nav">';
+
+<?php  
+if ($sh->canRead() && $u->config('UI_SITEMAP')) { ?>
+	menuHTML += '<li><a id="ccm-nav-sitemap" dialog-title="<?php echo t('Navigate to Page')?>" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/sitemap_search_selector?callback=ccm_goToSitemapNode&sitemap_select_mode=select_page" dialog-on-open="$(\'#ccm-nav-sitemap\').removeClass(\'ccm-nav-loading\')" dialog-width="90%" dialog-height="70%" dialog-modal="false"><?php echo t('Sitemap')?></a></li>';
+<?php 
+}
+$fp = FilePermissions::getGlobal();
+if ($fp->canSearchFiles() && $u->config('UI_FILEMANAGER')) { ?>
+	menuHTML += '<li><a id="ccm-nav-file-manager" dialog-title="<?php echo t('File Manager')?>" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/search_dialog?disable_choose=1" dialog-on-open="$(\'#ccm-nav-file-manager\').removeClass(\'ccm-nav-loading\')" dialog-width="90%" dialog-height="70%" dialog-modal="false"><?php echo t('File Manager')?></a></li>';
+
+<?php 
+}
+?>
+
 <?php  if ($dh->canRead()) { ?>
 	menuHTML += '<li><a id="ccm-nav-dashboard" href="<?php echo View::url('/dashboard')?>"><?php echo t('Dashboard')?></a></li>';
 <?php  } ?>

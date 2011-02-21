@@ -20,12 +20,13 @@
  * @license    http://www.concrete5.org/license/     MIT License
  *
  */
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	class AutonavBlockItem {
 
-		private $level;
-		private $isActive = false;
-		private $_c;
+		protected $level;
+		protected $isActive = false;
+		protected $_c;
+		public $hasChildren = false;
 		
 		/**
 		 * Instantiates an Autonav Block Item. 
@@ -50,7 +51,7 @@
 		 * @return int
 		 */
 		function hasChildren() {
-			return count($this->subNavigationItems);
+			return $this->hasChildren;
 		}
 		
 		/**
@@ -73,6 +74,24 @@
 			return $this->cvDescription;
 		}
 
+		/** 
+		 * Returns a target for the nav item
+		 */
+		public function getTarget() {
+			if ($this->cPointerExternalLink != '') {
+				if ($this->cPointerExternalLinkNewWindow) {
+					return '_blank';
+				}
+			}
+			
+			$_c = $this->getCollectionObject();
+			if (is_object($_c)) {
+				return $_c->getAttribute('nav_target');
+			}
+			
+			return '';
+		}
+		
 		/** 
 		 * Gets a URL that will take the user to this particular page. Checks against URL_REWRITING, the page's path, etc..
 		 * @return string $url
@@ -154,7 +173,11 @@
 		protected $btTable = 'btNavigation';
 		protected $btInterfaceWidth = "500";
 		protected $btInterfaceHeight = "350";
-
+		protected $btCacheBlockOutput = true;
+		protected $btCacheBlockOutputOnPost = true;
+		protected $btCacheBlockOutputForRegisteredUsers = false;
+		protected $btCacheBlockOutputLifetime = 300;
+		
 		public function getBlockTypeDescription() {
 			return t("Creates navigation trees and sitemaps.");
 		}
@@ -435,6 +458,14 @@
 		}
 
 		function getNavigationArray($cParentID, $orderBy, $currentLevel) {
+			// increment all items in the nav array with a greater $currentLevel
+			
+			foreach($this->navArray as $ni) {
+				if ($ni->getLevel() + 1 < $currentLevel) {
+					$ni->hasChildren = true;
+				}
+			}
+			
 			$db = Loader::db();
 			$navSort = $this->navSort;
 			$sorted_array = $this->sorted_array;
@@ -475,6 +506,7 @@
 							$niRow['cvDescription'] = $tc->getCollectionDescription();
 							$niRow['cPath'] = $tc->getCollectionPath();
 							$niRow['cPointerExternalLink'] = $tc->getCollectionPointerExternalLink();
+							$niRow['cPointerExternalLinkNewWindow'] = $tc->openCollectionPointerExternalLinkInNewWindow();
 							$dateKey = strtotime($tc->getCollectionDatePublic());
 
 							$ni = new AutonavBlockItem($niRow, $currentLevel);

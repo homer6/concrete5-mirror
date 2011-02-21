@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 
 <?php  
 
@@ -15,15 +15,15 @@ if (isset($message)) { ?>
 </div>
 
 <?php  } else { ?>
-
 <script type="text/javascript">
+
 
 activateInstallForm = function() {
 	$("#ccm-install-form input").each(function() {
 		$(this).attr('disabled', false);
-		$('#ccm-form-intro').html('<?php echo $introMsg?>');
-		$("#ccm-form-intro").removeClass('ccm-error');
 	});
+	$('#ccm-form-intro').html('<?php echo $introMsg?>');
+	$("#ccm-form-intro").removeClass('ccm-error');
 }
 
 <?php  if ($this->controller->passedRequiredItems()) { ?>

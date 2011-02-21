@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::library('authentication/open_id');
 
 class LoginController extends Controller { 
@@ -253,22 +253,24 @@ class LoginController extends Controller {
 			$url = $nh->getLinkToCollection($rc, true);
 			$loginData['redirectURL'] = $url;
 		}elseif( strlen($rcID) ){
-			$loginData['redirectURL'] = $rcID;
+			$rcID = trim($rcID, '/');
+			
+			$nc2 = Page::getByPath('/' . $rcID);
+			if (is_object($nc2) && !$nc2->isError()) {
+				$loginData['redirectURL'] = BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '/' . $rcID;
+			}
 		}
 		
+		/*
 		//full page login redirect (non-ajax login)
 		if( strlen($loginData['redirectURL']) && $_REQUEST['format']!='JSON' ){ 
 			header('Location: ' . $loginData['redirectURL']);
 			exit;	
 		}
-		
-		//not sure why there's this second redirect approach, but oh well...
-		if ($this->post('redirect') != '' && $this->isValidExternalUrl($this->post('redirect'))) {
-			$loginData['redirectURL']=$this->post('redirect');
-		}
+		*/
 		
 		$dash = Page::getByPath("/dashboard", "RECENT");
-		$dbp = new Permissions($dash);		
+		$dbp = new Permissions($dash);
 		
 		Events::fire('on_user_login',$this);
 		

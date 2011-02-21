@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 
 <?php  $th = $c->getCollectionThemeObject(); ?>
 <?php  $this->inc('editor_config.php', array('theme' => $th)); ?> 
@@ -10,6 +10,7 @@ var editor_id = 'ccm-content-<?php echo $a->getAreaID()?>';
 // store the selection/position for ie..
 var bm; 
 setBookMark = function () {
+	tinyMCE.activeEditor.focus();
 	bm = tinyMCE.activeEditor.selection.getBookmark();
 }
 

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * An implementation of the OpenID Provider Authentication Policy

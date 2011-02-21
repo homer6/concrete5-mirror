@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  * Functions for dealing with OpenID trust roots
  *

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Routines for XRI resolution.

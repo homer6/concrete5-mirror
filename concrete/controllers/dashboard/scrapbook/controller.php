@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 Loader::model('pile');
 
@@ -89,8 +89,8 @@ class DashboardScrapbookController extends Controller {
 			}
 		}else{
 			$bID=intval($_REQUEST['bID']);
-			$block=Block::getById($bID); 
-			$c=$this->getCollectionObject(); 
+			$c = Page::getCurrentPage();
+			$block=Block::getById($bID, $c, $_REQUEST['scrapbookName']); 
 			if( $block ){  //&& $block->getAreaHandle()=='Global Scrapbook'
 				$block->delete(1);
 			}

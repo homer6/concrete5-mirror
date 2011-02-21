@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $ci = Loader::helper('concrete/interface');
 ?>
 	<h1><span><?php echo t('Inspect Theme: ')?> <?php echo $pageTheme->getThemeName() ?></span></h1>

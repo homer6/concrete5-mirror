@@ -20,18 +20,10 @@
 		</tr>
 	</table>
 
-    <div class="ccm-buttons">
-        <a class="ccm-dialog-close ccm-button-left cancel" href="#" onClick="tinyMCEPopup.close();">
-            <span>
-                <em class="ccm-button-close">Cancel</em>
-            </span>
-        </a>
-        <a class="ccm-button-right accept" href="#" onClick="AnchorDialog.update();return false">
-            <span>
-                <em class="ccm-button-update">Update</em>
-            </span>
-        </a>
-    </div>
+	<div class="mceActionPanel">
+		<input type="submit" id="insert" name="insert" class="ccm-button-v2" style="float: right" value="{#update}" />
+		<input type="button" id="cancel" name="cancel" class="ccm-button-v2"  value="{#cancel}" onclick="tinyMCEPopup.close();" />
+	</div>
 </form>
 </body>
 </html>

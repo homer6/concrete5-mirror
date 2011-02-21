@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+defined('C5_EXECUTE') or die("Access Denied."); ?>
 
 <?php  if ($this->controller->getTask() == 'viewDetail') { ?>
 	<h1><span><?php echo t('Results for &#34;%s&#34;', $current_survey)?></span></h1>

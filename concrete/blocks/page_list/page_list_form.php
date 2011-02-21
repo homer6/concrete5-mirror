@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <?php  $c = Page::getCurrentPage(); ?>
 <ul id="ccm-pagelist-tabs" class="ccm-dialog-tabs">
 	<li class="ccm-nav-active"><a id="ccm-pagelist-tab-add" href="javascript:void(0);"><?php echo ($bID>0)? t('Edit') : t('Add') ?></a></li>
@@ -82,7 +82,7 @@
 	  <select name="orderBy">
 		<option value="display_asc" <?php  if ($orderBy == 'display_asc') { ?> selected <?php  } ?>><?php echo t('in their sitemap order')?></option>
 		<option value="chrono_desc" <?php  if ($orderBy == 'chrono_desc') { ?> selected <?php  } ?>><?php echo t('with the most recent first')?></option>
-		<option value="chrono_asc" <?php  if ($orderBy == 'chrono_asc') { ?> selected <?php  } ?>><?php echo t('with the earlist first')?></option>
+		<option value="chrono_asc" <?php  if ($orderBy == 'chrono_asc') { ?> selected <?php  } ?>><?php echo t('with the earliest first')?></option>
 		<option value="alpha_asc" <?php  if ($orderBy == 'alpha_asc') { ?> selected <?php  } ?>><?php echo t('in alphabetical order')?></option>
 		<option value="alpha_desc" <?php  if ($orderBy == 'alpha_desc') { ?> selected <?php  } ?>><?php echo t('in reverse alphabetical order')?></option>
 	  </select>

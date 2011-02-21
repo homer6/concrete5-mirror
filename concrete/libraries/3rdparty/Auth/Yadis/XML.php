@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * XML-parsing classes to wrap the domxml and DOM extensions for PHP 4

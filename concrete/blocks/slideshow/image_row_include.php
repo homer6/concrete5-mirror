@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <div id="ccm-slideshowBlock-imgRow<?php echo $imgInfo['slideshowImgId']?>" class="ccm-slideshowBlock-imgRow" >
 	<div class="backgroundRow" style="background: url(<?php echo $imgInfo['thumbPath']?>) no-repeat left top; padding-left: 100px">
 		<div class="cm-slideshowBlock-imgRowIcons" >

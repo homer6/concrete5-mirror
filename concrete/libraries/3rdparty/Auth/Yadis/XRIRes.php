@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Code for using a proxy XRI resolver.

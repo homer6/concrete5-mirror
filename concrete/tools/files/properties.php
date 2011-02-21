@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $u = new User();
 $form = Loader::helper('form');
 Loader::model("file_attributes");
@@ -220,6 +220,24 @@ if (!$previewMode) {
 	<th><?php echo t('URL to File')?></th>
 	<td width="100%" colspan="2"><?php echo $fv->getRelativePath(true)?></td>
 </tr>
+<?php 
+$oc = $f->getOriginalPageObject();
+if (is_object($oc)) { 
+	$fileManager = Page::getByPath('/dashboard/files/search'); 
+	$ocName = $oc->getCollectionName();
+	if (is_object($fileManager) && !$fileManager->isError()) {
+		if ($fileManager->getCollectionID() == $oc->getCollectionID()) {
+			$ocName = t('Dashboard File Manager');
+		}
+	}
+	?>
+
+<tr>
+	<th><?php echo t('Page Added To')?></th>
+	<td width="100%" colspan="2"><a href="<?php echo Loader::helper('navigation')->getLinkToCollection($oc)?>" target="_blank"><?php echo $ocName?></a></td>
+</tr>
+<?php  } ?>
+
 <tr>
 	<th><?php echo t('Type')?></th>
 	<td colspan="2"><?php echo $fv->getType()?></td>
@@ -340,13 +358,17 @@ foreach($attribs as $at) {
 				<td style="text-align: center">
 					<?php echo $form->radio('vlfvID', $fvv->getFileVersionID(), $fvv->getFileVersionID() == $fv->getFileVersionID())?>
 				</td>
-				<td>
+				<td width="100">
+					<div style="width: 150px; word-wrap: break-word">
 					<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/properties?fID=<?php echo $f->getFileID()?>&fvID=<?php echo $fvv->getFileVersionID()?>&task=preview_version" dialog-modal="false" dialog-width="630" dialog-height="450" dialog-title="<?php echo t('Preview File')?>" class="dialog-launch">
-						<?php echo wordwrap($fvv->getFilename(),20,"\n",true) ?>
+						<?php echo $fvv->getFilename()?>
 					</a>
+					</div>
 				</td>
 				<td> 
-					<?php echo wordwrap($fvv->getTitle(),20,"\n",true) ?>
+					<div style="width: 150px; word-wrap: break-word">
+						<?php echo $fvv->getTitle()?>
+					</div>
 				</td>
 				<td><?php 
 					$comments = $fvv->getVersionLogComments();

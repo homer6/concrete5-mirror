@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This file specifies the interface for PHP OpenID store implementations.

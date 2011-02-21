@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 if ($action == null) { 
 	// we can pass an action from the block, but in most instances we won't, we'll use the default
 	$action = $bt->getBlockAddAction($a);
@@ -42,6 +42,8 @@ $(function() {
 <input type="hidden" name="ccm-block-pane-action" value="<?php echo $_SERVER['REQUEST_URI']?>" />
 
 <form method="post" action="<?php echo $action?>" class="validate" id="ccm-block-form" enctype="multipart/form-data">
+
+<input type="hidden" name="ccm-block-form-method" value="REGULAR" />
 
 <?php  foreach($this->controller->getJavaScriptStrings() as $key => $val) { ?>
 	<input type="hidden" name="ccm-string-<?php echo $key?>" value="<?php echo $val?>" />

@@ -64,7 +64,7 @@ var GlobalScrapbook = {
 		<?php  if(!$globalScrapbookArea){ ?>
 		return false;
 		<?php  }else{ ?>
-		ccm_openAreaAddBlock("<?php echo $globalScrapbookArea->getAreaHandle() ?>", true);
+		ccm_openAreaAddBlock("<?php echo urlencode($globalScrapbookArea->getAreaHandle()) ?>", true);
 		<?php  } ?>
 	},
 	editBlock:function(bID,w,h){ 
@@ -73,7 +73,7 @@ var GlobalScrapbook = {
 		var editBlockURL = '<?php echo REL_DIR_FILES_TOOLS_REQUIRED ?>/edit_block_popup';
 		$.fn.dialog.open({
 			title: ccmi18n.editBlock,
-			href: editBlockURL+'?cID='+CCM_CID+'&bID='+bID+'&arHandle=<?php echo urlencode($scrapbookName)?>&btask=edit',
+			href: editBlockURL+'?cID='+CCM_CID+'&bID='+bID+'&arHandle=<?php echo urlencode($scrapbookName)?>&btask=edit&isGlobal=1',
 			width: w,
 			modal: false,
 			height: h
@@ -87,6 +87,16 @@ var GlobalScrapbook = {
 			width: 300,
 			modal: false,
 			height: 100
+		});		
+	},
+	editBlockDesign:function(bID){ 
+		var editBlockURL = '<?php echo REL_DIR_FILES_TOOLS_REQUIRED ?>/edit_block_popup';
+		$.fn.dialog.open({
+			title: '<?php echo t("Design")?>',
+			href: editBlockURL+'?cID='+CCM_CID+'&bID='+bID+'&arHandle=<?php echo urlencode($scrapbookName)?>&btask=block_css',
+			width: 450,
+			modal: false,
+			height: 420
 		});		
 	},
 	editBlockPermissions:function(bID){ 
@@ -169,7 +179,7 @@ $(function(){ GlobalScrapbook.init(); });
 						<div class="edit">
 							<form method="post" action="<?php echo $this->url($cPath, 'rename_scrapbook' )?>">
 								<input name="arID" type="hidden" value="<?php echo intval($availableScrapbook['arID']) ?>" /> 
-								<input name="scrapbookName" type="text" value="<?php echo addslashes($availableScrapbook['arHandle']) ?>" />
+								<input name="scrapbookName" type="text" value="<?php echo $availableScrapbook['arHandle'] ?>" />
 								<input name="Submit" type="submit" value="<?php echo t('Save')?>" />
 								<input onclick="GlobalScrapbook.toggleScrapbookRename(<?php echo intval($availableScrapbook['arID']) ?>)" name="cancel" type="button" value="<?php echo t('Cancel')?>" />
 								&nbsp;
@@ -318,6 +328,10 @@ $(function(){ GlobalScrapbook.init(); });
 							&nbsp;|&nbsp; 
 							<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlockTemplate(<?php echo intval($b->bID) ?>)" ><?php echo t('Custom Template')?></a> 
 							&nbsp;|&nbsp; 
+							<?php  if (ENABLE_CUSTOM_DESIGN == true) { ?>
+							<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlockDesign(<?php echo intval($b->bID) ?>)" ><?php echo t('Design')?></a> 
+							&nbsp;|&nbsp; 
+							<?php  } ?>
 							<a href="javascript:void(0)" onclick="GlobalScrapbook.editBlock(<?php echo intval($b->bID) ?>,<?php echo $bt->getBlockTypeInterfaceWidth()?> , <?php echo $bt->getBlockTypeInterfaceHeight()?> )" ><?php echo t('Edit')?></a> 
 							&nbsp;|&nbsp; 
 							
@@ -349,7 +363,7 @@ $(function(){ GlobalScrapbook.init(); });
 							<div class="edit">
 								<form method="post" action="<?php echo $this->url($c->getCollectionPath(), 'rename_block' )?>">
 									<input name="bID" type="hidden" value="<?php echo intval($b->bID) ?>" />
-									<input name="scrapbookName" type="hidden" value="<?php echo addslashes($scrapbookName) ?>" />
+									<input name="scrapbookName" type="hidden" value="<?php echo $scrapbookName ?>" />
 									<input name="bName" type="text" value="<?php echo $b->getBlockName() ?>" />
 									<input name="Submit" type="submit" value="<?php echo t('Save')?>" />
 									<input onclick="GlobalScrapbook.toggleRename(<?php echo intval($b->bID) ?>)" name="cancel" type="button" value="<?php echo t('Cancel')?>" />

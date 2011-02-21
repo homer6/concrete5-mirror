@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::model('attribute/categories/user');
 Loader::model('user_list');
 class DashboardUsersSearchController extends Controller {
@@ -123,7 +123,7 @@ class DashboardUsersSearchController extends Controller {
 		if ($_POST['task'] == 'update_extended_attribute') { 
 			$ak->saveAttributeForm($uo);
 			$val = $uo->getAttributeValueObject($ak);
-			print $val->getValue('displaySanitized');
+			print $val->getValue('displaySanitized','display');
 			exit;
 		}
 		

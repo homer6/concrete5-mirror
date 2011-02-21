@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::block('form');
 
 class DashboardReportsFormsController extends Controller {
@@ -16,6 +16,8 @@ class DashboardReportsFormsController extends Controller {
 	}
 
 	public function excel(){ 
+		$dateHelper = Loader::helper('date');
+		
 		$this->pageSize=0;
 		$this->loadSurveyResponses();
 		$textHelper = Loader::helper('text');
@@ -86,7 +88,7 @@ class DashboardReportsFormsController extends Controller {
 			$questionNumber=0;
 			$numQuestionsToShow=2;
 			echo "\t<tr>\r\n";
-			echo "\t\t<td>".$answerSet['created']."</td>\r\n";
+			echo "\t\t<td>". $dateHelper->getSystemDateTime($answerSet['created'])."</td>\r\n";
 			foreach($questions as $questionId=>$question){ 
 				$questionNumber++;
                 if ($question['inputType'] == 'checkboxlist'){
@@ -95,11 +97,12 @@ class DashboardReportsFormsController extends Controller {
                     for ($i = 1; $i <= count($options); $i++)
                     {
 				        echo "\t\t<td align='center'>\r\n";
-                        if (in_array($options[$i-1], $subanswers))
+                        if (in_array(trim($options[$i-1]), $subanswers)) {
 				           // echo "\t\t\t".$options[$i-1]."\r\n";
-				           echo "&#10004;";
-                        else
+				           echo "x";
+				        } else {
 				            echo "\t\t\t&nbsp;\r\n";
+				        }
 				        echo "\t\t</td>\r\n";
                     }
 					

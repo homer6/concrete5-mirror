@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
 *
@@ -58,7 +58,7 @@ class Page extends Collection {
 	protected function populatePage($cInfo, $where, $cvID) {
 		$db = Loader::db();
 		
-		$q0 = "select Pages.cID, Pages.pkgID, Pages.cPointerID, Pages.cPointerExternalLink, Pages.cFilename, Collections.cDateAdded, Pages.cDisplayOrder, Collections.cDateModified, cInheritPermissionsFromCID, cInheritPermissionsFrom, cOverrideTemplatePermissions, cPendingAction, cPendingActionUID, cPendingActionTargetCID, cPendingActionDatetime, cCheckedOutUID, cIsTemplate, uID, cPath, Pages.ctID, ctHandle, ctIcon, ptID, cParentID, cChildren, ctName from Pages inner join Collections on Pages.cID = Collections.cID left join PageTypes on (PageTypes.ctID = Pages.ctID) left join PagePaths on (Pages.cID = PagePaths.cID and PagePaths.ppIsCanonical = 1) ";
+		$q0 = "select Pages.cID, Pages.pkgID, Pages.cPointerID, Pages.cPointerExternalLink, Pages.cPointerExternalLinkNewWindow, Pages.cFilename, Collections.cDateAdded, Pages.cDisplayOrder, Collections.cDateModified, cInheritPermissionsFromCID, cInheritPermissionsFrom, cOverrideTemplatePermissions, cPendingAction, cPendingActionUID, cPendingActionTargetCID, cPendingActionDatetime, cCheckedOutUID, cIsTemplate, uID, cPath, Pages.ctID, ctHandle, ctIcon, ptID, cParentID, cChildren, ctName, cCacheFullPageContent, cCacheFullPageContentOverrideLifetime, cCacheFullPageContentLifetimeCustom from Pages inner join Collections on Pages.cID = Collections.cID left join PageTypes on (PageTypes.ctID = Pages.ctID) left join PagePaths on (Pages.cID = PagePaths.cID and PagePaths.ppIsCanonical = 1) ";
 		$q2 = "select cParentID, cPointerID, cPath, Pages.cID from Pages left join PagePaths on (Pages.cID = PagePaths.cID and PagePaths.ppIsCanonical = 1) ";
 
 		if ($cInfo != 1) {
@@ -435,16 +435,22 @@ $ppWhere = '';
 		return $newCID;
 	}
 	
-	function updateCollectionAliasExternal($cName, $cLink) {
+	function updateCollectionAliasExternal($cName, $cLink, $newWindow = 0) {
 		if ($this->cPointerExternalLink != '') {
 			$db = Loader::db();
 			$this->markModified();
+			if ($newWindow) {
+				$newWindow = 1;
+			} else {
+				$newWindow = 0;
+			}
 			$db->query("update CollectionVersions set cvName = ? where cID = ?", array($cName, $this->cID));
-			$db->query("update Pages set cPointerExternalLink = ? where cID = ?", array($cLink, $this->cID));
+			$db->query("update Pages set cPointerExternalLink = ?, cPointerExternalLinkNewWindow = ? where cID = ?", array($cLink, $newWindow, $this->cID));
+			$this->refreshCache();
 		}
 	}
 	
-	function addCollectionAliasExternal($cName, $cLink) {
+	function addCollectionAliasExternal($cName, $cLink, $newWindow = 0) {
 
 		$db = Loader::db();
 		$dh = Loader::helper('date');
@@ -467,8 +473,14 @@ $ppWhere = '';
 		$cobj = parent::add($data);
 		$newCID = $cobj->getCollectionID();
 		
-		$v = array($newCID, $ctID, $cParentID, $uID, $cLink);
-		$q = "insert into Pages (cID, ctID, cParentID, uID, cPointerExternalLink) values (?, ?, ?, ?, ?)";
+		if ($newWindow) {
+			$newWindow = 1;
+		} else {
+			$newWindow = 0;
+		}
+		
+		$v = array($newCID, $ctID, $cParentID, $uID, $cLink, $newWindow);
+		$q = "insert into Pages (cID, ctID, cParentID, uID, cPointerExternalLink, cPointerExternalLinkNewWindow) values (?, ?, ?, ?, ?, ?)";
 		$r = $db->prepare($q);
 		
 		$res = $db->execute($r, $v);
@@ -550,6 +562,7 @@ $ppWhere = '';
 
 			Cache::delete('page', $this->getCollectionPointerOriginalID()  );
 			Cache::delete('page_path', $this->getCollectionPointerOriginalID()  );
+			Cache::delete('request_path_page', $this->getCollectionPointerOriginalID()  );
 
 			return $cIDRedir;
 		}
@@ -604,9 +617,9 @@ $ppWhere = '';
 	}
 
 	function getCollectionThemeID() {
-		$db = Loader::db();
-		if ($this->ptID < 1) {
-			return $db->GetOne("select ptID from Pages where cID = 1");
+		if ($this->ptID < 1 && $this->cID != HOME_CID) {
+			$c = Page::getByID(HOME_CID);
+			return $c->getCollectionThemeID();
 		} else {
 			return $this->ptID;
 		}	
@@ -616,7 +629,6 @@ $ppWhere = '';
 		if ($this->ptID < 1) {
 			return PageTheme::getSiteTheme();
 		} else {
-			// this is probably not terribly efficient
 			$pl = PageTheme::getByID($this->ptID);
 			return $pl;
 		}		
@@ -635,6 +647,10 @@ $ppWhere = '';
 
 	function getCollectionPointerExternalLink() {
 		return $this->cPointerExternalLink;
+	}
+
+	function openCollectionPointerExternalLinkInNewWindow() {
+		return $this->cPointerExternalLinkNewWindow;
 	}
 	
 	function isAlias() {
@@ -883,8 +899,21 @@ $ppWhere = '';
 		
 		$rescanTemplatePermissions = false;
 		
+		$cCacheFullPageContent = $this->cCacheFullPageContent;
+		$cCacheFullPageContentLifetimeCustom = $this->cCacheFullPageContentLifetimeCustom;
+		$cCacheFullPageContentOverrideLifetime = $this->cCacheFullPageContentOverrideLifetime;
+		
 		if (isset($data['cName'])) {
 			$cName = $data['cName'];
+		}
+		if (isset($data['cCacheFullPageContent'])) {
+			$cCacheFullPageContent = $data['cCacheFullPageContent'];
+		}
+		if (isset($data['cCacheFullPageContentLifetimeCustom'])) {
+			$cCacheFullPageContentLifetimeCustom = $data['cCacheFullPageContentLifetimeCustom'];
+		}
+		if (isset($data['cCacheFullPageContentOverrideLifetime'])) {
+			$cCacheFullPageContentOverrideLifetime = $data['cCacheFullPageContentOverrideLifetime'];
 		}
 		if (isset($data['cDescription'])) {
 			$cDescription = $data['cDescription'];
@@ -912,6 +941,8 @@ $ppWhere = '';
             $cHandle = $txt->sanitizeFileSystem($data['cHandle']);
         }
 		
+		$cName = $txt->sanitize($cName);
+		
 		// Update the non-canonical page paths
 		if (isset($data['ppURL']))
 			$this->rescanPagePaths($data['ppURL']);
@@ -934,7 +965,7 @@ $ppWhere = '';
 			$res = $db->execute($r, $v);				
 		}
 
-		$db->query("update Pages set uID = ?, ctID = ?, pkgID = ?, cFilename = ? where cID = ?", array($uID, $ctID, $pkgID, $cFilename, $this->cID));
+		$db->query("update Pages set uID = ?, ctID = ?, pkgID = ?, cFilename = ?, cCacheFullPageContent = ?, cCacheFullPageContentLifetimeCustom = ?, cCacheFullPageContentOverrideLifetime = ? where cID = ?", array($uID, $ctID, $pkgID, $cFilename, $cCacheFullPageContent, $cCacheFullPageContentLifetimeCustom, $cCacheFullPageContentOverrideLifetime, $this->cID));
 
 		if ($rescanTemplatePermissions) {
 			if ($this->cInheritPermissionsFrom == 'TEMPLATE') {
@@ -1048,6 +1079,7 @@ $ppWhere = '';
 		if (!is_array($args)) {
 			$args = $_POST; // legacy support
 		}
+		
 		if ($args['cInheritPermissionsFrom'] == 'OVERRIDE') {
 			// we're hitting manual override, which means we need to do permissions updates
 			if ($this->getPermissionsCollectionID() != $this->cID) {
@@ -1077,6 +1109,9 @@ $ppWhere = '';
 			$q = "update Pages set cInheritPermissionsFrom = ?, cInheritPermissionsFromCID = ? where cID = ?";
 			$r = $db->query($q, $v);
 
+			$this->cInheritPermissionsFrom = $args['cInheritPermissionsFrom'];
+			$this->cInheritPermissionsFromCID = $cpID;
+
 			// we do this because we may be going from a manual override to inheritance, and we don't
 			// want any orphaned groups
 			$this->clearGroups();
@@ -1086,8 +1121,26 @@ $ppWhere = '';
 
 		$v = array($cOverrideTemplatePermissions, $this->cID);
 		$q = "update Pages set cOverrideTemplatePermissions = ? where cID = ?";
+
+		$this->cOverrideTemplatePermissions = $cOverrideTemplatePermissions;
+		
+		$arHandles = $db->GetCol('select arHandle from Areas where cID = ?', $this->getCollectionID());
+		foreach($arHandles as $arHandle) {
+			$a = Area::getOrCreate($this, $arHandle);
+			$a->rescanAreaPermissionsChain();
+		}
+
+		$blocks = $this->getBlocks();
+		foreach($blocks as $b) {
+			$b->refreshCache();
+		}
+		
 		$db->query($q, $v);
 		parent::refreshCache();
+	}
+	
+	public function __destruct() {
+		parent::__destruct();
 	}
 
 	function updatePermissionsCollectionID($cParentIDString, $npID) {
@@ -1132,7 +1185,10 @@ $ppWhere = '';
 		$dh = Loader::helper('date');
 
 		Loader::model('page_statistics');
-		PageStatistics::decrementParents($this->cID);
+
+		$cID = ($this->getCollectionPointerOriginalID() > 0) ? $this->getCollectionPointerOriginalID() : $this->cID;
+
+		PageStatistics::decrementParents($cID);
 		parent::refreshCache();
 		
 		$cDateModified = $dh->getSystemDateTime();
@@ -1150,14 +1206,13 @@ $ppWhere = '';
 			}
 		}
 		
-		$db->query("update Collections set cDateModified = ? where cID = ?", array($cDateModified, $this->cID));
-		
-		$v = array($newCParentID, $this->cID);
+		$db->query("update Collections set cDateModified = ? where cID = ?", array($cDateModified, $cID));
+		$v = array($newCParentID, $cID);
 		$q = "update Pages set cParentID = ? where cID = ?";
 		$r = $db->prepare($q);
 		$res = $db->execute($r, $v);
 
-		PageStatistics::incrementParents($this->cID);
+		PageStatistics::incrementParents($cID);
 		
 		// run any event we have for page move. Arguments are
 		// 1. current page being moved
@@ -1231,8 +1286,8 @@ $ppWhere = '';
 		$newC = $cobj->duplicate();
 		$newCID = $newC->getCollectionID();
 		
-		$v = array($newCID, $this->getCollectionTypeID(), $cParentID, $uID, $this->overrideTemplatePermissions(), $this->getPermissionsCollectionID(), $this->getCollectionInheritance(), $this->cFilename, $this->cPointerID, $this->cPointerExternalLink, $this->ptID, $this->cDisplayOrder);
-		$q = "insert into Pages (cID, ctID, cParentID, uID, cOverrideTemplatePermissions, cInheritPermissionsFromCID, cInheritPermissionsFrom, cFilename, cPointerID, cPointerExternalLink, ptID, cDisplayOrder) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		$v = array($newCID, $this->getCollectionTypeID(), $cParentID, $uID, $this->overrideTemplatePermissions(), $this->getPermissionsCollectionID(), $this->getCollectionInheritance(), $this->cFilename, $this->cPointerID, $this->cPointerExternalLink, $this->cPointerExternalLinkNewWindow, $this->ptID, $this->cDisplayOrder);
+		$q = "insert into Pages (cID, ctID, cParentID, uID, cOverrideTemplatePermissions, cInheritPermissionsFromCID, cInheritPermissionsFrom, cFilename, cPointerID, cPointerExternalLink, cPointerExternalLinkNewWindow, ptID, cDisplayOrder) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		$res = $db->query($q, $v);
 	
 		Loader::model('page_statistics');
@@ -1247,7 +1302,7 @@ $ppWhere = '';
 				$qp = "insert into PagePermissions (cID, gID, uID, cgPermissions, cgStartDate, cgEndDate) values (?, ?, ?, ?, ?, ?)";
 				$db->query($qp, $vp);
 			}
-			$q = "select cID, gID, ctID from PagePermissionPageTypes where cID = '{$this->cID}'";
+			$q = "select cID, gID, uID, ctID from PagePermissionPageTypes where cID = '{$this->cID}'";
 			$r = $db->query($q);
 			while ($row = $r->fetchRow()) {
 				$vp = array($newCID, $row['gID'], $row['uID'], $row['ctID']);
@@ -1344,6 +1399,8 @@ $ppWhere = '';
 		
 		$q = "delete from Areas WHERE cID = '{$cID}'";
 		$r = $db->query($q);
+
+		$db->query('delete from PageSearchIndex where cID = ?', array($cID));
 		
 		$q = "select cID from Pages where cParentID = '{$cID}'";
 		$r = $db->query($q);
@@ -1461,6 +1518,34 @@ $ppWhere = '';
 		$this->refreshCache();
 	}
 	
+	public function movePageDisplayOrderToTop() {
+		// first, we take the current collection, stick it at the beginning of an array, then get all other items from the current level that aren't that cID, order by display order, and then update
+		$db = Loader::db();
+		$nodes = array();
+		$nodes[] = $this->getCollectionID();
+		$r = $db->GetCol('select cID from Pages where cParentID = ? and cID <> ? order by cDisplayOrder asc', array($this->getCollectionParentID(), $this->getCollectionID()));
+		$nodes = array_merge($nodes, $r);
+		$displayOrder = 0;
+		foreach($nodes as $do) {
+			$co = Page::getByID($do);
+			$co->updateDisplayOrder($displayOrder);
+			$displayOrder++;			
+		}
+	}
+	
+	public function movePageDisplayOrderToBottom() {
+		// first, we take the current collection, stick it at the beginning of an array, then get all other items from the current level that aren't that cID, order by display order, and then update
+		$db = Loader::db();
+		$nodes = $db->GetCol('select cID from Pages where cParentID = ? and cID <> ? order by cDisplayOrder asc', array($this->getCollectionParentID(), $this->getCollectionID()));
+		$displayOrder = 0;
+		$nodes[] = $this->getCollectionID();
+		foreach($nodes as $do) {
+			$co = Page::getByID($do);
+			$co->updateDisplayOrder($displayOrder);
+			$displayOrder++;			
+		}
+	}
+	
 	function rescanCollectionPathIndividual($cID, $cPath) {
 		$db = Loader::db();
 		$q = "select CollectionVersions.cID, CollectionVersions.cvHandle, CollectionVersions.cvID, PagePaths.cID as cpcID from CollectionVersions left join PagePaths on (PagePaths.cID = CollectionVersions.cID) where CollectionVersions.cID = '{$cID}' and CollectionVersions.cvIsApproved = 1";
@@ -1468,6 +1553,9 @@ $ppWhere = '';
 		if (!$r) return;
 
 		$row = $r->fetchRow();
+		if (!$row['cvHandle']) {
+			$row['cvHandle'] = $row['cID'];
+		}
 		if ($row['cvHandle']) {
 			$origPath = $cPath . '/' . $row['cvHandle'];
 
@@ -1486,9 +1574,8 @@ $ppWhere = '';
 				}
 			}
 
-			// If a page path already existed, keep it but mark it as non-canonical.
 			if ($row['cpcID']) {
-				$db->query("update PagePaths set ppIsCanonical = 0 where cID = {$cID}");
+				$db->query('delete from PagePaths where ppIsCanonical = 1 and cID = ?', array($row['cpcID']));	
 			}
 
 			// Check to see if a non-canonical page path already exists for the new location.
@@ -1561,6 +1648,8 @@ $ppWhere = '';
 
 		$q2 = "delete from PagePermissionPageTypes where cID = '{$this->cID}'";
 		$r2 = $db->query($q2);
+		
+		Cache::delete("page_permission_set_guest", $this->getCollectionID());
 	}
 
 	/**
@@ -1739,6 +1828,7 @@ $ppWhere = '';
 		//we have to update the existing collection with the info for the new
 		//as well as all collections beneath it that are set to inherit from this parent
 		$this->updateGroupsSubCollection($this->getCollectionID());
+		Cache::delete("page_permission_set_guest", $this->getCollectionID());
 	}
 	
 	function _associateMasterCollectionBlocks($newCID, $masterCID) {
@@ -1904,18 +1994,106 @@ $ppWhere = '';
 
 			// run any internal event we have for page addition
 			Events::fire('on_page_add', $pc);
+			$pc->rescanCollectionPath();
 
-			// if there is a path specified, we create a new collection object of the one we just made
-			// and rescan its path, to grab the path of its parent
-
-			if ($handle) {
-				$pc->rescanCollectionPath();
-			}
 		}
 		
 		return $pc;
 	}
+	
+	public function addToPageCache($content) {
+		Cache::set('page_content', $this->getCollectionID(), $content, $this->getCollectionFullPageCachingLifetimeValue());
+	}
+	
+	public function renderFromCache() {
+		$content = Cache::get('page_content', $this->getCollectionID());
+		if ($content != false) {
+			print $content;
+			exit;
+		}
+	}
 
+	public function getCollectionFullPageCaching() {
+		return $this->cCacheFullPageContent;
+	}
+	
+	public function getCollectionFullPageCachingLifetime() {
+		return $this->cCacheFullPageContentOverrideLifetime;
+	}
+	
+	public function getCollectionFullPageCachingLifetimeCustomValue() {
+		return $this->cCacheFullPageContentLifetimeCustom;
+	}
+
+	public function getCollectionFullPageCachingLifetimeValue() {
+		if ($this->cCacheFullPageContentOverrideLifetime == 'default') {
+			$lifetime = CACHE_LIFETIME;
+		} else if ($this->cCacheFullPageContentOverrideLifetime == 'custom') {
+			$lifetime = $this->cCacheFullPageContentLifetimeCustom * 60;		
+		} else if ($this->cCacheFullPageContentOverrideLifetime == 'forever') {
+			$lifetime = 31536000; // 1 year
+		} else {
+			if (FULL_PAGE_CACHE_LIFETIME == 'custom') {
+				$lifetime = Config::get('FULL_PAGE_CACHE_LIFETIME_CUSTOM') * 60;		
+			} else if (FULL_PAGE_CACHE_LIFETIME == 'forever') {
+				$lifetime = 31536000; // 1 year
+			} else {
+				$lifetime = CACHE_LIFETIME;
+			}
+		}
+		
+		return $lifetime;
+	}
+	
+	public function supportsPageCache($blocks, $controller = false) {
+		$u = new User();
+		
+		$allowedControllerActions = array('view');
+		if (is_object($controller)) {
+			if (!in_array($controller->getTask(), $allowedControllerActions)) {
+				return false;
+			}
+		}
+
+		if ($this->cCacheFullPageContent == 0) {
+			return false;
+		}
+		
+		
+		if ($u->isRegistered() || $_SERVER['REQUEST_METHOD'] == 'POST') {
+			return false;
+		}
+		
+		// test get variables
+		$allowedGetVars = array('cid');
+		foreach($_GET as $key => $value) {
+			if (!in_array(strtolower($key), $allowedGetVars)) {
+				return false;
+			}
+		}
+		
+		
+		if ($this->cCacheFullPageContent == 1 || FULL_PAGE_CACHE_GLOBAL == 'all') {
+			// this cache page at the page level
+			// this overrides any global settings
+			return true;
+		}
+		
+		if (FULL_PAGE_CACHE_GLOBAL != 'blocks') {
+			// we are NOT specifically caching this page, and we don't 
+			return false;
+		}
+
+		foreach($blocks as $b) {
+			$controller = $b->getInstance();
+			if (!$controller->cacheBlockOutput()) {
+				return false;
+			}
+		}
+		return true;
+	}
+		
+	
 	public function addStatic($data) {
 		$db = Loader::db();
 		$cParentID = $this->getCollectionID();
@@ -1956,13 +2134,9 @@ $ppWhere = '';
 		}
 			
 
-		if ($handle) {
-			$pc = Page::getByID($cID);
-			$pc->rescanCollectionPath();
-		}
-		
-		$collection = Page::getByID($cID);
-		return $collection;
+		$pc = Page::getByID($cID);
+		$pc->rescanCollectionPath();
+		return $pc;
 				
 	}
 	
@@ -1982,22 +2156,6 @@ $ppWhere = '';
 		return $paths;
 	}
 
-	const BLOCK_HANDLE_GUEST 	= 'guestbook';
-	function populateGuestbookInformation(){
-		$this->guestbook_id = 0;
-		$blocks = $this->getBlocks();
-		foreach($blocks as $block){
-			if ($block->btHandle == self::BLOCK_HANDLE_GUEST){
-				$this->guestbook_id    = $block->bID;
-				$ca = new Cache();
-				$this->guestbook_count = $ca->get('GuestBookCount',$block->bID);
-				$this->guestbook_count = $this->guestbook_count ? $this->guestbook_count : '0';
-				
-				break; //break out of foreach after you've found a guestbook
-			}
-		}		
-	}
-
 	/*
 	 * returns an instance of the current page object 
 	 *
@@ -2008,5 +2166,3 @@ $ppWhere = '';
 	}
 
 }
-
-?>

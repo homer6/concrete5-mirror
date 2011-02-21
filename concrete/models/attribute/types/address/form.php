@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <?php  $f = Loader::helper('form'); ?>
 <?php  $co = Loader::helper('lists/countries'); ?>
 <?php echo $der?>
@@ -65,7 +65,9 @@ $countries = array_merge(array('' => t('Choose Country')), $countries);
 </fieldset>
 
 <script type="text/javascript">
+//<![CDATA[
 $(function() {
 	ccm_setupAttributeTypeAddressSetupStateProvinceSelector('ccm-attribute-address-<?php echo $key->getAttributeKeyID()?>');
 });
+//]]>
 </script>

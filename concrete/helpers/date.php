@@ -16,7 +16,7 @@
  * @license    http://www.concrete5.org/license/     MIT License
  */
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 // Load a compatiblity class for pre php 5.2 installs
 Loader::library('datetime_compat');
@@ -70,6 +70,14 @@ class DateHelper {
 			return NULL; // if passed a null value, pass it back
 		} elseif(strlen($userDateTime)) {
 			$datetime = new DateTime($userDateTime);
+			
+			if (defined('APP_TIMEZONE')) {
+				$tz = new DateTimeZone(APP_TIMEZONE_SERVER);
+				$datetime = new DateTime($userDateTime,$tz); // create the in the user's timezone 				
+				$stz = new DateTimeZone(date_default_timezone_get()); // grab the default timezone
+				$datetime->setTimeZone($stz); // convert the datetime object to the current timezone
+			}
+			
 			if(defined('ENABLE_USER_TIMEZONES') && ENABLE_USER_TIMEZONES) {
 				$u = new User();
 				if($u && $u->isRegistered()) {

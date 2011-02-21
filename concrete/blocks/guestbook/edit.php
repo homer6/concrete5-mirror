@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <?php echo t('Title')?><br />
 <input type="text" name="title" value="<?php echo $title?>" /><br /><br />
 <?php 

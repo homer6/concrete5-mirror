@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * The Auth_OpenID_DatabaseConnection class, which is used to emulate

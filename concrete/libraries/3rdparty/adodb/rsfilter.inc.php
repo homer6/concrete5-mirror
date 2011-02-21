@@ -1,4 +1,4 @@
-<?php 
+<?php
 /** 
  * @version V4.93 10 Oct 2006 (c) 2000-2009 John Lim (jlim#natsoft.com). All rights reserved.
  * Released under both BSD license and Lesser GPL library license. 

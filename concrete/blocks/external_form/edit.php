@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $filename = $controller->getFilename(); ?>
 
 <h2><?php echo t('External form file to include')?></h2>

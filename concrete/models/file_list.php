@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::model('attribute/categories/file');
 /**
 *
@@ -58,7 +58,7 @@ class FileList extends DatabaseItemList {
 			$cnt = $ak->getController();			
 			$attribsStr.=' OR ' . $cnt->searchKeywords($keywords);
 		}
-		$this->filter(false, '(fvFilename like ' . $qkeywords . ' or fvTitle like ' . $qkeywords . ' or fvTags like ' . $qkeywords . ' or u.uName = ' . $keywordsExact . $attribsStr . ')');
+		$this->filter(false, '(fvFilename like ' . $qkeywords . ' or fvDescription like ' . $qkeywords . ' or fvTitle like ' . $qkeywords . ' or fvTags like ' . $qkeywords . ' or u.uName = ' . $keywordsExact . $attribsStr . ')');
 	}
 	
 	/** 
@@ -98,6 +98,10 @@ class FileList extends DatabaseItemList {
 	 */
 	public function filterByDateAdded($date, $comparison = '=') {
 		$this->filter('f.fDateAdded', $date, $comparison);
+	}
+	
+	public function filterByOriginalPageID($ocID) {
+		$this->filter('f.ocID', $ocID);
 	}
 	
 	public function setPermissionLevel($plevel) {
@@ -221,7 +225,11 @@ class FileList extends DatabaseItemList {
 	public function sortByAttributeKey($key,$order='asc') {
 		$this->sortBy($key, $order); // this is handled natively now
 	}
-			
+	
+	public function sortByFileSetDisplayOrder() {
+		$this->sortByMultiple('fsDisplayOrder asc', 'fID asc');
+	}
+	
 	public static function getExtensionList() {
 		$db = Loader::db();
 		$col = $db->GetCol('select distinct(trim(fvExtension)) as extension from FileVersions where fvIsApproved = 1 and fvExtension <> ""');
@@ -234,4 +242,50 @@ class FileList extends DatabaseItemList {
 		return $col;
 	}
 
+}
+
+class FileManagerDefaultColumnSet extends DatabaseItemListColumnSet {
+	protected $attributeClass = 'FileAttributeKey';	
+	
+	public static function getFileDateAdded($f) {
+		return date(DATE_APP_DASHBOARD_SEARCH_RESULTS_FILES, strtotime($f->getDateAdded()));
+	}
+
+	public static function getFileDateActivated($f) {
+		$fv = $f->getVersion();
+		return date(DATE_APP_DASHBOARD_SEARCH_RESULTS_FILES, strtotime($fv->getDateAdded()));
+	}
+	
+	public function __construct() {
+		$this->addColumn(new DatabaseItemListColumn('fvType', t('Type'), 'getType', false));
+		$this->addColumn(new DatabaseItemListColumn('fvTitle', t('Title'), 'getTitle'));
+		$this->addColumn(new DatabaseItemListColumn('fDateAdded', t('Added'), array('FileManagerDefaultColumnSet', 'getFileDateAdded')));
+		$this->addColumn(new DatabaseItemListColumn('fvDateAdded', t('Active'), array('FileManagerDefaultColumnSet', 'getFileDateActivated')));
+		$this->addColumn(new DatabaseItemListColumn('fvSize', t('Size'), 'getSize'));
+		$title = $this->getColumnByKey('fDateAdded');
+		$this->setDefaultSortColumn($title, 'desc');
+	}
+}
+
+class FileManagerAvailableColumnSet extends FileManagerDefaultColumnSet {
+	protected $attributeClass = 'FileAttributeKey';
+	public function __construct() {
+		parent::__construct();
+		$this->addColumn(new DatabaseItemListColumn('fvAuthorName', t('Author'), 'getAuthorName'));
+	}
+}
+
+class FileManagerColumnSet extends DatabaseItemListColumnSet {
+	protected $attributeClass = 'FileAttributeKey';
+	public function getCurrent() {
+		$u = new User();
+		$fldc = $u->config('FILE_LIST_DEFAULT_COLUMNS');
+		if ($fldc != '') {
+			$fldc = @unserialize($fldc);
+		}
+		if (!($fldc instanceof DatabaseItemListColumnSet)) {
+			$fldc = new FileManagerDefaultColumnSet();
+		}
+		return $fldc;
+	}
 }

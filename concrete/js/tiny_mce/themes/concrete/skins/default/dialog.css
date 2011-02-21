@@ -1,12 +1,12 @@
 /* Generic */
 body {
-	background:#fff;
+	background:#fafafa;
 	padding:0;
 	margin:8px 8px 0 8px !important;
 	font-family:Verdana, Arial, Helvetica, sans-serif;
 }
 
-html {background:#fff;}	
+html {background:#fafafa;}	
 td { font-size:10px;}
 /* 
 textarea {resize:none;outline:none;}
@@ -85,7 +85,7 @@ td.charmap, #charmap a {width:18px; height:18px; color:#000; border:1px solid #A
 	padding:0;
 	padding-top:5px;
 	clear:both;
-	background:white;
+	background: #fafafa;
 }
 
 /* Columns */

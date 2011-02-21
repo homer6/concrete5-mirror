@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 Loader::block('library_file');
 
@@ -10,6 +10,9 @@ class HtmlBlockController extends BlockController {
 	protected $btTable = 'btContentLocal';
 	protected $btInterfaceWidth = "600";
 	protected $btInterfaceHeight = "465";
+	protected $btCacheBlockOutput = true;
+	protected $btCacheBlockOutputOnPost = true;
+	protected $btCacheBlockOutputForRegisteredUsers = true;
 	
 	public $content = "";	
 	
@@ -28,6 +31,10 @@ class HtmlBlockController extends BlockController {
 	public function view(){ 
 		$this->set('content', $this->content); 
 	} 
+	
+	public function getSearchableContent() {
+		return $this->content;
+	}
 	
 	public function save($data) { 
 		$args['content'] = isset($data['content']) ? $data['content'] : '';

@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::helper('concrete/dashboard/sitemap');
 
 
@@ -23,8 +23,8 @@ if (isset($selectedPageID)) {
 <div class="ccm-pane-controls">
 
 <?php  if (!$sitemapCombinedMode) { ?>
-<link href="<?php echo ASSETS_URL_CSS?>/ccm.sitemap.css" rel="stylesheet" type="text/css">
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.sitemap.js"></script>
+<?php echo Loader::helper('html')->css('ccm.sitemap.css')?>
+<?php echo Loader::helper('html')->javascript('ccm.sitemap.js')?>
 <?php  } ?>
 
 <script type="text/javascript">
@@ -48,6 +48,9 @@ $u = new User();
 $sitemapOverlayPreference = $u->config('SITEMAP_OVERLAY_DISPLAY_MODE');
 $display_mode = $sitemapOverlayPreference;
 
+if (!isset($callback)) {
+	$sitemap_select_callback = 'ccm_selectSitemapNode';
+}
 if ($sitemapOverlayPreference != 'explore') {
 	$sitemapOverlayPreference = 'full';
 	$display_mode = 'full';
@@ -62,8 +65,8 @@ if ($sitemapOverlayPreference != 'explore') {
 </form>
 </div>
 
-<div id="tree" sitemap-wrapper="1" sitemap-instance-id="<?php echo $instance_id?>" <?php  if ($display_mode == 'explore') { ?>class="ccm-sitemap-explore"<?php  } ?>>
-	<ul id="tree-root0" tree-root-node-id="0" sitemap-display-mode="<?php echo $display_mode?>" sitemap-select-mode="<?php echo $select_mode?>" sitemap-instance-id="<?php echo $instance_id?>">
+<div id="tree" sitemap-wrapper="1" sitemap-select-callback="<?php echo $callback?>" sitemap-instance-id="<?php echo $instance_id?>" <?php  if ($display_mode == 'explore') { ?>class="ccm-sitemap-explore"<?php  } ?>>
+	<ul id="tree-root0" tree-root-node-id="0" sitemap-select-callback="<?php echo $sitemap_select_callback?>" sitemap-display-mode="<?php echo $display_mode?>" sitemap-select-mode="<?php echo $select_mode?>" sitemap-instance-id="<?php echo $instance_id?>">
 	</ul>
 </div>
 

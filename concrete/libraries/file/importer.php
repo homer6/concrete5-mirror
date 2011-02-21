@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::model('file');
 Loader::model('file_version');
 
@@ -91,7 +91,7 @@ class FileImporter {
 		if ($path == false) {
 			$path = $fi->mapSystemPath($prefix, $filename, true);
 		}
-		return copy($pointer, $path);
+		return @copy($pointer, $path);
 	}
 	
 	/** 

@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 
 <h2><?php echo t('External form file to include')?></h2>
 <?php echo t('The following is a list of all the files in your external forms directory.')?>

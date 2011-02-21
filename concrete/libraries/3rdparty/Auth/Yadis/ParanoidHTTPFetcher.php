@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This module contains the CURL-based HTTP fetcher implementation.

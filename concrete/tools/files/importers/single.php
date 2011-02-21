@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $u = new User();
 $valt = Loader::helper('validation/token');
 Loader::library("file/importer");
@@ -33,6 +33,10 @@ if ($valt->validate('upload')) {
 		}
 		if (!($resp instanceof FileVersion)) {
 			$errorCode = $resp;
+		} else if (!is_object($fr)) {
+			// we check $fr because we don't want to set it if we are replacing an existing file
+			$respf = $resp->getFile();
+			$respf->setOriginalPage($_POST['ocID']);
 		}
 	} else {
 		$errorCode = $_FILES['Filedata']['error'];
@@ -59,7 +63,6 @@ if ($errorCode > -1 && $error == '') {
 	<?php  } else { ?>
 		highlight = new Array();
 		highlight.push(<?php echo $resp->getFileID()?>);
-		window.parent.ccm_alRefresh(highlight, '<?php echo $searchInstance?>');
 		
 		<?php  if (is_object($fr)) { ?>
 			window.parent.jQuery.fn.dialog.closeTop();
@@ -67,6 +70,7 @@ if ($errorCode > -1 && $error == '') {
 		
 		window.parent.ccm_uploadedFiles.push(<?php echo intval($resp->getFileID())?>);
 		window.parent.ccm_filesUploadedDialog('<?php echo $searchInstance?>');
+		window.parent.ccm_alResetSingle();
 	<?php  } ?>
 </script>
 </head>

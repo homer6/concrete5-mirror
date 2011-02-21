@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * @package Users
@@ -95,7 +95,6 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		
 		function User() {
 			$args = func_get_args();
-			$db = Loader::db();
 			
 			if ($args[1]) {
 				// first, we check to see if the username and password match the admin username and password
@@ -113,6 +112,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				} else {
 					$q = "select uID, uName, uIsActive, uIsValidated, uTimezone from Users where uName = ? and uPassword = ?";
 				}
+				$db = Loader::db();
 				$r = $db->query($q, $v);
 				if ($r) {
 					$row = $r->fetchRow(); 
@@ -253,10 +253,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		function _getUserGroups($disableLogin = false) {
-			$db = Loader::db();
 			if ($_SESSION['uGroups'] && (!$disableLogin)) {
 				$ug = $_SESSION['uGroups'];
 			} else {
+				$db = Loader::db();
 				if ($this->uID) {
 					$ug[REGISTERED_GROUP_ID] = REGISTERED_GROUP_NAME;
 					//$_SESSION['uGroups'][REGISTERED_GROUP_ID] = REGISTERED_GROUP_NAME;
@@ -380,7 +380,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$db = Loader::db();
 			$cID = $c->getCollectionID();
 			// first, we check to see if we have a collection in edit mode. If we do, we relinquish it
-			$this->unloadCollectionEdit();
+			$this->unloadCollectionEdit(false);
 			
 			$q = "select cIsCheckedOut, cCheckedOutDatetime from Pages where cID = '{$cID}'";
 			$r = $db->query($q);
@@ -403,14 +403,16 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			
 		}
 			
-		function unloadCollectionEdit() {		
+		function unloadCollectionEdit($removeCache = true) {		
 			// first we remove the cached versions of all of these pages
 			$db = Loader::db();
 			if ($this->getUserID() > 0) { 
 				$col = $db->GetCol("select cID from Pages where cCheckedOutUID = " . $this->getUserID());
 				foreach($col as $cID) {
 					$p = Page::getByID($cID);
-					$p->refreshCache();
+					if ($removeCache) {
+						$p->refreshCache();
+					}
 				}
 				
 				$q = "update Pages set cIsCheckedOut = 0, cCheckedOutUID = null, cCheckedOutDatetime = null, cCheckedOutDatetimeLastEdit = null where cCheckedOutUID = " . $this->getUserID();

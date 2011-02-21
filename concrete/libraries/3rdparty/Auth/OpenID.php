@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This is the PHP OpenID library by JanRain, Inc.

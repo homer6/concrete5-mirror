@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 
 <?php  if ($showDownloadBox) { ?>
 <h1><span><?php echo t('Download Update')?></span></h1>

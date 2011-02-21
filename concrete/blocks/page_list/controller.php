@@ -1,6 +1,6 @@
 <?php 
 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	class PageListBlockController extends BlockController {
 
 		protected $btTable = 'btPageList';
@@ -41,6 +41,7 @@
 				$row['orderBy'] = $this->orderBy;
 				$row['ctID'] = $this->ctID;
 				$row['rss'] = $this->rss;
+				$row['displayAliases'] = $this->displayAliases;
 			}
 			
 
@@ -123,6 +124,16 @@
 			$this->set('cArray', $cArray);
 		}
 		
+		// this doesn't work yet
+		/*
+		public function on_page_view() {
+			if ($this->rss) {
+				$b = $this->getBlockObject();
+				$this->addHeaderItem('<link href="' . $this->getRssUrl($b) . '"  rel="alternate" type="application/rss+xml" title="' . $this->rssTitle . '" />');
+			}
+		}
+		*/
+		
 		public function add() {
 			Loader::model("collection_types");
 			$c = Page::getCurrentPage();
@@ -174,14 +185,14 @@
 		
 		}
 
-		public function getRssUrl($b){
+		public function getRssUrl($b, $tool = 'rss'){
 			$uh = Loader::helper('concrete/urls');
 			if(!$b) return '';
 			$btID = $b->getBlockTypeID();
 			$bt = BlockType::getByID($btID);
 			$c = $b->getBlockCollectionObject();
 			$a = $b->getBlockAreaObject();
-			$rssUrl = $uh->getBlockTypeToolsURL($bt)."/rss?bID=".$b->getBlockID()."&amp;cID=".$c->getCollectionID()."&amp;arHandle=" . $a->getAreaHandle();
+			$rssUrl = $uh->getBlockTypeToolsURL($bt)."/" . $tool . "?bID=".$b->getBlockID()."&amp;cID=".$c->getCollectionID()."&amp;arHandle=" . $a->getAreaHandle();
 			return $rssUrl;
 		}
 	}

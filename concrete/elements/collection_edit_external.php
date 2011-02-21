@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <div class="ccm-pane-controls">
 <?php  
 
@@ -22,6 +22,12 @@ if ($c->isAlias() && $c->getCollectionPointerExternalLink() != '') {
 	<div class="ccm-field">
 
 	<label><?php echo t('URL')?></label> <input type="text" name="cExternalLink" style="width: 100%" value="<?php echo $c->getCollectionPointerExternalLink()?>" />
+
+	</div>
+
+	<div class="ccm-field">
+
+	<label for="cExternalLinkNewWindow"><input type="checkbox" value="1" <?php  if ($c->openCollectionPointerExternalLinkInNewWindow()) { ?> checked <?php  } ?> name="cExternalLinkNewWindow" id="cExternalLinkNewWindow" style="vertical-align: middle" /> <?php echo t('Open Link in New Window')?></label>
 
 	</div>
 	

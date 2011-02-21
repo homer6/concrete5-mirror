@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $u = new User();
 
 $cf = Loader::helper('file');
@@ -106,6 +106,13 @@ if (count($errors) < 1) {
 					$errors[] .= $fname . ': ' . FileImporter::getErrorMessage($resp) . "\n";
 				} else {
 					$import_responses[] = $resp;
+					
+					if (!is_object($fr)) {
+						// we check $fr because we don't want to set it if we are replacing an existing file
+						$respf = $resp->getFile();
+						$respf->setOriginalPage($_POST['ocID']);
+					}
+					
 				}
 				
 				// clean up the file
@@ -137,7 +144,6 @@ if(count($errors)) {
 			window.parent.ccm_uploadedFiles.push(<?php echo intval($r->getFileID())?>);
 	<?php 	} ?>		
 		window.parent.ccm_filesUploadedDialog('<?php echo $searchInstance?>');	
-		window.parent.ccm_alRefresh(highlight, '<?php echo $searchInstance?>');
 <?php  } ?>
 		</script>
 	</head>

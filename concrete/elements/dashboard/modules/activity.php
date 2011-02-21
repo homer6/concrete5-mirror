@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <?php echo t('You are logged in as <b>%s</b>. You logged in on <b>%s</b>.', $uName, $uLastLogin)?> 
 <ul class="ccm-dashboard-list">
 <?php  if (isset($uLastActivity)) { ?>

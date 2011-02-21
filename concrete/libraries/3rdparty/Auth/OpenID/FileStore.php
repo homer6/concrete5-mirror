@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This file supplies a Memcached store backend for OpenID servers and

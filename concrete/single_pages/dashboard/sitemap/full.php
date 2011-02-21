@@ -1,6 +1,10 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::library('search');
+
+$this->addHeaderItem(Loader::helper('html')->css('ccm.sitemap.css'));
+$this->addHeaderItem(Loader::helper('html')->javascript('ccm.sitemap.js'));
+
 $sh = Loader::helper('concrete/dashboard/sitemap');
 
 if (isset($_REQUEST['reveal'])) {
@@ -20,15 +24,12 @@ $listHTML = $sh->outputRequestHTML($instanceID, 'full', false, $nodes);
 
 ?>
 
-<style type="text/css">@import "<?php echo ASSETS_URL_CSS?>/ccm.sitemap.css";</style>
-
 <script type="text/javascript">
 	var CCM_LAUNCHER_SITEMAP = 'full';
 	$(function() {
 		ccmSitemapLoad('<?php echo $instanceID?>', 'full');
 	});
 </script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.sitemap.js"></script>
 
 <h1><span><?php echo t('Sitemap')?></span></h1>
 

@@ -16,7 +16,7 @@
  * @license    http://www.concrete5.org/license/     MIT License
  */
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class ImageHelper {
 
 		
@@ -111,7 +111,7 @@ class ImageHelper {
 						$res2 = imageGIF($image, $newPath);
 						break;
 					case IMAGETYPE_JPEG:
-						$res2 = imageJPEG($image, $newPath, 80);
+						$res2 = imageJPEG($image, $newPath, AL_THUMBNAIL_JPEG_COMPRESSION);
 						break;
 					case IMAGETYPE_PNG:
 						$res2 = imagePNG($image, $newPath);

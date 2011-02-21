@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This module contains the plain non-curl HTTP fetcher

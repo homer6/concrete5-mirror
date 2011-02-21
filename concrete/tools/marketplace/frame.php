@@ -1,4 +1,4 @@
-<?php   defined('C5_EXECUTE') or die(_("Access Denied."));
+<?php   defined('C5_EXECUTE') or die("Access Denied.");
 
 Loader::library('marketplace');
 $mi = Marketplace::getInstance();
@@ -15,5 +15,5 @@ if ($_REQUEST['complete']) {
 	</script>
 <?php  } else {
 	$completeURL = BASE_URL . REL_DIR_FILES_TOOLS_REQUIRED . '/marketplace/frame?complete=1&mpID=' . $_REQUEST['mpID'];
-	$mi->outputMarketplaceFrame('100%', '100%', $completeURL);
+	print $mi->getMarketplaceFrame('100%', '100%', $completeURL);
 }

@@ -1,5 +1,5 @@
 <?php  
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	$aBlocks = $controller->generateNav();
 	$c = Page::getCurrentPage();
 	$nh = Loader::helper('navigation');
@@ -9,6 +9,11 @@
 		if (!$_c->getCollectionAttributeValue('exclude_nav')) {	
 
 			$pageLink = false;
+
+			$target = $ni->getTarget();
+			if ($target != '') {
+				$target = 'target="' . $target . '"';
+			}
 			
 			if ($_c->getCollectionAttributeValue('replace_link_with_first_in_nav')) {
 				$subPage = $_c->getFirstChild();
@@ -27,7 +32,7 @@
 			if ($c->getCollectionID() == $_c->getCollectionID()) { 
 				echo($ni->getName());
 			} else {
-				echo('<a href="' . $pageLink . '">' . $ni->getName() . '</a>');
+				echo('<a href="' . $pageLink . '" ' . $target . '>' . $ni->getName() . '</a>');
 			}	
 			$lastLevel = $thisLevel;
 			$i++;

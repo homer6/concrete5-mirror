@@ -16,7 +16,7 @@
  * @license    http://www.concrete5.org/license/     MIT License
  */
  
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class ListsStatesProvincesHelper {
 	
 	protected $stateProvinces = array(
@@ -101,6 +101,25 @@ class ListsStatesProvincesHelper {
 		'VIC' => 'Victoria',
 		'WA' => 'Western Australia',
 	),
+	
+	'DE' => array(
+      'BW' => 'Baden-W&uuml;rttemberg',
+      'BY' => 'Bayern',
+      'BE' => 'Berlin',
+      'BB' => 'Brandenburg',
+      'HB' => 'Bremen',
+      'HH' => 'Hamburg',
+      'HE' => 'Hessen',
+      'MV' => 'Mecklenburg-Vorpommern',
+      'NI' => 'Niedersachsen',
+      'NW' => 'Nordrhein-Westfalen',
+      'RP' => 'Rheinland-Pfalz',
+      'SL' => 'Saarland',
+      'SN' => 'Sachsen',
+      'ST' => 'Sachsen-Anhalt',
+      'SH' => 'Schleswig-Holstein',
+      'TH' => 'Th&uuml;ringen'   
+   ),
 
 	'UK' => array(
 		'ANGLES' => 'Anglesey',
@@ -154,6 +173,7 @@ class ListsStatesProvincesHelper {
 		
 		
 		'BEDS' => 'Bedfordshire',
+		'LONDON' => 'London',
 		'BERKS' => 'Berkshire',
 		'BUCKS' => 'Buckinghamshire',
 		'CAMBS' => 'Cambridgeshire',

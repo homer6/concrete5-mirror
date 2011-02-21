@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Miscellaneous utility values and functions for OpenID and Yadis.

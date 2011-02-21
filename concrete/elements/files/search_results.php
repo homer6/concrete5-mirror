@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <?php 
 if (isset($_REQUEST['searchInstance'])) {
 	$searchInstance = $_REQUEST['searchInstance'];
@@ -18,7 +18,7 @@ if (isset($_REQUEST['searchInstance'])) {
 	$keywords = $searchRequest['fKeywords'];
 	$soargs = array();
 	$soargs['searchInstance'] = $searchInstance;
-
+	
 	/*
 	if ($searchType == 'DASHBOARD') {
 		$bu = false;
@@ -39,22 +39,20 @@ if (isset($_REQUEST['searchInstance'])) {
 				<option value="sets"><?php echo t('Sets')?></option>
 				<option value="properties"><?php echo t('Properties')?></option>
 				<option value="rescan"><?php echo t('Rescan')?></option>
+				<option value="duplicate"><?php echo t('Copy')?></option>
 				<option value="delete"><?php echo t('Delete')?></option>
 			</select>
 			</th>
-			<th>Type</th>
 
-			<th class="ccm-file-list-starred">&nbsp;</th>			
-			<th class="ccm-file-list-filename <?php echo $fileList->getSearchResultsClass('fvTitle')?>"><a href="<?php echo $fileList->getSortByURL('fvTitle', 'asc', $bu, $soargs)?>"><?php echo t('Title')?></a></th>
-			<th class="<?php echo $fileList->getSearchResultsClass('fDateAdded')?>"><a href="<?php echo $fileList->getSortByURL('fDateAdded', 'asc', $bu, $soargs)?>"><?php echo t('Added')?></a></th>
-			<th class="<?php echo $fileList->getSearchResultsClass('fvDateAdded')?>"><a href="<?php echo $fileList->getSortByURL('fvDateAdded', 'asc', $bu, $soargs)?>"><?php echo t('Active')?></a></th>
-			<th class="<?php echo $fileList->getSearchResultsClass('fvSize')?>"><a href="<?php echo $fileList->getSortByURL('fvSize', 'asc', $bu, $soargs)?>"><?php echo t('Size')?></a></th>
-			<?php  
-			$slist = FileAttributeKey::getColumnHeaderList();
-			foreach($slist as $ak) { ?>
-				<th class="<?php echo $fileList->getSearchResultsClass($ak)?>"><a href="<?php echo $fileList->getSortByURL($ak, 'asc', $bu, $soargs)?>"><?php echo $ak->getAttributeKeyDisplayHandle()?></a></th>
-			<?php  } ?>			
-			<th class="ccm-search-add-column-header"><a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/customize_search_columns?searchInstance=<?php echo $searchInstance?>" id="ccm-search-add-column"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/add.png" width="16" height="16" /></a></th>
+			<th class="ccm-file-list-starred">&nbsp;</th>
+			<?php  foreach($columns->getColumns() as $col) { ?>
+				<?php  if ($col->isColumnSortable()) { ?>
+					<th class="<?php echo $fileList->getSearchResultsClass($col->getColumnKey())?>"><a href="<?php echo $fileList->getSortByURL($col->getColumnKey(), $col->getColumnDefaultSortDirection(), $bu, $soargs)?>"><?php echo $col->getColumnName()?></a></th>
+				<?php  } else { ?>
+					<th><?php echo t('Type')?></th>
+				<?php  } ?>
+			<?php  } ?>
+			<th class="ccm-search-add-column-header"><?php  if ($_REQUEST['fssID'] < 1) { ?><a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/customize_search_columns?searchInstance=<?php echo $searchInstance?>" id="ccm-search-add-column"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/column_preferences.png" width="16" height="16" /></a><?php  } ?></th>
 		</tr>
 	<?php 
 		foreach($files as $f) {
@@ -68,8 +66,9 @@ if (isset($_REQUEST['searchInstance'])) {
 			$fv = $f->getApprovedVersion(); 
 			$canViewInline = $fv->canView() ? 1 : 0;
 			$canEdit = ($fv->canEdit() && $pf->canWrite()) ? 1 : 0;
+			$pfg = FilePermissions::getGlobal();
 			?>
-			<tr class="ccm-list-record <?php echo $striped?>" ccm-file-manager-instance="<?php echo $searchInstance?>" ccm-file-manager-can-admin="<?php echo ($pf->canAdmin())?>" ccm-file-manager-can-delete="<?php echo $pf->canAdmin()?>" ccm-file-manager-can-view="<?php echo $canViewInline?>" ccm-file-manager-can-replace="<?php echo $pf->canWrite()?>" ccm-file-manager-can-edit="<?php echo $canEdit?>" fID="<?php echo $f->getFileID()?>" id="fID<?php echo $f->getFileID()?>">
+			<tr class="ccm-list-record <?php echo $striped?>" ccm-file-manager-instance="<?php echo $searchInstance?>" ccm-file-manager-can-admin="<?php echo ($pf->canAdmin())?>" ccm-file-manager-can-duplicate="<?php echo ($pfg->canAddFileType($f->getExtension()))?>" ccm-file-manager-can-delete="<?php echo $pf->canAdmin()?>" ccm-file-manager-can-view="<?php echo $canViewInline?>" ccm-file-manager-can-replace="<?php echo $pf->canWrite()?>" ccm-file-manager-can-edit="<?php echo $canEdit?>" fID="<?php echo $f->getFileID()?>" id="fID<?php echo $f->getFileID()?>">
 			<td class="ccm-file-list-cb" style="vertical-align: middle !important"><input type="checkbox" value="<?php echo $f->getFileID()?>" /></td>
 			<td>
 				<div class="ccm-file-list-thumbnail">
@@ -81,22 +80,20 @@ if (isset($_REQUEST['searchInstance'])) {
 			<?php  } ?>
 
 				</td>
-			<td><?php echo $fv->getType()?></td>
-			<td class="ccm-file-list-starred"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/<?php echo $star_icon?>" height="16" width="16" border="0" class="ccm-star" /></td>			
-			<td class="ccm-file-list-filename"><?php echo $txt->highlightSearch(wordwrap($fv->getTitle(), 15, "\n", true), $keywords)?></td>
-			<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_FILES, strtotime($f->getDateAdded()))?></td>
-			<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_FILES, strtotime($fv->getDateAdded()))?></td>
-			<td><?php echo $fv->getSize()?></td>
-			<?php  
-			$slist = FileAttributeKey::getColumnHeaderList();
-			foreach($slist as $ak) { ?>
-				<td><?php 
-				$vo = $fv->getAttributeValueObject($ak);
-				if (is_object($vo)) {
-					print $vo->getValue('display');
-				}
-				?></td>
-			<?php  } ?>		
+			<td class="ccm-file-list-starred"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/<?php echo $star_icon?>" height="16" width="16" border="0" class="ccm-star" /></td>
+			<?php  foreach($columns->getColumns() as $col) { ?>
+				<?php  // special one for keywords ?>				
+				<?php  if ($col->getColumnKey() == 'fvTitle') { ?>
+					<td class="ccm-file-list-filename"><div style="word-wrap: break-word; width: 100px"><?php echo $txt->highlightSearch($fv->getTitle(), $keywords)?></div></td>		
+				<?php  } else { ?>
+					<td><?php echo $col->getColumnValue($f)?></td>
+				<?php  } ?>
+			<?php  } ?>
+			
+			<?php  /*
+			
+			*/ ?>
+			
 			<td>&nbsp;</td>
 			
 			</tr>

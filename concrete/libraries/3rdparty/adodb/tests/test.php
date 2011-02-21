@@ -1,4 +1,4 @@
-<?php 
+<?php
 /* 
 V4.80 8 Mar 2006  (c) 2000-2009 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
@@ -83,7 +83,7 @@ GLOBAL $ADODB_vers,$ADODB_CACHE_DIR,$ADODB_FETCH_MODE,$ADODB_COUNTRECS;
 	</p>
 	<table width=100% ><tr><td bgcolor=beige>&nbsp;</td></tr></table>
 	</p>
-<?php   
+<?php  
 	$create =false;
 	/*$ADODB_FETCH_MODE = ADODB_FETCH_NUM;
 	
@@ -1643,7 +1643,7 @@ END Adodb;
 	</p>
 	<table width=100% ><tr><td bgcolor=beige>&nbsp;</td></tr></table>
 	</p></form>
-<?php 
+<?php
 
 	if ($rs1) $rs1->Close();
 	if ($rs2) $rs2->Close();
@@ -1729,7 +1729,7 @@ Test <a href=test4.php>GetInsertSQL/GetUpdateSQL</a> &nbsp;
 	<a href=testsessions.php>Sessions</a> &nbsp;
 	<a href=testpaging.php>Paging</a> &nbsp;
 	<a href=test-perf.php>Perf Monitor</a><p>
-<?php 
+<?php
 
 
 include_once('../adodb-time.inc.php');
@@ -1743,6 +1743,6 @@ echo "<br>vers=",ADOConnection::Version();
 
 
 ?>
-<p><i>ADODB Database Library  (c) 2000-2009 John Lim. All rights reserved. Released under BSD and LGPL, PHP <?php  echo PHP_VERSION ?>.</i></p>
+<p><i>ADODB Database Library  (c) 2000-2009 John Lim. All rights reserved. Released under BSD and LGPL, PHP <?php echo PHP_VERSION ?>.</i></p>
 </body>
 </html>

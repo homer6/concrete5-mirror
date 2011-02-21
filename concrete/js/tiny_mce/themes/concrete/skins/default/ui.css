@@ -25,7 +25,7 @@
 .defaultSkin table.mceLayout {border:0;}
 .defaultSkin table.mceLayout tr.mceFirst td {}
 .defaultSkin table.mceLayout tr.mceLast td {border:1px solid #CCC;}
-.defaultSkin table.mceToolbar, .defaultSkin tr.mceFirst .mceToolbar tr td, .defaultSkin tr.mceLast .mceToolbar tr td {border:0; margin:0; padding:0;}
+.defaultSkin table.mceToolbar, .defaultSkin tr.mceFirst .mceToolbar tr td, .defaultSkin tr.mceLast .mceToolbar tr td {background-color: transparent !important; border:0; margin:0; padding:0;}
 .defaultSkin td.mceToolbar {padding:4px 8px 4px 8px; vertical-align:top;}
 .defaultSkin .mceIframeContainer {border-top:1px solid #CCC; border-bottom:1px solid #CCC}
 .defaultSkin .mceStatusbar {font-family:'MS Sans Serif',sans-serif,Verdana,Arial; font-size:9pt; line-height:16px; overflow:visible; color:#000; display:block; height:20px}
@@ -40,9 +40,9 @@
 .defaultSkin td.mceRight table {margin:0 0 0 auto;}
 
 /* Button */
-.defaultSkin .mceButton {display:block; border:1px solid #F0F0EE; width:20px; height:20px; margin-right:1px;}
-.defaultSkin a.mceButtonEnabled:hover {border:1px solid #0A246A; background-color:#B2BBD0}
-.defaultSkin a.mceButtonActive, .defaultSkin a.mceButtonSelected {border:1px solid #0A246A; background-color:#C2CBE0}
+.defaultSkin .mceButton {display:block; width:20px; height:20px; padding: 1px}
+.defaultSkin a.mceButtonEnabled:hover {background-color:#B2BBD0; border:1px solid #0A246A; padding: 0px}
+.defaultSkin a.mceButtonActive, .defaultSkin a.mceButtonSelected {border:1px solid #0A246A; background-color:#C2CBE0; padding: 0px}
 .defaultSkin .mceButtonDisabled .mceIcon {opacity:0.3; filter:alpha(opacity=30)}
 
 /* Separator */

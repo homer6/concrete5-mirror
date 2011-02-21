@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This module implements a VERY limited parser that finds <link> tags

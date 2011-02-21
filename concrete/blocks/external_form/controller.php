@@ -1,5 +1,5 @@
 <?php 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	class ExternalFormBlockController extends BlockController {
 		
 		protected $btTable = 'btExternalForm';
@@ -59,7 +59,7 @@
 		}
 		
 		public function view() {
-		
+			$this->set('controller', $this);		
 		}
 		
 		public function __call($nm, $a) {

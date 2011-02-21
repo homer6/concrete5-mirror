@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $this->inc('elements/header.php'); ?>
 <div id="page">
 	<div id="headerSpacer"></div>
@@ -46,7 +46,7 @@ $this->inc('elements/header.php'); ?>
 		<div class="spacer">&nbsp;</div>		
 	</div>
 	<div id="footer">
-			<span class="powered-by"><?php echo t('Built with concrete5')?> <a href="http://www.concrete5.org">CMS</a>.</span>
+			<span class="powered-by"><a href="http://www.concrete5.org" title="<?php echo t('concrete5 - open source content management system for PHP and MySQL')?>"><?php echo t('concrete5 - open source CMS')?></a></span>
             &copy; <?php echo date('Y')?> <a href="<?php echo DIR_REL?>/"><?php echo SITE?></a>.
 			&nbsp;&nbsp;
 			<?php echo t('All rights reserved.')?>

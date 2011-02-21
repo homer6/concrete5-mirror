@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  * This file contains a subclass of the Zend_Search_Lucene_Analysis_TokenFilter class.
  * Its purpose is to help provide a corresponding PHP implementation of the Standard analyzer for

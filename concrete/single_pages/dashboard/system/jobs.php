@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <script>
 
 var Jobs = {
@@ -106,7 +106,7 @@ $ih = Loader::helper('concrete/interface');
 		//print $ih->buttons($b1);
 		print '<div class="ccm-buttons"><a onclick="Jobs.runChecked()" href="javascript:void(0)"><div class="ccm-button"><span>'.t('Run Checked').'</span></div></a></div>';
 	?>
-
+	
 	<h2 style="padding-bottom:8px; padding-top:16px"><?php echo t('Installed Jobs')?></h2>
 	
 	<div class="ccm-spacer">&nbsp;</div>

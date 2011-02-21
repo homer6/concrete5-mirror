@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Extension argument processing code

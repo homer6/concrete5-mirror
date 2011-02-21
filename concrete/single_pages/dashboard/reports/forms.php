@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <script>
 <?php  
 
@@ -123,9 +123,19 @@ function deleteForm(dLink){
 			<table class="entry-form" width="100%" style="margin-bottom:2px">
 				<tr>
 					<td class="header"><?php echo t('Submitted Date')?></td>
-					<td class="header"><?php echo $dh->getLocalDateTime($answerSet['created'])?></td>
+					<td class="header"><?php echo $dh->getSystemDateTime($answerSet['created'])?></td>
 				</tr>
-				<?php  
+				<?php  if ($answerSet['uID'] > 0) { ?>
+				<tr>
+					<td class="subheader"><?php echo t('Submitted By User')?></td>
+					<td class="subheader"><?php  
+						$ui = UserInfo::getByID($answerSet['uID']);
+						if (is_object($ui)) {
+							print $ui->getUserName();
+						}
+						print ' ' . t('(User ID: %s)', $answerSet['uID']);
+					} ?></td>
+				</tr>				<?php  
 				$questionNumber=0;
 				$numQuestionsToShow=2;
 				foreach($questions as $questionId=>$question){ 

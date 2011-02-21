@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * A MySQL store.

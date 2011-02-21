@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 if (!defined('DISPATCHER_FILENAME')) {
 	define('DISPATCHER_FILENAME', 'index.php');
 }
@@ -12,8 +12,13 @@ if (!defined('ENABLE_CMS_FOR_DIRECTORY')) {
 }
 
 # These items should be set by site.php in config/ but if they're not that means we're installing and we need something there
-if (!defined('BASE_URL')) {
-	define('BASE_URL', 'http://' . $_SERVER['HTTP_HOST']);
+/* https patch applied here */
+if (!defined('BASE_URL')) { 
+	if(isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on')) {
+		define('BASE_URL', 'https://' . $_SERVER['HTTP_HOST']);
+	} else {
+		define('BASE_URL', 'http://' . $_SERVER['HTTP_HOST']);
+	}
 }
 
 if (!defined('DIR_REL')) {
@@ -48,6 +53,14 @@ if (!defined('ENABLE_EMAILS')) {
 	define('ENABLE_EMAILS', true);
 }
 
+if (!defined('EMAIL_DEFAULT_FROM_ADDRESS')) {
+	define('EMAIL_DEFAULT_FROM_ADDRESS', 'concrete5-noreply@' . str_replace(array('http://www.', 'https://www.', 'http://', 'https://'), '', BASE_URL));
+}
+
+if (!defined('EMAIL_DEFAULT_FROM_NAME')) {
+	define('EMAIL_DEFAULT_FROM_NAME', '');
+}
+
 if (!defined('SITEMAP_PAGES_LIMIT')) {
 	define('SITEMAP_PAGES_LIMIT', 100);
 }
@@ -64,10 +77,6 @@ if (!defined('ENABLE_DEFINABLE_USER_ATTRIBUTES')) {
 
 if (!defined('ENABLE_CUSTOM_USER_ATTRIBUTES_MODEL')) {
 	define('ENABLE_CUSTOM_USER_ATTRIBUTES_MODEL', false);
-}
-
-if (!defined('STATISTICS_TRACK_PAGE_VIEWS')) {
-	define('STATISTICS_TRACK_PAGE_VIEWS', true);
 }
 
 if (!defined("PAGE_TITLE_FORMAT")) {
@@ -303,6 +312,10 @@ if (!defined('DIR_FILES_CACHE')) {
 	define('DIR_FILES_CACHE', DIR_BASE . '/files/cache');
 }
 
+if (!defined('CACHE_ID')) {
+	define('CACHE_ID', md5(BASE_URL . DIR_REL));
+}
+
 if (defined('DIR_FILES_CACHE') && !is_dir(DIR_FILES_CACHE)) {
 	@mkdir(DIR_FILES_CACHE);
 	@chmod(DIR_FILES_CACHE, 0777);
@@ -320,6 +333,10 @@ if (defined('DIR_FILES_CACHE')) {
 	define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
 	$ADODB_ACTIVE_CACHESECS = 300;
 	$ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
+}
+
+if (!defined('CACHE_LIFETIME')) {
+	define('CACHE_LIFETIME', 7200);
 }
 
 define('ON_WINDOWS', intval(substr(PHP_OS,0,3)=='WIN') );
@@ -352,6 +369,10 @@ define('DIR_AL_ICONS', DIR_BASE_CORE . '/images/icons/filetypes');
 define('REL_DIR_AL_ICONS', ASSETS_URL_IMAGES . '/icons/filetypes');
 define('AL_ICON_DEFAULT', ASSETS_URL_IMAGES . '/icons/filetypes/default.png');
 
+if (!defined('AL_THUMBNAIL_JPEG_COMPRESSION')){ 
+	define('AL_THUMBNAIL_JPEG_COMPRESSION', 80); 
+}
+
 # This is the max size of any image in the system
 define('IMAGE_MAX_WIDTH','1200'); // this is the max - can't be any higher, this overrides area settings
 define('IMAGE_MAX_HEIGHT','1200');
@@ -371,6 +392,12 @@ define('USER_CHANGE_PASSWORD_URL_LIFETIME',  7200);
 
 # Default search size
 define('SEARCH_CHUNK_SIZE','20'); /* number of entries retrieved per page */
+if (!defined('PAGE_SEARCH_INDEX_LIFETIME')) {
+	define('PAGE_SEARCH_INDEX_LIFETIME', 259200);
+}
+if (!defined('PAGE_SEARCH_INDEX_BATCH_SIZE')) {
+	define('PAGE_SEARCH_INDEX_BATCH_SIZE', 200);
+}
 
 # Versioning/Editing defaults 
 define('CHECKOUT_TIMEOUT', 300); // # in seconds.

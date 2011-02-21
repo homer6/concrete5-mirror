@@ -17,7 +17,7 @@
  * @license    http://www.concrete5.org/license/     MIT License
  */
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class ConcreteUpgradeVersion540Helper {
 
 	public function run() {
@@ -85,7 +85,7 @@ class ConcreteUpgradeVersion540Helper {
 		$sp = Page::getByPath('/dashboard/sitemap/explore');
 		if ($sp->isError()) {
 			$d1b = SinglePage::add('/dashboard/sitemap/explore');
-			$d1b->update(array('cName'=>t('Folder View')));
+			$d1b->update(array('cName'=>t('Flat View')));
 		}
 		$sp = Page::getByPath('/dashboard/sitemap/search');
 		if ($sp->isError()) {

@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 ?>
 
 <a style="position: absolute; top: 9px; right: 10px; z-index: 10" href="<?php echo View::url('/dashboard/system/notifications')?>"><?php echo t('View all &gt;')?></a>

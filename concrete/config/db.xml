@@ -620,6 +620,10 @@
       <NOTNULL/>
       <UNSIGNED />
     </field>
+    <field name="rcID" type="I" size="10">
+      <NOTNULL/>
+      <UNSIGNED />
+    </field>
     <field name="timestamp" type="T">
       <NOTNULL/>
       <DEFTIMESTAMP/>
@@ -941,6 +945,11 @@
       <DEFAULT value="0"/>
       <UNSIGNED/>
     </field>
+    <field name="ocID" type="I" size="10">
+      <NOTNULL/>
+      <UNSIGNED />
+    </field>
+
     <field name="fOverrideSetPermissions" type="I" size="1">
       <NOTNULL/>
       <DEFAULT value="0"/>
@@ -1167,6 +1176,9 @@
     <index name="cID">
       <col>cID</col>
     </index>
+    <index name="ppIsCanonical">
+      <col>ppIsCanonical</col>
+    </index>
   </table>
   <table name="PageSearchIndex">
     <opt platform="MYSQL">ENGINE=MYISAM</opt>
@@ -1180,6 +1192,8 @@
     <field name="cDescription" type="X"/>
     <field name="cPath" type="X"/>
     <field name="cDatePublic" type="T"/>
+    <field name="cDateLastIndexed" type="T" />
+    <field name="cDateLastSitemapped" type="T" />
     <index name="cName">
       <col>cName</col>
       <FULLTEXT />
@@ -1197,6 +1211,12 @@
       <col>cDescription</col>
       <col>content</col>
       <FULLTEXT />
+	</index>
+    <index name="cDateLastIndexed">
+      <col>cDateLastIndexed</col>
+	</index>
+    <index name="cDateLastSitemapped">
+      <col>cDateLastSitemapped</col>
 	</index>
   </table>
   <table name="PagePermissionPageTypes">
@@ -1401,6 +1421,10 @@
       <UNSIGNED/>
     </field>
     <field name="cPointerExternalLink" type="C" size="255"/>
+    <field name="cPointerExternalLinkNewWindow" type="I1" size="1">
+      <NOTNULL/>
+      <DEFAULT value="0"/>
+    </field>
     <field name="cChildren" type="I" size="10">
       <NOTNULL/>
       <DEFAULT value="0"/>
@@ -1422,6 +1446,19 @@
       <UNSIGNED/>
     </field>
     <field name="ptID" type="I" size="10">
+      <NOTNULL/>
+      <DEFAULT value="0"/>
+      <UNSIGNED/>
+    </field>
+    <field name="cCacheFullPageContent" type="I" size="4">
+      <NOTNULL/>
+      <DEFAULT value="-1"/>
+    </field>
+    <field name="cCacheFullPageContentOverrideLifetime" type="C" size="32">
+      <NOTNULL/>
+      <DEFAULT value="0"/>
+    </field>
+    <field name="cCacheFullPageContentLifetimeCustom" type="I" size="10">
       <NOTNULL/>
       <DEFAULT value="0"/>
       <UNSIGNED/>
@@ -1926,6 +1963,17 @@
       <col>fsOverrideGlobalPermissions</col>
     </index>
   </table>    
+  
+  <table name="FileSetSavedSearches">
+    <field name="fsID" type="I" size="10">
+      <KEY/>
+      <DEFAULT value="0"/>
+      <UNSIGNED/>
+    </field>
+    <field name="fsSearchRequest" type="X"/>
+    <field name="fsResultColumns" type="X"/>
+  </table>
+  
   <table name="FileSetFiles">
     <field name="fsfID" type="I" size="10">
       <KEY/>
@@ -1943,6 +1991,10 @@
     <field name="timestamp" type="T">
       <NOTNULL/>
       <DEFTIMESTAMP/>
+    </field>
+    <field name="fsDisplayOrder" type="I" size="10">
+      <UNSIGNED/>
+      <NOTNULL/>
     </field>
      <index name="fID">
       <col>fID</col>

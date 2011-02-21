@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This module documents the main interface with the OpenID consumer

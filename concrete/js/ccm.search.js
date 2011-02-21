@@ -104,7 +104,7 @@ ccm_setupSortableColumnSelection = function(searchType) {
 	$("#ccm-search-add-column").unbind();
 	$("#ccm-search-add-column").click(function() {
 		jQuery.fn.dialog.open({
-			width: 400,
+			width: 550,
 			height: 350,
 			modal: false,
 			href: $(this).attr('href'),
@@ -201,9 +201,14 @@ ccm_activateEditablePropertiesGrid = function() {
 }
 
 ccm_submitEditablePropertiesGrid = function(trow) {
+
 	trow.find('.ccm-attribute-editable-field-save-button').hide();
 	trow.find('.ccm-attribute-editable-field-clear-button').hide();
 	trow.find('.ccm-attribute-editable-field-loading').show();
+	try {
+		tinyMCE.triggerSave(true, true);
+	} catch(e) { }
+
 	trow.find('form').ajaxSubmit(function(resp) {
 		// resp is new HTML to display in the div
 		trow.find('.ccm-attribute-editable-field-loading').hide();

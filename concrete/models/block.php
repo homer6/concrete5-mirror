@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * Contains the block object, which is an atomic unit of content on a Concrete page.
@@ -120,6 +120,7 @@ class Block extends Object {
 			}
 			
 			$b->instance = new $class($b);
+			$b->populateIsGlobal();
 			
 			
 			if ($c != null || $a != null) {
@@ -143,11 +144,11 @@ class Block extends Object {
 		$db = Loader::db();
 		$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
 		$globalScrapbookPage=$scrapbookHelper->getGlobalScrapbookPage();
-		$bID = $db->getOne( 'SELECT b.bID FROM Blocks AS b, CollectionVersionBlocks AS cvb '.
+		$row = $db->getRow( 'SELECT b.bID, cvb.arHandle FROM Blocks AS b, CollectionVersionBlocks AS cvb '.
 						  'WHERE b.bName=? AND b.bID=cvb.bID AND cvb.cID=? ORDER BY cvb.cvID DESC', 
 						   array($globalBlockName, intval($globalScrapbookPage->getCollectionId()) ) ); 
-		if ($bID > 0) {
-			return Block::getByID( intval($bID) );
+		if ($row != false && isset($row['bID']) && $row['bID'] > 0) {
+			return Block::getByID( $row['bID'], $globalScrapbookPage, $row['arHandle'] );
 		} else {
 			return new Block();
 		}
@@ -181,7 +182,11 @@ class Block extends Object {
 		}
 	}
 	
-	public function isGlobal(){
+	public function isGlobal() {
+		return $this->bIsGlobal;
+	}
+	
+	public function populateIsGlobal() {
 		$db = Loader::db();
 		
 		$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
@@ -193,9 +198,11 @@ class Block extends Object {
 			 "WHERE b.bID = '{$this->bID}' AND cvb.bID=b.bID AND cvb.cID=".intval($globalScrapbookC->getCollectionId())." LIMIT 1";
 			 
 		$r = $db->query($q);
-		if ($r) {
-			return ($r->numRows() > 0)?1:0;
-		}			
+		if ($r->numRows() > 0) {
+			$this->bIsGlobal = 1;
+		} else {
+			$this->bIsGlobal = 0;
+		}
 		return 0;
 	}
 
@@ -280,8 +287,9 @@ class Block extends Object {
 		return $this->instance;
 	}
 	
+	
 	public function getController() {
-		return $this->instance;
+		return $this->getInstance();
 	}
 	
 	function getCollectionList() {
@@ -375,6 +383,9 @@ class Block extends Object {
 		$cvID = $c->getVersionID();
 		$cID = $c->getCollectionID();
 		$v = array($cID, $cvID, $this->bID, $this->getAreaHandle());
+
+		Cache::delete('collection_blocks', $cID . ':' . $cvID);
+
 		$q = "select count(bID) from CollectionVersionBlocks where cID = ? and cvID = ? and bID = ? and arHandle = ?";
 		$total = $db->getOne($q, $v);
 		if ($total == 0) {
@@ -420,6 +431,8 @@ class Block extends Object {
 		$cID = $this->getBlockCollectionID();
 
 		$newBlockDisplayOrder = $nc->getCollectionAreaDisplayOrder($area->getAreaHandle());
+
+		Cache::delete('collection_blocks', $nc->getCollectionID() . ':' . $nc->getVersionID());
 		
 		$v = array($nc->getCollectionID(), $nc->getVersionID(), $area->getAreaHandle(), $newBlockDisplayOrder, $cID, $this->arHandle);
 		$db->Execute('update CollectionVersionBlocks set cID = ?, cvID = ?, arHandle = ?, cbDisplayOrder = ? where cID = ? and arHandle = ? and isOriginal = 1', $v);
@@ -488,6 +501,8 @@ class Block extends Object {
 		
 		$v = array($ncID, $nvID, $newBID, $this->arHandle, $this->csrID);
 		$db->Execute('insert into CollectionVersionBlockStyles (cID, cvID, bID, arHandle, csrID) values (?, ?, ?, ?, ?)', $v);
+
+		Cache::delete('collection_blocks', $ncID . ':' . $nvID);
 		
 		return $nb;
 	}
@@ -508,28 +523,56 @@ class Block extends Object {
 	public function getBlockCustomStyleRuleID() {return $this->csrID;}
 	
 	
-	public function resetBlockCustomStyle() {
+	public function resetBlockCustomStyle($updateAll = false) {
 		$db = Loader::db();
 		$c = $this->getBlockCollectionObject();
 		$cvID = $c->getVersionID();
-		$db->Execute('delete from CollectionVersionBlockStyles where cID = ? and cvID = ? and arHandle = ? and bID = ?', array(
-			$this->getBlockCollectionID(),
-			$cvID,
-			$this->getAreaHandle(),
-			$this->bID
-		));
-		$this->refreshCache();
+		if ($updateAll) {
+			$r = $db->Execute('select cID, cvID, bID, arHandle from CollectionVersionBlockStyles where bID = ? and csrID = ?', array($this->bID, $this->csrID));
+			while ($row = $r->FetchRow()) {
+				$c1 = Page::getByID($row['cID'], $row['cvID']);
+				$b1 = Block::getByID($row['bID'], $c1, $row['arHandle']);
+				$b1->refreshCache();
+			}			
+			$db->Execute('delete from CollectionVersionBlockStyles where bID = ? and csrID = ?', array(
+				$this->bID,
+				$this->csrID
+			));
+		} else {
+			$db->Execute('delete from CollectionVersionBlockStyles where cID = ? and cvID = ? and arHandle = ? and bID = ?', array(
+				$this->getBlockCollectionID(),
+				$cvID,
+				$this->getAreaHandle(),
+				$this->bID
+			));
+			$this->refreshCache();
+		}
 	}
 	
-	public function setBlockCustomStyle($csr) {
+	public function __destruct() {
+		unset($this->c);
+		unset($this->a);
+		unset($this->instance);
+	}
+	
+	public function setBlockCustomStyle($csr, $updateAll = false) {
 		$db = Loader::db();
 		$c = $this->getBlockCollectionObject();
 		$cvID = $c->getVersionID();
-		$db->Replace('CollectionVersionBlockStyles', 
-			array('cID' => $this->getBlockCollectionID(), 'cvID' => $cvID, 'arHandle' => $this->getAreaHandle(), 'bID' => $this->bID, 'csrID' => $csr->getCustomStyleRuleID()),
-			array('cID', 'cvID', 'bID', 'arHandle'), true
-		);
-		$this->refreshCache();
+		if ($updateAll) {
+			$r = $db->Execute('select cID, cvID, bID, arHandle from CollectionVersionBlocks where bID = ?', array($this->bID));
+			while ($row = $r->FetchRow()) {
+				$c1 = Page::getByID($row['cID'], $row['cvID']);
+				$b1 = Block::getByID($row['bID'], $c1, $row['arHandle']);
+				$b1->setBlockCustomStyle($csr, false);
+			}			
+		} else {
+			$db->Replace('CollectionVersionBlockStyles', 
+				array('cID' => $this->getBlockCollectionID(), 'cvID' => $cvID, 'arHandle' => $this->getAreaHandle(), 'bID' => $this->bID, 'csrID' => $csr->getCustomStyleRuleID()),
+				array('cID', 'cvID', 'bID', 'arHandle'), true
+			);
+			$this->refreshCache();
+		}
 	}
 
 	function getBlockCollectionObject() {
@@ -601,17 +644,31 @@ class Block extends Object {
 	}
 
 	function _getBlockAction() {
-		$c = Page::getCurrentPage();
-		$cID = $c->getCollectionID();
+		$cID = $this->getBlockActionCollectionID();
 		$bID = $this->getBlockID();
-		$arHandle = $this->getAreaHandle();
+		$arHandle = urlencode($this->getAreaHandle());
 		$step = ($_REQUEST['step']) ? '&step=' . $_REQUEST['step'] : '';
 		$valt = Loader::helper('validation/token');
 		$token = $valt->generate();
 		$str = DIR_REL . "/" . DISPATCHER_FILENAME . "?cID={$cID}&amp;bID={$bID}&amp;arHandle={$arHandle}" . $step . "&ccm_token=" . $token;
 		return $str;
 	}
-
+	
+	public function setBlockActionCollectionID($bActionCID) {
+		$this->bActionCID = $bActionCID;
+	}
+	
+	public function getBlockActionCollectionID() {
+		if ($this->bActionCID > 0) {
+			return $this->bActionCID;
+		}
+		$c = Page::getCurrentPage();
+		if (is_object($c)) {
+			return $c->getCollectionID();
+		} else {
+			$this->getBlockCollectionObject();
+		}
+	}
 	function getBlockEditAction() {
 		return $this->_getBlockAction();
 	}
@@ -672,6 +729,11 @@ class Block extends Object {
 		if (($c instanceof Page && $c->isMasterCollection() && !$this->isAlias()) || $forceDelete) {
 			// forceDelete is used by the administration console
 
+			$r = $db->Execute('select cID, cvID from CollectionVersionBlocks where bID = ?', array($bID));
+			while ($row = $r->FetchRow()) {
+				Cache::delete('collection_blocks', $row['cID'] . ':' . $row['cvID']);
+			}
+
 			// this is an original. We're deleting it, and everything else having to do with it
 			$q = "delete from CollectionVersionBlocks where bID = '$bID'";
 			$r = $db->query($q);
@@ -680,7 +742,8 @@ class Block extends Object {
 			$r = $db->query($q);
 			
 			$q = "delete from CollectionVersionBlockStyles where bID = ".intval($bID);
-			$r = $db->query($q);			
+			$r = $db->query($q);
+			
 		} else {
 			$q = "delete from CollectionVersionBlocks where cID = '$cID' and (cvID = '$cvID' or cbIncludeAll=1) and bID = '$bID' and arHandle = '$arHandle'";
 			$r = $db->query($q);
@@ -690,7 +753,7 @@ class Block extends Object {
 			$r = $db->query($q);
 			
 			$q = "delete from CollectionVersionBlockStyles where cID = '$cID' and cvID = '$cvID' and bID = '$bID' and arHandle = '$arHandle'";
-			//$r = $db->query($q);				
+			$r = $db->query($q);				
 		}
 
 		//then, we see whether or not this block is aliased to anything else
@@ -965,6 +1028,8 @@ class Block extends Object {
 		$a = $this->getBlockAreaObject();
 		if (is_object($c) && is_object($a)) {
 			Cache::delete('block', $this->getBlockID() . ':' . $c->getCollectionID() . ':' . $c->getVersionID() . ':' . $a->getAreaHandle());
+			Cache::delete('block_view_output', $c->getCollectionID() . ':' . $this->getBlockID() . ':' . $a->getAreaHandle());
+			Cache::delete('collection_blocks', $c->getCollectionID() . ':' . $c->getVersionID());
 		}
 		Cache::delete('block', $this->getBlockID());		
 	}

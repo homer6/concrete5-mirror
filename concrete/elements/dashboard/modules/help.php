@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 ?>
 <h2><?php echo t('Search Documentation')?></h2>
 <form method="get" action="http://www.concrete5.org/search/">

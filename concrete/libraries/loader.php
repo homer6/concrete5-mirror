@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * @package Core
@@ -26,14 +26,23 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * Loads a library file, either from the site's files or from Concrete's
 		 */
 		public function library($lib, $pkgHandle = null) {
-			if ($pkgHandle) {
+		
+			if (file_exists(DIR_LIBRARIES . '/' . $lib . '.php')) {
+				require_once(DIR_LIBRARIES . '/' . $lib . '.php');
+				return;
+			}
+			
+			if ($pkgHandle == null && file_exists(DIR_LIBRARIES_CORE . '/' . $lib . '.php')) {
+				require_once(DIR_LIBRARIES_CORE . '/' . $lib . '.php');
+				return;
+			}
+			
+			if ($pkgHandle != null) {			
 				$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
 				require_once($dir . '/' . $pkgHandle . '/' . DIRNAME_LIBRARIES . '/' . $lib . '.php');
-			} else if (file_exists(DIR_LIBRARIES . '/' . $lib . '.php')) {
-				require_once(DIR_LIBRARIES . '/' . $lib . '.php');
-			} else {
-				require_once(DIR_LIBRARIES_CORE . '/' . $lib . '.php');
+				return;
 			}
+			
 		}
 
 		/** 
@@ -41,19 +50,22 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 */
 		public function model($mod, $pkgHandle = null) {
 			
-			$ret = Loader::legacyModel($mod);
-			if ($ret) {
+			if (file_exists(DIR_MODELS . '/' . $mod . '.php')) {
+				require_once(DIR_MODELS . '/' . $mod . '.php');
 				return;
 			}
 			
-			if ($pkgHandle) {
+			if ($pkgHandle == null && file_exists(DIR_MODELS_CORE . '/' . $mod . '.php')) {
+				require_once(DIR_MODELS_CORE . '/' . $mod . '.php');
+				return;
+			}
+			
+			if ($pkgHandle != null) {
 				$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
 				require_once($dir . '/' . $pkgHandle . '/' . DIRNAME_MODELS . '/' . $mod . '.php');
-			} else if (file_exists(DIR_MODELS . '/' . $mod . '.php')) {
-				require_once(DIR_MODELS . '/' . $mod . '.php');
-			} else {
-				require_once(DIR_MODELS_CORE . '/' . $mod . '.php');
 			}
+			
+			Loader::legacyModel($mod);
 		}
 		
 		protected function legacyModel($model) {
@@ -83,9 +95,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if (is_array($args)) {
 				extract($args);
 			}
-			$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
-			if (file_exists($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php')) {
-				include($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php');
+			if (file_exists(DIR_FILES_ELEMENTS . '/' . $file . '.php')) {
+				include(DIR_FILES_ELEMENTS . '/' . $file . '.php');
+			} else {
+				$dir = (is_dir(DIR_PACKAGES . '/' . $pkgHandle)) ? DIR_PACKAGES : DIR_PACKAGES_CORE;
+				if (file_exists($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php')) {
+					include($dir . '/' . $pkgHandle . '/' . DIRNAME_ELEMENTS . '/' . $file . '.php');
+				}
 			}
 		}
 
@@ -100,6 +116,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				include(DIR_FILES_ELEMENTS . '/' . $file . '.php');
 			} else if (file_exists(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php')) {
 				include(DIR_FILES_ELEMENTS_CORE . '/' . $file . '.php');
+			}
+		}
+
+		public function tool($file, $args = null) {
+			if (is_array($args)) {
+				extract($args);
+			}
+			if (file_exists(DIR_FILES_TOOLS . '/' . $file . '.php')) {
+				include(DIR_FILES_TOOLS . '/' . $file . '.php');
+			} else if (file_exists(DIR_FILES_TOOLS_REQUIRED . '/' . $file . '.php')) {
+				include(DIR_FILES_TOOLS_REQUIRED . '/' . $file . '.php');
 			}
 		}
 
@@ -151,9 +178,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * $db->query($sql);
 		 * </code>
 		 */
-		public function db($server = null, $username = null, $password = null, $database = null, $create = false) {
+		public function db($server = null, $username = null, $password = null, $database = null, $create = false, $autoconnect = true) {
 			static $_db;
-			if (!isset($_db) || $create) {
+			if ((!isset($_db) || $create) && ($autoconnect)) {
 				if ($server == null && defined('DB_SERVER')) {	
 					$dsn = DB_TYPE . '://' . DB_USERNAME . ':' . rawurlencode(DB_PASSWORD) . '@' . rawurlencode(DB_SERVER) . '/' . DB_DATABASE;
 				} else if ($server) {
@@ -323,9 +350,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 * Loads a controller for either a page or view
 		 */
 		public function controller($item) {
-			$db = Loader::db();
 			
 			if (is_string($item)) {
+				$db = Loader::db();
 				if (is_object($db)) {
 					try {
 						$_item = Page::getByPath($item);
@@ -363,10 +390,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					}
 				}
 			} else if ($item instanceof Block || $item instanceof BlockType) {
-				if ($item->getPackageID() > 0 && file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
-					require_once(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER);
-				} else if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
+				if (file_exists(DIR_FILES_BLOCK_TYPES . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
 					require_once(DIR_FILES_BLOCK_TYPES . "/" . $item->getBlockTypeHandle() . "/" . FILENAME_BLOCK_CONTROLLER);
+				} else if ($item->getPackageID() > 0 && file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
+					require_once(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_BLOCKS . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER);
 				} else if (file_exists(DIR_FILES_BLOCK_TYPES_CORE . '/' . $item->getBlockTypeHandle() . '/' . FILENAME_BLOCK_CONTROLLER)) {
 					require_once(DIR_FILES_BLOCK_TYPES_CORE . "/" . $item->getBlockTypeHandle() . "/" . FILENAME_BLOCK_CONTROLLER);
 				}
@@ -398,7 +425,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$include = true;
 
 				} else if (is_object($item)) {
-					if ($item->getPackageID() > 0 && (file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $controllerFile))) {
+					if ($item->getPackageID() > 0 && (file_exists(DIR_FILES_CONTROLLERS . $controllerFile))) {
+						include(DIR_FILES_CONTROLLERS . $controllerFile);
+						$include = true;
+					} else if ($item->getPackageID() > 0 && (file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $controllerFile))) {
 						include(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $controllerFile);
 						$include = true;
 					} else if ($item->getPackageID() > 0 && (file_exists(DIR_PACKAGES . '/' . $item->getPackageHandle() . '/' . DIRNAME_CONTROLLERS . $path . '/'. FILENAME_COLLECTION_CONTROLLER))) {
@@ -436,14 +466,4 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			return $controller;
 		}
 
-		/**
-		* Instantiates one of our Soap Client Singletons
-		*/		
-		public function soapClient($client) {			
-			Loader::library('soap_clients');
-			$client .= 'SoapClient';			
-			$api = call_user_func_array($client.'::getInstance',Array());					
-			$api->setup();
-			return $api;
-		}
 	}

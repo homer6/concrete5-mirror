@@ -1,5 +1,5 @@
 <?php 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	$aBlocks = $controller->generateNav();
 	$c = Page::getCurrentPage();
 	$containsPages = false;
@@ -23,6 +23,12 @@
 	foreach($aBlocks as $ni) {
 		$_c = $ni->getCollectionObject();
 		if (!$_c->getCollectionAttributeValue('exclude_nav')) {
+			
+			
+			$target = $ni->getTarget();
+			if ($target != '') {
+				$target = 'target="' . $target . '"';
+			}
 			if (!$containsPages) {
 				// this is the first time we've entered the loop so we print out the UL tag
 				echo("<ul class=\"nav\">");
@@ -59,11 +65,11 @@
 			}
 
 			if ($c->getCollectionID() == $_c->getCollectionID()) { 
-				echo('<li class="nav-selected nav-path-selected"><a class="nav-selected nav-path-selected" href="' . $pageLink . '">' . $ni->getName() . '</a>');
+				echo('<li class="nav-selected nav-path-selected"><a class="nav-selected nav-path-selected" ' . $target . ' href="' . $pageLink . '">' . $ni->getName() . '</a>');
 			} elseif ( in_array($_c->getCollectionID(),$selectedPathCIDs) ) { 
-				echo('<li class="nav-path-selected"><a class="nav-path-selected" href="' . $pageLink . '">' . $ni->getName() . '</a>');
+				echo('<li class="nav-path-selected"><a class="nav-path-selected" href="' . $pageLink . '" ' . $target . '>' . $ni->getName() . '</a>');
 			} else {
-				echo('<li><a href="' . $pageLink . '">' . $ni->getName() . '</a>');
+				echo('<li><a href="' . $pageLink . '" ' . $target . ' >' . $ni->getName() . '</a>');
 			}	
 			$lastLevel = $thisLevel;
 			$i++;

@@ -2,7 +2,7 @@
 
 var ccm_uiLoaded = false;
 var ccm_siteActivated = true;
-var ccm_animEffects = true;
+var ccm_animEffects = false;
 
 ccm_parseJSON = function(resp, onNoError) {
 	if (resp.error) {
@@ -26,30 +26,25 @@ ccm_deactivateSite = function(onDone) {
 		$(this).css('visibility', 'hidden');
 	});
 	
-	if (ccm_animEffects) {				
-		$("#ccm-overlay").fadeIn(60, function() {
-			ccm_siteActivated = false;
-			if (typeof onDone == 'function') {
-				onDone();
-			}
-		});
-	
+	if (ccm_animEffects) {
+		$("#ccm-overlay").fadeIn(100);
 	} else {
 		$("#ccm-overlay").show();
-		ccm_siteActivated = false;
-		if (typeof onDone == 'function') {
-			onDone();
-		}
+	}
+	
+	ccm_siteActivated = false;
+	if (typeof onDone == 'function') {
+		onDone();
 	}
 }
 
 ccm_activateSite = function() {
 	if (ccm_animEffects) {
-		$("#ccm-overlay").fadeOut(60);
+		$("#ccm-overlay").fadeOut(100);
 	} else {
 		$("#ccm-overlay").hide();
 	}
-
+	
 	$("embed,object").each(function() {
 		$(this).css('visibility', $(this).attr('ccm-style-old-visibility'));
 	});
@@ -59,32 +54,15 @@ ccm_activateSite = function() {
 }
 
 ccm_addHeaderItem = function(item, type) {
-	var doLoad = true;
 	if (type == 'CSS') {
-		for (i = 0; i < document.styleSheets.length; i++) {
-			ss = document.styleSheets[i];			
-			if (ss.href == item) {
-				doLoad = false;
-				break;
-			}
+		if (!($('head').children('link[href*=' + item + ']').length)) {
+			$('head').append('<link rel="stylesheet" type="text/css" href="' + item + '?ts=' + new Date().getTime() + '" />');
 		}
 	} else if (type == 'JAVASCRIPT') {
-		$("script").each(function(i, obj) {
-			var src = $(obj).attr('src');
-			if (src == item) {
-				doLoad = false;
-			}
-		});
-	}
-	if (doLoad) {
-		switch(type) {
-			case 'CSS':
-				$('head').append('<link rel="stylesheet" type="text/css" href="' + item + '?ts=' + new Date().getTime() + '" />');
-				break;
-			case 'JAVASCRIPT':
-				$('head').append('<script type="text/javascript" src="' + item + '?ts=' + new Date().getTime() + '"></script>');
-				break;
+		if (!($('head').children('script[src*=' + item + ']').length)) {
+			$('head').append('<script type="text/javascript" src="' + item + '?ts=' + new Date().getTime() + '"></script>');
 		}
+
 	}
 }
 

@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 /**
  * This class holds a list of attribute values for an object. Why do we need a special class to do this? Because 
  * class can be retrieved by handle
@@ -67,6 +67,13 @@ class AttributeValue extends Object {
 		$this->attributeType = $this->getAttributeTypeObject();
 		$this->attributeType->controller->setAttributeKey($this->getAttributeKey());
 		$this->attributeType->controller->setAttributeValue($this);
+	}
+
+	public function __destruct() {
+		if (is_object($this->attributeType)) {
+			$this->attributeType->__destruct();
+			unset($this->attributeType);
+		}
 	}
 	
 	public function getValue($mode = false) {

@@ -55,6 +55,10 @@ showPageMenu = function(obj, e) {
 			html += '<li class=\"header\"><\/li>';
 			if (obj.display_mode == 'explore' || obj.display_mode == 'search') {
 				html += '<li><a class="ccm-icon" dialog-width="640" dialog-height="340" dialog-modal="false" dialog-title="' + ccmi18n_sitemap.moveCopyPage + '" id="menuMoveCopy' + obj.cID + '" href="' + CCM_TOOLS_PATH + '/sitemap_overlay?instance_id=' + obj.instance_id + '&display_mode=' + obj.display_mode + '&select_mode=move_copy_delete&cID=' + obj.cID + '" id="menuMoveCopy' + obj.cID + '"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/up_down.png)">' + ccmi18n_sitemap.moveCopyPage + '<\/span><\/a><\/li>';
+				if (obj.display_mode == 'explore') {
+					html += '<li><a class="ccm-icon" id="menuSendToStop' + obj.cID + '" href="' + CCM_DISPATCHER_FILENAME + '/dashboard/sitemap/explore?cNodeID=' + obj.cID + '&task=send_to_top"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/sitemap_up.png)">' + ccmi18n_sitemap.sendToTop + '<\/span><\/a><\/li>';
+					html += '<li><a class="ccm-icon" id="menuSendToBottom' + obj.cID + '" href="' + CCM_DISPATCHER_FILENAME + '/dashboard/sitemap/explore?cNodeID=' + obj.cID + '&task=send_to_bottom"><span style="background-image: url(' + CCM_IMAGE_PATH + '/icons/sitemap_down.png)">' + ccmi18n_sitemap.sendToBottom + '<\/span><\/a><\/li>';
+			}
 				if (obj.cNumChildren == 0) {
 					html += '<li class=\"header\"><\/li>';
 				}
@@ -307,7 +311,11 @@ selectLabel = function(e, node) {
 		var origCID = node.attr('selected-page-id');
 		selectMoveCopyTarget(node.attr('sitemap-instance-id'), node.attr('sitemap-display-mode'), node.attr('sitemap-select-mode'), destCID, origCID);
 	} else if (node.attr('sitemap-select-mode') == 'select_page') {
-		ccm_selectSitemapNode(node.attr('id').substring(10), unescape(node.attr('tree-node-title')));
+		var callback = node.parents('[sitemap-wrapper=1]').attr('sitemap-select-callback');
+		if (callback == null || callback == '' || typeof(callback) == 'undefined') {
+			callback = 'ccm_selectSitemapNode';
+		}
+		eval(callback + '(node.attr(\'id\').substring(10), unescape(node.attr(\'tree-node-title\')));');
 		jQuery.fn.dialog.closeTop();
 	} else {
 		node.addClass('tree-label-selected');
@@ -324,7 +332,7 @@ selectLabel = function(e, node) {
 }
 
 ccmSitemapHighlightPageLabel = function(cID, name) {
-	var sp = $("#tree-node" + cID + " span");
+	var sp = $("#tree-label" + cID + " span");
 
 	if (sp.length == 0) {
 		var sp = $("tr.ccm-list-record[cID=" + cID + "]");
@@ -452,7 +460,7 @@ moveCopyAliasNode = function(reloadPage) {
 		// parse response
 		ccm_parseJSON(resp, function() {
 			
-			alert(resp.message);
+ 			ccmAlert.hud(resp.message, 2000);
 			jQuery.fn.dialog.hideLoader();
 			
 			if (reloadPage == true) {
@@ -679,6 +687,26 @@ ccmSitemapLoad = function(instance_id, display_mode, select_mode, node, selected
 		ccm_sitemap_html = '';
 
 	} else {
+		if (select_mode != 'move_copy_delete' && select_mode != 'select_page') {
+			$("ul[sitemap-instance-id=" + instance_id + "]").sortable({
+				cursor: 'move',
+				items: 'li[draggable=true]',
+				opacity: 0.5,
+				stop: function(sor) {
+					var ss = $("ul[sitemap-instance-id=" + instance_id + "]").sortable('toArray');
+					var queryString = '';
+					for (i = 0; i < ss.length; i++) {
+						if (ss[i] != '') {
+							queryString += '&cID[]=' + ss[i].substring(9);
+						}
+					}
+
+					$.getJSON(CCM_TOOLS_PATH + '/dashboard/sitemap_update.php', queryString, function(resp) {
+						ccm_parseJSON(resp, function() {});
+					});
+				}
+			});
+		}
 		activateLabels(instance_id, display_mode, select_mode);
 	}
 	
@@ -749,7 +777,11 @@ ccm_sitemapSetupSearchPages = function(instance_id) {
 		}
 		
 		if (node.attr('sitemap-select-mode') == 'select_page') {
-			ccm_selectSitemapNode(node.attr('cID'), unescape(node.attr('cName')));
+			var callback = node.attr('sitemap-select-callback');
+			if (callback == null || callback == '' || typeof(callback) == 'undefined') {
+				callback = 'ccm_selectSitemapNode';
+			}
+			eval(callback + '(node.attr(\'cID\'), unescape(node.attr(\'cName\')));');
 			jQuery.fn.dialog.closeTop();
 		} else if (node.attr('sitemap-select-mode') == 'move_copy_delete') {
 			var destCID = node.attr('cID');

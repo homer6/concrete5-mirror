@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $fp = FilePermissions::getGlobal();
 if (!$fp->canAccessFileManager()) {
 	die(_("Unable to access the file manager."));
@@ -14,6 +14,7 @@ $fileList = $cnt->getRequestedSearchResults();
 
 $files = $fileList->getPage();
 $pagination = $fileList->getPagination();
+$searchRequest = $cnt->get('searchRequest');
+$columns = $cnt->get('columns');
 
-
-Loader::element('files/search_results', array('files' => $files, 'fileList' => $fileList, 'pagination' => $pagination));
+Loader::element('files/search_results', array('files' => $files, 'columns' => $columns, 'searchRequest' => $searchRequest,  'fileList' => $fileList, 'pagination' => $pagination));

@@ -1,5 +1,5 @@
 <?php 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	
 	# Filename: _process.php
 	# Author: Andrew Embler (andrew@bluepavo.com)
@@ -30,8 +30,10 @@
 	$token = '&' . $valt->getParameter();
 	
 	// If the user has checked out something for editing, we'll increment the lastedit variable within the database
-	$u = new User();
-	$u->refreshCollectionEdit($c);
+	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+		$u = new User();
+		$u->refreshCollectionEdit($c);
+	}
 	if ($_REQUEST['btask'] && $valt->validate()) {
 	
 		// these are tasks dealing with blocks (moving up, down, removing)
@@ -74,7 +76,14 @@
 					$b = Block::getByID($_REQUEST['bID'], $c, $a);
 					$p = new Permissions($b);
 					if ($p->canWrite()){ 					
-					
+						
+						$updateAll = false;
+						$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
+						$globalScrapbookC = $scrapbookHelper->getGlobalScrapbookPage();						
+						if ($globalScrapbookC->getCollectionID() == $c->getCollectionID()) {
+							$updateAll = true;
+						}
+						
 						Loader::model('custom_style');						
 						
 						$nvc = $c->getVersionToModify();
@@ -88,7 +97,7 @@
 						}			
 						
 						if ($_POST['reset_css']) {
-							$b->resetBlockCustomStyle();
+							$b->resetBlockCustomStyle($updateAll);
 						} else {
 							
 							if ($_POST['cspID'] > 0 && ($_POST['cspPresetAction'] == 'update_existing_preset')) {
@@ -96,10 +105,10 @@
 								$csr = $csp->getCustomStylePresetRuleObject();
 								// we update the csr in case anything has been changed
 								$csr->update($_POST['css_id'], $_POST['css_class_name'], $_POST['css_custom'], $_POST);
-								$b->setBlockCustomStyle($csr);
+								$b->setBlockCustomStyle($csr, $updateAll);
 							} else {
 								$csr = CustomStyleRule::add($_POST['css_id'], $_POST['css_class_name'], $_POST['css_custom'], $_POST);
-								$b->setBlockCustomStyle($csr);
+								$b->setBlockCustomStyle($csr, $updateAll);
 							}
 							
 							if ($_POST['cspPresetAction'] == 'create_new_preset') {
@@ -320,7 +329,11 @@
 							
 							$layout->save( $nvc ); 
 							//if($oldLayoutId) $nvc->updateAreaLayoutId($area, $oldLayoutId, $layout->layoutID);  
-						}else throw new Exception(t('Access Denied: Invalid Layout'));
+						}else{
+							//this may be triggered when there are two quick requests to the server, and the change has already been saved
+							$skipLayoutSave=1;
+							//throw new Exception(t('Access Denied: Invalid Layout'));
+						}
 						
 					}else{ //new layout  
 						$layout = new Layout( $params );   
@@ -331,12 +344,16 @@
 					
 					//are we adding a new layout to an area, or updating an existing one? 
 					$cvalID=intval($_REQUEST['cvalID']);
-					if( $cvalID ){
+					if($skipLayoutSave){
+						//see above
+					}elseif( $cvalID ){
+						//get the cval of the record that corresponds to this version & area 
+						$vals = array( $nvc->getCollectionID(), $nvc->getVersionID(), $_GET['arHandle'], intval($_REQUEST['layoutID']) );
+						$cvalID = intval($db->getOne('SELECT cvalID FROM CollectionVersionAreaLayouts WHERE cID=? AND cvID=? AND arHandle=? AND layoutID=? ',$vals));	
 						if($updateLayoutId) $nvc->updateAreaLayoutId( $cvalID, $layout->layoutID);  
-					}else{ 
+					}else{  
 						$nvc->addAreaLayout($area, $layout, $position);  
-					}
-					
+					} 					
 					
 					if ( $_POST['layoutPresetAction']=='create_new_preset' ) { 
 						$newPresetName = (strlen($_POST['layoutPresetNameAlt']))?$_POST['layoutPresetNameAlt']:$_POST['layoutPresetName'];
@@ -413,7 +430,8 @@
 					// checking out the collection for editing
 					$u = new User();
 					$u->loadCollectionEdit($c);
-
+					
+					/*
 					if ($_GET['ctask'] == 'check-out-first') {
 						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?ctask=first_run&cID=' . $c->getCollectionID() . $step);
 						exit;
@@ -421,11 +439,18 @@
 						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $c->getCollectionID() . $step);
 						exit;
 					}
+					*/
 				}
 				break;
 			case 'check-in':
 				if ($cp->canWrite() || $cp->canApproveCollection()) {
-					// checking out the collection for editing
+
+					if ($_REQUEST['approve'] == 'APPROVE' && $cp->canApproveCollection()) {
+						$u->unloadCollectionEdit(false);
+					} else {
+						$u->unloadCollectionEdit();
+					}
+
 					$v = CollectionVersion::get($c, "RECENT");
 					
 					$v->setComment($_REQUEST['comments']);
@@ -438,8 +463,6 @@
 					} else {
 						$v->removeNewStatus();
 					}
-					$u = new User();
-					$u->unloadCollectionEdit($c);
 					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $c->getCollectionID() . $step);
 					exit;
 				}
@@ -517,7 +540,18 @@
 				$obj->aID = $a->getAreaID();
 				$obj->arHandle = $a->getAreaHandle();
 				$obj->cID = $c->getCollectionID();
-			
+				$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
+				$c1 = $scrapbookHelper->getGlobalScrapbookPage();					
+				if ($c1->getCollectionID() == $c->getCollectionID()) {
+					$obj->isGlobalBlock = true;
+					$obj->cID = $_REQUEST['rcID'];
+					$obj->arHandle = $_REQUEST['rarHandle'];
+					$a1 = Area::getOrCreate(Page::getByID($obj->cID), $obj->arHandle);
+					$obj->aID = $a1->getAreaID();
+				} else {
+					$obj->isGlobalBlock = false;
+				}
+				
 				if ((!is_object($e)) || (($e instanceof ValidationErrorHelper) && (!$e->has()))) {
 					$bt = BlockType::getByHandle($b->getBlockTypeHandle());
 					if (!$bt->includeAll()) {
@@ -551,18 +585,14 @@
 					$obj->response = $e->getList();
 				}
 				
-				print Loader::helper('json')->encode($obj);
-				exit;
-				
-				/*
-					
-				$redirectCID = (intval($_REQUEST['rcID'])) ? intval($_REQUEST['rcID']) : intval($_REQUEST['cID']);
-					
-				if (!$_SESSION['disableRedirect']) {
+				if ($_POST['ccm-block-form-method'] == 'AJAX') { 
+					print Loader::helper('json')->encode($obj);
+					exit;
+				} else {
+					$redirectCID = (intval($_REQUEST['rcID'])) ? intval($_REQUEST['rcID']) : intval($_REQUEST['cID']);
 					header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $redirectCID . $edit . $step);
 					exit;
 				}
-				*/
 			}
 						
 		} else if ($_REQUEST['add'] || $_REQUEST['_add']) {
@@ -599,12 +629,17 @@
 							}
 						}
 					} else if (isset($_REQUEST['bID'])) {
-						$b = Block::getByID($_REQUEST['bID']); 
 						if($_REQUEST['globalBlock']) {
-							$b->setBlockAreaObject($a);
+							$scrapbookHelper=Loader::helper('concrete/scrapbook'); 
+							$c1 = $scrapbookHelper->getGlobalScrapbookPage();			
+							$a1 = Area::get($c1, $_REQUEST['globalScrapbook']);
+							$b = Block::getByID($_REQUEST['bID'], $c1, $a1);
+						} else {
+							$b = Block::getByID($_REQUEST['bID']); 
 						}
 						$bt = BlockType::getByHandle($b->getBlockTypeHandle());						
 						if ($ap->canAddBlock($bt)) {
+							$b->setBlockAreaObject($a);
 							if (!$bt->includeAll()) {
 								$nvc = $c->getVersionToModify();
 								$b->alias($nvc);
@@ -656,9 +691,14 @@
 							$obj->response = $e->getList();
 						
 						}
-						
-						print Loader::helper('json')->encode($obj);
-						exit;
+
+						if ($_POST['ccm-block-form-method'] == 'AJAX') { 
+							print Loader::helper('json')->encode($obj);
+							exit;
+						} else {
+							header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $c->getCollectionID());
+							exit;
+						}
 					}
 				}
 			}
@@ -699,7 +739,7 @@
 					$nc = Page::getByID($_REQUEST['cParentID']);
 					$ncp = new Permissions($nc);
 
-					User::unloadCollectionEdit($c);
+					User::unloadCollectionEdit();
 					if ($ncp->canAddSubCollection($ct) && $c->canMoveCopyTo($nc)) {
 						$ncID = $c->addCollectionAlias($nc);						
 						header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $ncID . $step);
@@ -777,6 +817,9 @@
 				$data['cName'] = $_POST['cName'];
 				$data['cDescription'] = $_POST['cDescription'];
 				$data['cHandle'] = $_POST['cHandle'];
+				$data['cCacheFullPageContent'] = $_POST['cCacheFullPageContent'];
+				$data['cCacheFullPageContentLifetimeCustom'] = $_POST['cCacheFullPageContentLifetimeCustom'];
+				$data['cCacheFullPageContentOverrideLifetime'] = $_POST['cCacheFullPageContentOverrideLifetime'];				
 
 				$data['ppURL'] = array();
 				foreach ($_POST as $key=>$value) {
@@ -804,7 +847,7 @@
 						$v = CollectionVersion::get($c, "RECENT");
 						$v->approve();
 						$u = new User();
-						$u->unloadCollectionEdit($c);
+						$u->unloadCollectionEdit();
 						$obj->name = $v->getVersionName();
 					}
 					
@@ -819,7 +862,7 @@
 			}	
 		} else if ($_POST['update_external']) {
 			if ($cp->canWrite()) {
-				$ncID = $c->updateCollectionAliasExternal($_POST['cName'], $_POST['cExternalLink']);						
+				$ncID = $c->updateCollectionAliasExternal($_POST['cName'], $_POST['cExternalLink'], $_POST['cExternalLinkNewWindow']);						
 				header('Location: ' . URL_SITEMAP);
 				exit;
 			}
@@ -854,7 +897,7 @@
 
 				if ($_POST['rel'] == 'SITEMAP') { 
 					$u = new User();
-					$u->unloadCollectionEdit($c);
+					$u->unloadCollectionEdit();
 					$obj->rel = 'SITEMAP';
 				} else {
 					//header('Location: ' . BASE_URL . DIR_REL . '/' . DISPATCHER_FILENAME . '?cID=' . $_GET['cID'] . '&mode=edit' . $step);
@@ -894,7 +937,7 @@
 							$v->approve();
 						}
 						$u = new User();
-						$u->unloadCollectionEdit($nc);
+						$u->unloadCollectionEdit();
 
 						if ($_POST['mode'] == 'explore' ) {
 							header('Location: ' . BASE_URL . View::url('/dashboard/sitemap/explore', $c->getCollectionID()));
@@ -916,7 +959,7 @@
 			// adding a collection to a collection
 			Loader::model('collection_types');
 			if ($cp->canWrite()) {
-				$ncID = $c->addCollectionAliasExternal($_POST['cName'], $_POST['cExternalLink']);						
+				$ncID = $c->addCollectionAliasExternal($_POST['cName'], $_POST['cExternalLink'], $_POST['cExternalLinkNewWindow']);						
 				header('Location: ' . URL_SITEMAP);
 				exit;
 			}

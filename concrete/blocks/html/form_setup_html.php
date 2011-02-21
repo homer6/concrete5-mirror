@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>  
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>  
 
 <h2><?php echo t('Add your HTML below:')?></h2>
 

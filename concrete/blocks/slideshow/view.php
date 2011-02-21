@@ -1,6 +1,7 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 
 <script type="text/javascript">
+//<![CDATA[
 var ccmSlideShowHelper<?php echo intval($bID)?> = {
 
 	bID:<?php echo intval($bID)?>,
@@ -97,12 +98,8 @@ var ccmSlideShowHelper<?php echo intval($bID)?> = {
 	]
 }
 $(function(){ccmSlideShowHelper<?php echo intval($bID)?>.init();}); 
+//]]>
 </script>
-
-<style type="text/css">
-.ccm-SlideshowBlock-display{ position:relative; width:100%; height:auto; }
-.ccm-SlideshowBlock-display .slideImgWrap{ position:absolute; width:100%; height:auto; top:0px; left:0px; }
-</style>
 
 <div id="ccm-SlideshowBlock-display<?php echo intval($bID)?>" class="ccm-SlideshowBlock-display">
 <div id="ccm-SlideshowBlock-heightSetter<?php echo intval($bID)?>" class="ccm-SlideshowBlock-heightSetter"></div>

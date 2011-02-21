@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $u = new User();
 $form = Loader::helper('form');
 $fp = FilePermissions::getGlobal();
@@ -78,7 +78,7 @@ $searchInstance = $_REQUEST['searchInstance'];
 				</td>
 		
 				<td><?php echo $fv->getType()?></td>
-				<td class="ccm-file-list-filename"><?php echo wordwrap($fv->getTitle(), 25, "\n", true)?></td>
+				<td class="ccm-file-list-filename" width="100%"><div style="word-wrap: break-word; width: 150px"><?php echo $fv->getTitle()?></td>
 				<td><?php echo date(DATE_APP_DASHBOARD_SEARCH_RESULTS_FILES, strtotime($f->getDateAdded()))?></td>
 				<td><?php echo $fv->getSize()?></td>
 				<td><?php echo $fv->getAuthorName()?></td>

@@ -1,6 +1,6 @@
 <?php 
 $form = Loader::helper('form');
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 if (isset($response)) { ?>
 	<?php echo $response?>
 <?php  } ?>

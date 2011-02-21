@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 
 <h1><span><?php echo t('System Notifications')?></span></h1>
 <div class="ccm-dashboard-inner">

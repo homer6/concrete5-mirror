@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class AttributeType extends Object {
 
 	public function getAttributeTypeID() {return $this->atID;}
@@ -187,7 +187,7 @@ class AttributeType extends Object {
 		}
 	}
 	
-	protected function loadController() {
+	protected function loadController() { 
 		// local scope
 		$atHandle = $this->atHandle;
 		$txt = Loader::helper('text');

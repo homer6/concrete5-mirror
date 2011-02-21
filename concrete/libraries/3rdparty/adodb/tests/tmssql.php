@@ -1,4 +1,4 @@
-<?php 
+<?php
 error_reporting(E_ALL);
 ini_set('mssql.datetimeconvert',0); 
 
@@ -67,7 +67,7 @@ if (!empty($ACCEPTIP))
 <a href=tmssql.php?do=tmssql>mssql</a>
 <a href=tmssql.php?do=tpear>pear</a>
 <a href=tmssql.php?do=tadodb>adodb</a>
-<?php 
+<?php
 if (!empty($_GET['do'])) {
 	$do = $_GET['do'];
 	switch($do) {

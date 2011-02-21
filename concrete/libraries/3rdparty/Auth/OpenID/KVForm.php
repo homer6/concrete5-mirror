@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * OpenID protocol key-value/comma-newline format parsing and

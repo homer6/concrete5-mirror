@@ -5,7 +5,7 @@
 * @package Utilities
 * @subpackage Search
 */
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::model('page_list');
 
 class IndexedSearchResult {
@@ -17,6 +17,7 @@ class IndexedSearchResult {
 		$this->score = $score;
 		$this->cPath = $cPath;
 		$this->content = $content;
+		$this->nh = Loader::helper('navigation');
 	}
 
 	public function getID() {return $this->cID;}
@@ -32,6 +33,11 @@ class IndexedSearchResult {
 		}
 		return date($mask, strtotime($this->cDate));
 	}
+	public function getPath() {
+		$c = Page::getByID($this->cID);
+		return $this->nh->getLinkToCollection($c, true);
+	}
+	
 	public function setDate($date) { $this->cDate = $date;}
 }
 
@@ -41,8 +47,18 @@ class IndexedSearchResult {
  */
 class IndexedPageList extends PageList {
 
+	protected $indexModeSimple = false;
+	
+	public function setSimpleIndexMode($indexModeSimple) {
+		$this->indexModeSimple = $indexModeSimple;
+	}
+	
 	public function getPage() {
-		$this->sortByMultiple('cIndexScore desc', 'cDatePublic desc');
+		if ($this->indexModeSimple) {
+			$this->sortBy('cDatePublic', 'desc');
+		} else {
+			$this->sortByMultiple('cIndexScore desc', 'cDatePublic desc');
+		}
 		$r = parent::getPage();
 		$results = array();
 		foreach($r as $c) {
@@ -60,6 +76,9 @@ class IndexedPageList extends PageList {
 */
 class IndexedSearch {
 	
+	public $searchBatchSize = PAGE_SEARCH_INDEX_BATCH_SIZE;
+	public $searchReindexTimeout = PAGE_SEARCH_INDEX_LIFETIME;
+
 	private $cPathSections = array();
 	private $searchableAreaNamesManual = array();
 	
@@ -69,8 +88,8 @@ class IndexedSearch {
 	
 	public function getSearchableAreaAction() {
 		$action = Config::get('SEARCH_INDEX_AREA_METHOD');
-		if (!$action) {
-			$action = 'whitelist';
+		if (!strlen($action)) {
+			$action = 'blacklist';
 		}
 		return $action;
 	}
@@ -101,59 +120,70 @@ class IndexedSearch {
 		} else {
 			$searchableAreaNames = $searchableAreaNamesInitial;
 		}		
-
-		$blarray=array();
-		foreach($searchableAreaNames as $searchableAreaName){
-		 	$blarray = array_merge( $blarray, $c->getBlocks($searchableAreaName) );
+		
+		if (count($searchableAreaNames) == 0) {
+			return false;
 		}
+		
 		$text = '';
+
 		$tagsToSpaces=array('<br>','<br/>','<br />','<p>','</p>','</ p>','<div>','</div>','</ div>');
-		foreach($blarray as $b) { 
-			$bi = $b->getInstance();
-			if(method_exists($bi,'getSearchableContent')){
-				$searchableContent = $bi->getSearchableContent();  
-				if(strlen(trim($searchableContent))) 					
-					$text .= strip_tags(str_ireplace($tagsToSpaces,' ',$searchableContent)).' ';
-			}			
+		$blarray=array();
+		$db = Loader::db();
+		$r = $db->Execute('select bID, arHandle from CollectionVersionBlocks where cID = ? and cvID = ?', array($c->getCollectionID(), $c->getVersionID()));
+		while ($row = $r->FetchRow()) {
+			if (in_array($row['arHandle'], $searchableAreaNames)) {
+				$b = Block::getByID($row['bID'], $c, $row['arHandle']);
+				$bi = $b->getInstance();
+				if(method_exists($bi,'getSearchableContent')){
+					$searchableContent = $bi->getSearchableContent();  
+					if(strlen(trim($searchableContent))) 					
+						$text .= strip_tags(str_ireplace($tagsToSpaces,' ',$searchableContent)).' ';
+				}
+				unset($b);
+				unset($bi);
+			}		
 		}
-		unset($blarray);
+		
 		return $text;
 	}
 	
 	/** 
 	 * Reindexes the search engine.
 	 */
-	public function reindexAll() {
+	public function reindexAll($fullReindex = false) {
 		Cache::disableLocalCache();
 		
 		$db = Loader::db();
 		Loader::model('collection_attributes');
-		$r = $db->query("select cID from Pages order by cID asc");
-		$nh = Loader::helper('navigation');
 		
-		$db->Execute("truncate table PageSearchIndex");
+		if ($fullReindex) {
+			$db->Execute("truncate table PageSearchIndex");
+		}
+		
+		$pl = new PageList();
+		$pl->ignoreAliases();
+		$pl->ignorePermissions();
+		$pl->sortByCollectionIDAscending();
+		$pl->filter(false, '(c.cDateModified > psi.cDateLastIndexed or UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(psi.cDateLastIndexed) > ' . $this->searchReindexTimeout . ' or psi.cID is null or psi.cDateLastIndexed is null)');
+		$pl->filter(false, '(ak_exclude_search_index is null or ak_exclude_search_index = 0)');
+		$pages = $pl->get($this->searchBatchSize);
 		
 		$num = 0;
-		while ($row = $r->fetchRow()) {
-			$c = Page::getByID($row['cID'], 'ACTIVE');
-			
-			if ($c->isSystemPage() || $c->getCollectionAttributeValue('exclude_search_index')) {
-				continue;
-			}
+		foreach($pages as $c) { 
 			
 			// make sure something is approved
 			$cv = $c->getVersionObject();
 			if(!$cv->cvIsApproved) { 
 				continue;
 			}		
-			
+
 			$c->reindex($this);
 			$num++;
-		
+			
 			unset($c);
 		}
 		
-		$r->Close();
 		Cache::enableLocalCache();
 		$result = new stdClass;
 		$result->count = $num;

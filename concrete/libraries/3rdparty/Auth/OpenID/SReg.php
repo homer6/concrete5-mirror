@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * Simple registration request and response parsing and object

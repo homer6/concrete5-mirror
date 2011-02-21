@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This is the HTML pseudo-parser for the Yadis library.

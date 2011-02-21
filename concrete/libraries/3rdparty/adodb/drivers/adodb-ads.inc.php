@@ -1,4 +1,4 @@
-<?php 
+<?php
 /*
   (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
   Portions Copyright (c) 2007-2009, iAnywhere Solutions, Inc.

@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <div class="ccm-pane-controls">
 
 <script type="text/javascript">
@@ -9,7 +9,7 @@
 		// thanks fernandos
         alias = alias.replace(/[\u00C4\u00E4]/gi, "ae");            // €Š    
         alias = alias.replace(/[\u00D6\u00F6]/gi, "oe");            // …š    
-        alias = alias.replace(/[\u00DF]/gi, "sz");                  // §    
+        alias = alias.replace(/[\u00DF]/gi, "ss");                  // §    
         alias = alias.replace(/[\u00DC\u00FC]/gi, "ue");            // †Ÿ
         alias = alias.replace(/[\u00C6\u00E6]/gi, "ae");            // ®¾ 
         alias = alias.replace(/[\u00D8\u00F8]/gi, "oe");            // ¿ 
@@ -147,8 +147,7 @@ for ($i = 0; $i < count($ctArray); $i++) {
 	
 
 	<div class="ccm-buttons">
-	<!--	<a href="javascript:void(0)" onclick="ccm_hidePane()" class="ccm-button-left cancel"><span><em class="ccm-button-close">Cancel</em></span></a>//-->
-	<a href="javascript:void(0)" onclick="$('#ccmAddPage').submit()" class="ccm-button-right accept"><span><?php echo t('Add')?></span></a>
+		<?php echo Loader::helper('concrete/interface')->submit(t('Add Page'),'ccmAddPage')?>
 	</div>	
 	<input type="hidden" name="add" value="1" />
 	<input type="hidden" name="processCollection" value="1">

@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 if (!defined('E_DEPRECATED')) {
 	error_reporting(E_ALL ^ E_NOTICE);
 } else {
@@ -119,11 +119,16 @@ class UpgradeController extends Controller {
 		if (version_compare($sav, '5.3.3.1', '<')) { 
 			$ugvs[] = "version_533";
 		}
-		if (version_compare($sav, '5.4.1', '<')) { 
+		if (version_compare($sav, '5.4.0', '<')) { 
 			$ugvs[] = "version_5331";
 			$ugvs[] = "version_540";
 		}
-
+		if (version_compare($sav, '5.4.1', '<')) { 
+			$ugvs[] = "version_5406";
+		}
+		if (version_compare($sav, '5.4.2', '<')) { 
+			$ugvs[] = "version_541";
+		}
 		foreach($ugvs as $ugh) {
 			$this->upgrades[] = Loader::helper('concrete/upgrade/' . $ugh);
 		}

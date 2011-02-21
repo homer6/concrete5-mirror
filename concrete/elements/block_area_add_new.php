@@ -1,5 +1,5 @@
 <?php  
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $btl = $a->getAddBlockTypes($c, $ap );
 $blockTypes = $btl->getBlockTypeList();
 $ci = Loader::helper('concrete/urls');
@@ -7,10 +7,6 @@ $ch = Loader::helper('concrete/interface');
 $form = Loader::helper('form');
 
 ?>
-
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/quicksilver.js"></script>
-<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/jquery.liveupdate.js"></script>
-
 
 <script type="text/javascript">
 <?php  if (ENABLE_MARKETPLACE_SUPPORT) { ?>
@@ -192,9 +188,6 @@ $(function() {
 		<a href="javascript:void(0)" id="ccm-block-type-clear-search" onclick="ccmBlockTypeSearchClear()"><img width="16" height="16" src="<?php echo ASSETS_URL_IMAGES?>/icons/remove.png" border="0" style="vertical-align: middle" /></a>
 		</div>
 		
-		<div class="ccm-block-type-filter">
-		
-		</div>
 		</form>
 		
 	</div>
@@ -205,7 +198,7 @@ $(function() {
 			$btIcon = $ci->getBlockTypeIconURL($bt);
 			?>	
 			<li class="ccm-block-type ccm-block-type-available">
-				<a onclick="ccmBlockTypeResetKeys()" dialog-on-destroy="ccmBlockTypeMapKeys()" class="dialog-launch ccm-block-type-inner" dialog-modal="false" dialog-width="<?php echo $bt->getBlockTypeInterfaceWidth()?>" dialog-height="<?php echo $bt->getBlockTypeInterfaceHeight()?>" style="background-image: url(<?php echo $btIcon?>)" dialog-title="<?php echo t('Add')?> <?php echo $bt->getBlockTypeName()?>" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/add_block_popup.php?cID=<?php echo $c->getCollectionID()?>&btID=<?php echo $bt->getBlockTypeID()?>&arHandle=<?php echo $a->getAreaHandle()?>"><?php echo $bt->getBlockTypeName()?></a>
+				<a onclick="ccmBlockTypeResetKeys()" dialog-on-destroy="ccmBlockTypeMapKeys()" class="dialog-launch ccm-block-type-inner" dialog-on-close="ccm_blockWindowAfterClose()" dialog-modal="false" dialog-width="<?php echo $bt->getBlockTypeInterfaceWidth()?>" dialog-height="<?php echo $bt->getBlockTypeInterfaceHeight()?>" style="background-image: url(<?php echo $btIcon?>)" dialog-title="<?php echo t('Add')?> <?php echo $bt->getBlockTypeName()?>" href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/add_block_popup.php?cID=<?php echo $c->getCollectionID()?>&btID=<?php echo $bt->getBlockTypeID()?>&arHandle=<?php echo urlencode($a->getAreaHandle())?>"><?php echo $bt->getBlockTypeName()?></a>
 				<div class="ccm-block-type-description"  id="ccm-bt-help<?php echo $bt->getBlockTypeID()?>"><?php echo $bt->getBlockTypeDescription()?></div>
 			</li>
 			<?php 

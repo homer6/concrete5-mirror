@@ -105,7 +105,7 @@
 	padding: 0px;
 	height:100%;
 	width:100%;
-	background-color:#fff;
+	background-color:#fafafa;
 	clip:rect(auto auto auto 38px);
 }
 
@@ -115,7 +115,7 @@
 	padding: 0px 0px 0px 0px;
 	right: 20px;
 	bottom: 20px;
-	background-color:#fff;
+	background-color:#fafafa;
 }
 /* 
 div.concreteMCE div.mceMiddle div.mceContentWrap {

@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class DashboardSettingsController extends Controller {
 
 	var $helpers = array('form'); 
@@ -48,6 +48,8 @@ class DashboardSettingsController extends Controller {
 		$this->set('marketplace_enabled_in_config', Config::get('ENABLE_MARKETPLACE_SUPPORT') );		
 		$this->set('site', SITE);
 		$this->set('ui_breadcrumb', $u->config('UI_BREADCRUMB'));
+		$this->set('ui_filemanager', $u->config('UI_FILEMANAGER'));
+		$this->set('ui_sitemap', $u->config('UI_SITEMAP'));
 		$this->set('api_key_picnik', Config::get('API_KEY_PICNIK'));
 		
 		$txtEditorMode = Config::get('CONTENTS_TXT_EDITOR_MODE');
@@ -70,6 +72,9 @@ class DashboardSettingsController extends Controller {
 		}
 		if ($updated) {
 			switch($updated) {
+				case 'statistics_saved':
+					$this->set('message', t('Statistics tracking preference saved.'));
+					break;
 				case "tracking_code_saved";
 					$this->set('message', t('Your tracking code has been saved.'));	
 					break;			
@@ -105,6 +110,12 @@ class DashboardSettingsController extends Controller {
 					break;
 				case "debug_saved":
 					$this->set('message', t('Debug configuration saved.'));
+					break;
+				case "cache_cleared";
+					$this->set('message', t('Cached files removed.'));	
+					break;
+				case "cache_updated";
+					$this->set('message', t('Cache settings saved.'));	
 					break;
 				case "txt_editor_config_saved":
 					$this->set('message', t('Content text editor settings saved.'));
@@ -353,20 +364,8 @@ class DashboardSettingsController extends Controller {
 		if ($this->token->validate("clear_cache")) {
 			if ($this->isPost()) {
 				if (Cache::flush()) {
-					$this->redirect('/dashboard/settings', 'set_developer', 'cache_cleared');
+					$this->redirect('/dashboard/settings', 'cache_cleared');
 				}
-			}
-		} else {
-			$this->set('error', array($this->token->getErrorMessage()));
-		}
-	}
-
-	public function update_user_settings() {
-		if ($this->token->validate("update_user_settings")) {
-			if ($this->isPost()) {
-				$u = new User();
-				$u->saveConfig('UI_BREADCRUMB', $this->post('ui_breadcrumb'));
-				$this->redirect('/dashboard/settings','editing_preferences_saved');
 			}
 		} else {
 			$this->set('error', array($this->token->getErrorMessage()));
@@ -380,12 +379,30 @@ class DashboardSettingsController extends Controller {
 				$eca = $this->post('ENABLE_CACHE') == 1 ? 1 : 0; 
 				Cache::flush();
 				Config::save('ENABLE_CACHE', $eca);
-				$this->redirect('/dashboard/settings', 'set_developer', 'cache_updated');
+				Config::save('FULL_PAGE_CACHE_GLOBAL', $this->post('FULL_PAGE_CACHE_GLOBAL'));
+				Config::save('FULL_PAGE_CACHE_LIFETIME', $this->post('FULL_PAGE_CACHE_LIFETIME'));
+				Config::save('FULL_PAGE_CACHE_LIFETIME_CUSTOM', $this->post('FULL_PAGE_CACHE_LIFETIME_CUSTOM'));				
+				$this->redirect('/dashboard/settings', 'cache_updated');
 			}
 		} else {
 			$this->set('error', array($this->token->getErrorMessage()));
 		}
 	}
+
+	public function update_user_settings() {
+		if ($this->token->validate("update_user_settings")) {
+			if ($this->isPost()) {
+				$u = new User();
+				$u->saveConfig('UI_BREADCRUMB', $this->post('ui_breadcrumb'));
+				$u->saveConfig('UI_FILEMANAGER', $this->post('ui_filemanager'));
+				$u->saveConfig('UI_SITEMAP', $this->post('ui_sitemap'));
+				$this->redirect('/dashboard/settings','editing_preferences_saved');
+			}
+		} else {
+			$this->set('error', array($this->token->getErrorMessage()));
+		}
+	}
+
 	public function update_debug() {
 		if ($this->token->validate("update_debug")) {
 			if ($this->isPost()) {
@@ -445,6 +462,14 @@ class DashboardSettingsController extends Controller {
 		}
 	}	
 	
+	public function update_statistics() {
+		if ($this->isPost()) {
+			$sv = $this->post('STATISTICS_TRACK_PAGE_VIEWS') == 1 ? 1 : 0;
+			Config::save('STATISTICS_TRACK_PAGE_VIEWS', $sv);
+			$this->redirect('/dashboard/settings','statistics_saved');
+		}
+	}	
+	
 	public function set_developer($updated = false) {
 		$debug_level = Config::get('SITE_DEBUG_LEVEL');
 		$enable_log_emails = Config::get('ENABLE_LOG_EMAILS');
@@ -456,19 +481,28 @@ class DashboardSettingsController extends Controller {
 		$this->set('enable_log_emails', $enable_log_emails);		
 		$this->set('enable_log_errors', $enable_log_errors);	
 		
-		ob_start();
-		phpinfo();
-		$phpinfo = array('phpinfo' => array());
-		if(preg_match_all('#(?:<h2>(?:<a name=".*?">)?(.*?)(?:</a>)?</h2>)|(?:<tr(?: class=".*?")?><t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>(?:<t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>(?:<t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>)?)?</tr>)#s', ob_get_clean(), $matches, PREG_SET_ORDER))
-		foreach($matches as $match) {
-			if(strlen($match[1])) {
-				$phpinfo[$match[1]] = array();
-			} else if(isset($match[3])) {
-				$phpinfo[end(array_keys($phpinfo))][$match[2]] = isset($match[4]) ? array($match[3], $match[4]) : $match[3];
-			} else {
-				$phpinfo[end(array_keys($phpinfo))][] = $match[2];
+		
+		if ($updated) {
+			switch($updated) {
+				case "debug_saved":
+					$this->set('message', t('Debug configuration saved.'));
+					break;
+				case "logging_saved":
+					$this->set('message', t('Logging configuration saved.'));	
+					break;
+				case "cache_cleared";
+					$this->set('message', t('Cached files removed.'));	
+					break;
+				case "cache_updated";
+					$this->set('message', t('Cache settings saved.'));	
+					break;
 			}
 		}
+	}
+	
+	
+	public function get_environment_info() {
+		set_time_limit(5);
 		
 		$environmentMessage = '# ' . t('concrete5 Version') . "\n" . APP_VERSION . "\n\n";
 		$environmentMessage .= '# ' . t('concrete5 Packages') . "\n";
@@ -558,8 +592,10 @@ class DashboardSettingsController extends Controller {
 			$environmentMessage .= t('None') . "\n";
 		}
 		$environmentMessage .= "\n";
+
+		print $environmentMessage;
 		
-		$environmentMessage .= '# ' . t('Server Software') . "\n" . $_SERVER['SERVER_SOFTWARE'] . "\n\n";
+		$environmentMessage = '# ' . t('Server Software') . "\n" . $_SERVER['SERVER_SOFTWARE'] . "\n\n";
 		$environmentMessage .= '# ' . t('Server API') . "\n" . php_sapi_name() . "\n\n";
 		$environmentMessage .= '# ' . t('PHP Version') . "\n" . PHP_VERSION . "\n\n";
 		$environmentMessage .= '# ' . t('PHP Extensions') . "\n";
@@ -572,7 +608,23 @@ class DashboardSettingsController extends Controller {
 			$environmentMessage .= t('Unable to determine.') . "\n";
 		}
 
-		$environmentMessage .= "\n# " . t('PHP Settings') . "\n";
+		print $environmentMessage;
+
+		ob_start();
+		phpinfo();
+		$phpinfo = array('phpinfo' => array());
+		if(preg_match_all('#(?:<h2>(?:<a name=".*?">)?(.*?)(?:</a>)?</h2>)|(?:<tr(?: class=".*?")?><t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>(?:<t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>(?:<t[hd](?: class=".*?")?>(.*?)\s*</t[hd]>)?)?</tr>)#s', ob_get_clean(), $matches, PREG_SET_ORDER))
+		foreach($matches as $match) {
+			if(strlen($match[1])) {
+				$phpinfo[$match[1]] = array();
+			} else if(isset($match[3])) {
+				$phpinfo[end(array_keys($phpinfo))][$match[2]] = isset($match[4]) ? array($match[3], $match[4]) : $match[3];
+			} else {
+				$phpinfo[end(array_keys($phpinfo))][] = $match[2];
+			}
+		}
+		
+		$environmentMessage = "\n# " . t('PHP Settings') . "\n";
 
 		foreach($phpinfo as $name => $section) {
 			foreach($section as $key => $val) {
@@ -587,25 +639,12 @@ class DashboardSettingsController extends Controller {
 					$environmentMessage .= "$val\n";
 				}
 			}
-		}		
-		$this->set('environmentMessage', $environmentMessage);
-		if ($updated) {
-			switch($updated) {
-				case "debug_saved":
-					$this->set('message', t('Debug configuration saved.'));
-					break;
-				case "logging_saved":
-					$this->set('message', t('Logging configuration saved.'));	
-					break;
-				case "cache_cleared";
-					$this->set('message', t('Cached files removed.'));	
-					break;
-				case "cache_updated";
-					$this->set('message', t('Cache settings saved.'));	
-					break;
-			}
 		}
+		
+		print $environmentMessage;
+		exit;
 	}
+	
 	
 	public function add_attribute_type() {
 		$pat = PendingAttributeType::getByHandle($this->post('atHandle'));

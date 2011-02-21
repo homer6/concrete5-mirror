@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * BigMath: A math library wrapper that abstracts out the underlying

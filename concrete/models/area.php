@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * @package Pages
@@ -149,7 +149,6 @@ class Area extends Object {
 			different than get(), getOrCreate() is called by the templates. If no area record exists for the
 			permissions cID / handle combination, we create one. This is to make our lives easier
 		*/
-		$db = Loader::db();
 
 		$area = Area::get($c, $arHandle);
 		if (is_object($area)) {
@@ -162,6 +161,7 @@ class Area extends Object {
 		$cID = $c->getCollectionID();
 		$v = array($cID, $arHandle);
 		$q = "insert into Areas (cID, arHandle) values (?, ?)";
+		$db = Loader::db();
 		$db->query($q, $v);
 
 		$area = Area::get($c, $arHandle); // we're assuming the insert succeeded
@@ -201,7 +201,14 @@ class Area extends Object {
 	
 	public function getHandleList() {
 		$db = Loader::db();
-		$handles = $db->GetCol('select distinct arHandle from Areas order by arHandle asc');
+		$r = $db->Execute('select distinct arHandle from Areas order by arHandle asc');
+		$handles = array();
+		while ($row = $r->FetchRow()) {
+			$handles[] = $row['arHandle'];
+		}
+		$r->Free();
+		unset($r);
+		unset($db);
 		return $handles;
 	}
 	
@@ -232,6 +239,10 @@ class Area extends Object {
 		$a = Cache::delete('area', $this->getCollectionID() . ':' . $this->getAreaHandle());
 	}
 	
+	public function __destruct() {
+		unset($this->c);
+	}
+	
 	function rescanAreaPermissionsChain() {
 		// works on the current area object to ensure that inheritance makes sense
 		// and that areas actually inherit their permissions correctly up the chain
@@ -249,9 +260,7 @@ class Area extends Object {
 				// first, we temporarily set the arInheritPermissionsFromAreaOnCID to whatever the arInheritPermissionsFromAreaOnCID is set to
 				// in the immediate parent collection
 				$arInheritPermissionsFromAreaOnCID = $db->getOne("select a.arInheritPermissionsFromAreaOnCID from Pages c inner join Areas a on (c.cID = a.cID) where c.cID = ? and a.arHandle = ?", array($cIDToCheck, $this->getAreaHandle()));
-				if ($arInheritPermissionsFromAreaOnCID > 0) {
-					$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($arInheritPermissionsFromAreaOnCID, $this->getAreaID()));
-				}
+				$db->query("update Areas set arInheritPermissionsFromAreaOnCID = ? where arID = ?", array($arInheritPermissionsFromAreaOnCID, $this->getAreaID()));
 				
 				// now we do the recursive rescan to see if any areas themselves override collection permissions
 
@@ -325,7 +334,8 @@ class Area extends Object {
 			//Invalid Collection
 			return false;
 		}
-
+		
+		$currentPage = Page::getCurrentPage();
 		$ourArea = Area::getOrCreate($c, $this->arHandle);
 		if (count($this->customTemplateArray) > 0) {
 			$ourArea->customTemplateArray = $this->customTemplateArray;
@@ -358,16 +368,23 @@ class Area extends Object {
 			foreach($areaLayouts as $layout){
 				$layout->display($c,$this);  
 			}
-			if($c->isArrangeMode() || $c->isEditMode()) 
+			if($this->showControls && ($c->isArrangeMode() || $c->isEditMode())) {
 				echo '<div class="ccm-layouts-block-arrange-placeholder ccm-block-arrange"></div>';
-		}	
+			}
+		}
 
 
 		foreach ($blocksToDisplay as $b) {
 			$bv = new BlockView();
 			$bv->setAreaObject($ourArea); 
+			
+			// this is useful for rendering areas from one page
+			// onto the next and including interactive elements
+			if ($currentPage->getCollectionID() != $c->getCollectionID()) {
+				$b->setBlockActionCollectionID($c->getCollectionID());
+			}
 			$p = new Permissions($b);
-			if (($p->canWrite() || $p->canDeleteBlock()) && $c->isEditMode()) {
+			if (($p->canWrite() || $p->canDeleteBlock()) && $c->isEditMode() && $this->showControls) {
 				$includeEditStrip = true;
 			}
 

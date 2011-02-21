@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 /**
  * @package Users
  * @author Andrew Embler <andrew@concrete5.org>
@@ -88,6 +88,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		public function getMessageID() {return $this->msgID;}
 		public function getMessageUserID() {return $this->uID;}
 		public function getMessageAuthorObject() {return UserInfo::getByID($this->uAuthorID);}
+		public function getMessageUserToID() {return $this->uToID;}
 		public function getMessageRelevantUserID() {
 			if (is_object($this->mailbox)) {
 				if ($this->mailbox->getMailboxID() == UserPrivateMessageMailbox::MBTYPE_SENT) {
@@ -158,6 +159,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}
 		
 		public function getMessageSubject() {return $this->msgSubject;}
+		public function getFormattedMessageSubject() {
+			$txt = Loader::helper('text');
+			return $txt->entities($this->msgSubject);
+		}
 		public function getMessageBody() {return $this->msgBody;}
 	}
 	

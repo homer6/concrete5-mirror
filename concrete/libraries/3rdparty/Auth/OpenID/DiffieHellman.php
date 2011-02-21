@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * The OpenID library's Diffie-Hellman implementation.

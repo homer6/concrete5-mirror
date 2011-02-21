@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This file supplies a dumb store backend for OpenID servers and

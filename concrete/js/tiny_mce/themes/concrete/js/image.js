@@ -28,7 +28,7 @@ var ImageDialog = {
 			f.hspace.value = this.getAttrib(e, 'hspace');
 			f.width.value = ed.dom.getAttrib(e, 'width');
 			f.height.value = ed.dom.getAttrib(e, 'height');
-			//f.insert.value = ed.getLang('update');
+			f.insert.value = ed.getLang('update');
 			this.styleVal = ed.dom.getAttrib(e, 'style');
 			selectByValue(f, 'image_list', f.src.value);
 			selectByValue(f, 'align', this.getAttrib(e, 'align'));
@@ -88,7 +88,7 @@ var ImageDialog = {
 		if (el && el.nodeName == 'IMG') {
 			ed.dom.setAttribs(el, args);
 		} else {
-			ed.execCommand('mceInsertContent', false, '<img id="__mce_tmp" src="javascript:;" />', {skip_undo : 1});
+			ed.execCommand('mceInsertContent', false, '<img id="__mce_tmp" />', {skip_undo : 1});
 			ed.dom.setAttribs('__mce_tmp', args);
 			ed.dom.setAttrib('__mce_tmp', 'id', '');
 			ed.undoManager.add();
@@ -151,8 +151,8 @@ var ImageDialog = {
 			}
 
 			// Merge
-			st = tinyMCEPopup.dom.parseStyle(dom.serializeStyle(st));
-			this.styleVal = dom.serializeStyle(st);
+			st = tinyMCEPopup.dom.parseStyle(dom.serializeStyle(st), 'img');
+			this.styleVal = dom.serializeStyle(st, 'img');
 		}
 	},
 

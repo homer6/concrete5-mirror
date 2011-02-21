@@ -1,11 +1,14 @@
 <?php 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	require_once(DIR_FILES_BLOCK_TYPES_CORE . '/library_file/controller.php');
 	
 	class FlashContentBlockController extends BlockController {
 
 		protected $btInterfaceWidth = 300;
 		protected $btInterfaceHeight = 240;
+		protected $btCacheBlockOutput = true;
+		protected $btCacheBlockOutputOnPost = true;
+		protected $btCacheBlockOutputForRegisteredUsers = false;
 		protected $btTable = 'btFlashContent';
 		
 		/** 

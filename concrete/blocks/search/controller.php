@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 class SearchBlockController extends BlockController {
 	
@@ -102,7 +102,7 @@ class SearchBlockController extends BlockController {
 		$this->set('resultTargetURL', $resultTargetURL);
 
 		//run query if display results elsewhere not set, or the cID of this page is set
-		if( !empty($_REQUEST['query'])) { 
+		if( !empty($_REQUEST['query']) || isset($_REQUEST['akID']))  { 
 			$this->do_search();
 		}						
 	}
@@ -126,15 +126,31 @@ class SearchBlockController extends BlockController {
 	
 	function do_search() {
 		$q = $_REQUEST['query'];
-
+		$_q = preg_replace('/[^A-Za-z\']/i', '', $_REQUEST['query']);
 		Loader::library('database_indexed_search');
 		$ipl = new IndexedPageList();
-		$ipl->filterByKeywords($q);
+		if (is_array($_REQUEST['akID'])) {
+			Loader::model('attribute/categories/collection');
+			foreach($_REQUEST['akID'] as $akID => $req) {
+				$fak = CollectionAttributeKey::get($akID);
+				if (is_object($fak)) {
+					$type = $fak->getAttributeType();
+					$cnt = $type->getController();
+					$cnt->setAttributeKey($fak);
+					$cnt->searchForm($ipl);
+				}
+			}
+		}
+		$ipl->setSimpleIndexMode(true);
+		if (isset($_REQUEST['query'])) {
+			$ipl->filterByKeywords($_q);
+		}
 		
 		if( is_array($_REQUEST['search_paths']) ){ 
+			
 			foreach($_REQUEST['search_paths'] as $path) {
-				//if(!strlen($path)) continue;
-				$ipl->addSearchPath($path);
+				if(!strlen($path)) continue;
+				$ipl->filterByPath($path);
 			}
 		}
 
@@ -147,6 +163,7 @@ class SearchBlockController extends BlockController {
 		$this->set('query', $q);
 		$this->set('paginator', $ipl->getPagination());
 		$this->set('results', $results);
+		$this->set('do_search', true);
 	}		
 	
 }

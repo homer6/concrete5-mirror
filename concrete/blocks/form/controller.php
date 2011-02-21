@@ -1,5 +1,5 @@
 <?php  
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class FormBlockController extends BlockController {
 
 	public $btTable = 'btForm';
@@ -272,8 +272,13 @@ class FormBlockController extends BlockController {
 			$this->set('Entry',$E);			
 		}else{ //no form errors			
 			//save main survey record	
-			$q="insert into {$this->btAnswerSetTablename} (questionSetId) values (?)";
-			$db->query($q,array($qsID));
+			$u = new User();
+			$uID = 0;
+			if ($u->isRegistered()) {
+				$uID = $u->getUserID();
+			}
+			$q="insert into {$this->btAnswerSetTablename} (questionSetId, uID) values (?,?)";
+			$db->query($q,array($qsID, $uID));
 			$answerSetID=$db->Insert_ID();
 			$this->lastAnswerSetId=$answerSetID;
 			

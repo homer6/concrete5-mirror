@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * @package Core
@@ -90,7 +90,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		 */
 		public function getStyleSheet($stylesheet) {
 			if ($this->isPreview()) {
-				return REL_DIR_FILES_TOOLS . '/css/' . DIRNAME_THEMES . '/' . $this->getThemeHandle() . '/' . $stylesheet . '?mode=preview';
+				return REL_DIR_FILES_TOOLS . '/css/' . DIRNAME_THEMES . '/' . $this->getThemeHandle() . '/' . $stylesheet . '?mode=preview&time=' . time();
 			} else {
 				return REL_DIR_FILES_TOOLS . '/css/' . DIRNAME_THEMES . '/' . $this->getThemeHandle() . '/' . $stylesheet;
 			}
@@ -663,9 +663,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					// if we're passing a view but our render override is not null, that means that we're passing 
 					// a new view from within a controller. If that's the case, then we DON'T override the viewPath, we want to keep it
 					
-					$db = Loader::db();
 					// In order to enable editable 404 pages, other editable pages that we render without actually visiting
-					if (is_object($db) && $view == '/page_not_found') {
+					if (defined('DB_DATABASE') && $view == '/page_not_found') {
 						$pp = Page::getByPath($view);
 						if (!$pp->isError()) {
 							$this->c = $pp;
@@ -696,6 +695,9 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				
 				if (is_object($this->c)) {
 					$c = $this->c;
+					if (is_object($db) && $view == '/page_not_found') {
+						$view = $c;
+					}
 				}
 				
 				// Determine which outer item/theme to load
@@ -721,8 +723,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				
 				if ($view instanceof Page) {
 					$blocks = $view->getBlocks();
+					if ($view->supportsPageCache($blocks, $this->controller)) {
+						$view->renderFromCache();
+					}
+					
 					foreach($blocks as $b1) {
-						$btc = Loader::controller($b1);
+						$btc = $b1->getInstance();
 						// now we inject any custom template CSS and JavaScript into the header
 						if('Controller' != get_class($btc)){
 							$btc->outputAutoHeaderItems();
@@ -759,7 +765,19 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				}
 				
 				if (file_exists($this->theme)) {
+					
+					ob_start();
 					include($this->theme);
+					$pageContent = ob_get_contents();
+					ob_end_clean();
+					print $pageContent;
+					
+					if ($view instanceof Page) {
+						if ($view->supportsPageCache($blocks, $this->controller)) {
+							$view->addToPageCache($pageContent);
+						}
+					}
+					
 				} else {
 					throw new Exception(t('File %s not found. All themes need default.php and view.php files in them. Consult concrete5 documentation on how to create these files.', $this->theme));
 				}

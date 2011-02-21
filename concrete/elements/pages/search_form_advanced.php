@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <?php 
 
 $searchFields = array(
@@ -89,6 +89,9 @@ foreach($searchFieldAttributes as $ak) {
 		}
 		if ($sitemap_select_mode) {
 			print $form->hidden('sitemap_select_mode', $sitemap_select_mode);
+		}
+		if ($sitemap_select_callback) {
+			print $form->hidden('sitemap_select_callback', $sitemap_select_callback);
 		}
 		if ($sitemap_display_mode) {
 			print $form->hidden('sitemap_display_mode', $sitemap_display_mode);

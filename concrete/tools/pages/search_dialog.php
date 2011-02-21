@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 $sh = Loader::helper('concrete/dashboard/sitemap');
 if (!$sh->canRead()) {
@@ -16,13 +16,17 @@ if (!isset($sitemap_select_mode)) {
 		$sitemap_select_mode = 'move_copy_delete';
 	}
 }
+$sitemap_select_callback = $_REQUEST['callback'];
+if (!$_REQUEST['callback']) {
+	$sitemap_select_callback = 'ccm_selectSitemapNode';
+}
 $searchInstance = $page . time();
 $searchRequest = $pageList->getSearchRequest();
 ?>
 
 <?php  if (!$sitemapCombinedMode) { ?>
-	<script type="text/javascript" src="<?php echo ASSETS_URL_JAVASCRIPT?>/ccm.sitemap.js"></script>
-	<script type="text/javascript" src="<?php echo ASSETS_URL_CSS?>/ccm.sitemap.css"></script>
+<?php echo Loader::helper('html')->css('ccm.sitemap.css')?>
+<?php echo Loader::helper('html')->javascript('ccm.sitemap.js')?>
 <?php  } ?>
 <script type="text/javascript">$(function() {
 	ccm_sitemapSetupSearch('<?php echo $searchInstance?>');
@@ -34,7 +38,7 @@ $searchRequest = $pageList->getSearchRequest();
 		<table id="ccm-search-form-table" >
 			<tr>
 				<td valign="top" class="ccm-search-form-advanced-col">
-					<?php  Loader::element('pages/search_form_advanced', array('searchInstance' => $searchInstance, 'sitemap_select_mode' => $sitemap_select_mode, 'searchDialog' => true, 'searchRequest' => $searchRequest)); ?>
+					<?php  Loader::element('pages/search_form_advanced', array('sitemap_select_callback' => $sitemap_select_callback, 'searchInstance' => $searchInstance, 'sitemap_select_mode' => $sitemap_select_mode, 'searchDialog' => true, 'searchRequest' => $searchRequest)); ?>
 				</td>		
 				<td valign="top" width="100%">	
 					
@@ -42,7 +46,7 @@ $searchRequest = $pageList->getSearchRequest();
 					
 						<div id="ccm-<?php echo $searchInstance?>-search-results">
 						
-							<?php  Loader::element('pages/search_results', array('searchInstance' => $searchInstance, 'sitemap_select_mode' => $sitemap_select_mode, 'searchDialog' => true, 'pages' => $pages, 'pageList' => $pageList, 'pagination' => $pagination)); ?>
+							<?php  Loader::element('pages/search_results', array('searchInstance' => $searchInstance, 'sitemap_select_callback' => $sitemap_select_callback, 'sitemap_select_mode' => $sitemap_select_mode, 'searchDialog' => true, 'pages' => $pages, 'pageList' => $pageList, 'pagination' => $pagination)); ?>
 						
 						</div>
 					

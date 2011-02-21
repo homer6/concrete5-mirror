@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 class ImageFileAttributeTypeController extends AttributeTypeController  {
 
@@ -16,7 +16,9 @@ class ImageFileAttributeTypeController extends AttributeTypeController  {
 	
 	public function getDisplayValue() {
 		$f = $this->getValue();
-		return '<a href="' . $f->getDownloadURL() . '">' . $f->getTitle() . '</a>';
+		if (is_object($f)) {
+			return '<a href="' . $f->getDownloadURL() . '">' . $f->getTitle() . '</a>';
+		}
 	}
 
 	public function searchForm($list) {

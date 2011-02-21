@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This module contains code for dealing with associations between

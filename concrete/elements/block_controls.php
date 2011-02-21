@@ -1,5 +1,5 @@
 <?php  
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 	$cID = $b->getBlockCollectionID();
 	$c = $b->getBlockCollectionObject();
 	$btw = BlockType::getByID($b->getBlockTypeID());
@@ -35,13 +35,14 @@ ccm_menuObj<?php echo $id?>.bID = <?php echo $bID?>;
 ccm_menuObj<?php echo $id?>.isGlobal = <?php echo intval($isGlobal)?>;
 <?php  if ($b->isEditable() && $p->canWrite()) { ?>
 ccm_menuObj<?php echo $id?>.canWrite =true;
+ccm_menuObj<?php echo $id?>.btName = "<?php echo $btw->getBlockTypeName()?>";
 ccm_menuObj<?php echo $id?>.width = <?php echo $btw->getBlockTypeInterfaceWidth()?>;
 ccm_menuObj<?php echo $id?>.height = <?php echo (!$isGlobal)?$btw->getBlockTypeInterfaceHeight():$btw->getBlockTypeInterfaceHeight()+20 ?>;
 <?php  }
 if ($p->canAdminBlock() && PERMISSIONS_MODEL != 'simple') { ?>
 ccm_menuObj<?php echo $id?>.canModifyGroups = true;
 <?php  }
-if ($p->canWrite() && ENABLE_CUSTOM_DESIGN == true && (!$c->isMasterCollection())) { ?>
+if ($p->canWrite() && ENABLE_CUSTOM_DESIGN == true) { ?>
 	ccm_menuObj<?php echo $id?>.canDesign = true;
 <?php  } else { ?>
 	ccm_menuObj<?php echo $id?>.canDesign = false;

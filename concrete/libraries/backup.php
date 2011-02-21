@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class Backup {
 
 	public function execute($encrypt = false) {
@@ -13,13 +13,16 @@ class Backup {
 		$arr_tables = $db->getCol("SHOW TABLES FROM " . DB_DATABASE); 
 		foreach ($arr_tables as $bkuptable) {
 			$tableobj = new BackupTable($bkuptable);
-			$str_backupdata .= "DROP TABLE $bkuptable;\n\n";
+			$str_backupdata .= "DROP TABLE IF EXISTS $bkuptable;\n\n";
 			$str_backupdata .= $tableobj->str_createTableSql . "\n\n";
 			if ($tableobj->str_createTableSql != "" ) {
 				$str_backupdata .= $tableobj->str_insertionSql . "\n\n";
 			}
 		}
-		$fh_backupfile = fopen(DIR_FILES_BACKUPS . "/". $str_bkupfile,"w");
+		$fh_backupfile = @fopen(DIR_FILES_BACKUPS . "/". $str_bkupfile,"w");
+		if (!$fh_backupfile) {
+			throw new Exception(t('Unable to create backup file: %s', $str_bkupfile));
+		}
 		if ($encrypt == true) {
 			$crypt = Loader::helper('encryption');
 			fwrite($fh_backupfile,$crypt->encrypt($str_backupdata));

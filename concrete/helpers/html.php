@@ -16,7 +16,7 @@
  * @license    http://www.concrete5.org/license/     MIT License
  */
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class HtmlHelper {
 
 	/** 
@@ -39,7 +39,7 @@ class HtmlHelper {
 		
 		$v = View::getInstance();
 		// checking the theme directory for it. It's just in the root.
-		if (file_exists($v->getThemeDirectory() . '/' . $file)) {
+		if ($v->getThemeDirectory() != '' && file_exists($v->getThemeDirectory() . '/' . $file)) {
 			$css->file = $v->getThemePath() . '/' . $file;
 		} else if ($pkgHandle != null) {
 			if (file_exists(DIR_BASE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_CSS . '/' . $file)) {
@@ -84,7 +84,9 @@ class HtmlHelper {
 			$js->file = $file;
 		}
 
-		if ($pkgHandle != null) {
+		if (file_exists(DIR_BASE . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
+			$js->file = DIR_REL . '/' . DIRNAME_JAVASCRIPT . '/' . $file;
+		} else if ($pkgHandle != null) {
 			if (file_exists(DIR_BASE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
 				$js->file = DIR_REL . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file;
 			} else if (file_exists(DIR_BASE_CORE . '/' . DIRNAME_PACKAGES . '/' . $pkgHandle . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
@@ -93,11 +95,7 @@ class HtmlHelper {
 		}
 			
 		if ($js->file == '') {
-			if (file_exists(DIR_BASE . '/' . DIRNAME_JAVASCRIPT . '/' . $file)) {
-				$js->file = DIR_REL . '/' . DIRNAME_JAVASCRIPT . '/' . $file;
-			} else {
-				$js->file = ASSETS_URL_JAVASCRIPT . '/' . $file;
-			}
+			$js->file = ASSETS_URL_JAVASCRIPT . '/' . $file;
 		}
 
 		$js->file .= (strpos($js->file, '?') > -1) ? '&' : '?';
@@ -158,6 +156,11 @@ class HtmlHelper {
 				$width = $s[0];
 				$height = $s[1];
 				$src = DIR_REL . '/' . DIRNAME_IMAGES . '/' . $src;
+			} else if (file_exists(DIR_BASE_CORE . '/' . DIRNAME_IMAGES . '/' . $src)) {
+				$s = getimagesize(DIR_BASE_CORE . '/'  . DIRNAME_IMAGES . '/' . $src);
+				$width = $s[0];
+				$height = $s[1];
+				$src = ASSETS_URL_IMAGES . '/' . $src;
 			}
 		}
 		

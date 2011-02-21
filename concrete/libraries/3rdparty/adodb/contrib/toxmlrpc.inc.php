@@ -1,4 +1,4 @@
-<?php 
+<?php
     /**
     * Helper functions to convert between ADODB recordset objects and XMLRPC values.
     * Uses John Lim's AdoDB and Edd Dumbill's phpxmlrpc libs

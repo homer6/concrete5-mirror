@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * The OpenID and Yadis discovery implementation for OpenID 1.2.

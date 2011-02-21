@@ -1,4 +1,4 @@
-<?php 
+<?php
 // $Id: Test-JSON.php,v 1.28 2006/06/28 05:54:17 migurski Exp $
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 

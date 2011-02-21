@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  * jsmin.php - PHP implementation of Douglas Crockford's JSMin.
  *

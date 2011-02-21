@@ -1,4 +1,4 @@
-<?php 
+<?php
 /* 
 V5.10 10 Nov 2009   (c) 2000-2009 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
@@ -934,7 +934,7 @@ Committed_AS:   348732 kB
 		
 ?>
 
-<form method="POST" action="<?php  echo $PHP_SELF ?>">
+<form method="POST" action="<?php echo $PHP_SELF ?>">
 <table><tr>
 <td> Form size: <input type="submit" value=" &lt; " name="SMALLER"><input type="submit" value=" &gt; &gt; " name="BIGGER">
 </td>
@@ -942,13 +942,13 @@ Committed_AS:   348732 kB
 <input type="submit" value=" Run SQL Below " name="RUN"><input type=hidden name=do value=dosql>
 </td></tr>
   <tr>
-  <td colspan=2><textarea rows=<?php  print $rows; ?> name="sql" cols="80"><?php  print htmlspecialchars($sql) ?></textarea>
+  <td colspan=2><textarea rows=<?php print $rows; ?> name="sql" cols="80"><?php print htmlspecialchars($sql) ?></textarea>
   </td>
   </tr>
  </table>
 </form>
 
-<?php 
+<?php
 		if (!isset($_REQUEST['sql'])) return;
 		
 		$sql = $this->undomq(trim($sql));

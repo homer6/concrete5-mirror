@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 $u = new User();
 $ch = Loader::helper('concrete/file');
 $h = Loader::helper('concrete/interface');
@@ -12,6 +12,7 @@ if (!$fp->canAddFiles()) {
 
 $types = $fp->getAllowedFileExtensions();
 $searchInstance = $_REQUEST['searchInstance'];
+$ocID = $_REQUEST['ocID'];
 $types = $ch->serializeUploadFileExtensions($types);
 $valt = Loader::helper('validation/token');
 ?>
@@ -62,7 +63,7 @@ $(function() {
 
 		flash_url : "<?php echo ASSETS_URL_FLASH?>/swfupload/swfupload.swf",
 		upload_url : "<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/multiple",
-		post_params: {'ccm-session' : "<?php  echo session_id(); ?>",'searchInstance': '<?php echo $searchInstance?>', 'ccm_token' : '<?php echo $valt->generate("upload")?>'},
+		post_params: {'ccm-session' : "<?php  echo session_id(); ?>",'searchInstance': '<?php echo $searchInstance?>', 'ocID' : '<?php echo $ocID?>', 'ccm_token' : '<?php echo $valt->generate("upload")?>'},
 		file_size_limit : "<?php echo $umf?>",
 		file_types : "<?php echo $types?>",
 		button_window_mode : SWFUpload.WINDOW_MODE.TRANSPARENT,
@@ -138,9 +139,11 @@ $(function() {
 		upload_complete_handler : uploadComplete, 
 		queue_complete_handler : function(file){
 			// queueComplete() from swfupload.handlers.js
-			queueComplete();		
-			ccm_filesUploadedDialog('<?php echo $searchInstance?>'); 
-		}				
+			if (ccm_uploadedFiles.length > 0) {
+				queueComplete();		
+				ccm_filesUploadedDialog('<?php echo $searchInstance?>'); 
+			}
+		}
 	});
 
 	
@@ -180,7 +183,7 @@ $(function() {
 			<?php 
 			
 			print $h->button_js(t('Start Uploads'), 'swfu.startUpload()');
-			print $h->button_js(t('Cancel All Uploads'), 'swfu.cancelQueue()', 'left', null,array('id'=>'ccm-file-upload-multiple-btnCancel'));
+			print $h->button_js(t('Cancel All Uploads'), 'swfu.cancelQueue()', 'left', null,array('id'=>'ccm-file-upload-multiple-btnCancel', 'disabled' => 1));
 			
 			?>
 		</div>
@@ -209,6 +212,7 @@ $(function() {
 <?php  if(!empty($incoming_contents)) { ?>
 <form id="ccm-file-manager-multiple-incoming" method="post" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/incoming">
 	<input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
+    <input type="hidden" name="ocID" value="<?php echo $ocID?>" />
 		<table id="incoming_file_table" width="100%" cellpadding="0" cellspacing="0">
 			<tr>
 				<td width="10%" valign="middle" class="center theader"><input type="checkbox" id="check_all_imports" name="check_all_imports" onclick="ccm_alSelectMultipleIncomingFiles(this);" value="" /></td>
@@ -260,6 +264,7 @@ $(function() {
 <h1><?php echo t('Add From Remote URL')?></h1>
 <form method="POST" id="ccm-file-manager-multiple-remote" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/importers/remote">
 	<input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
+    <input type="hidden" name="ocID" value="<?php echo $ocID?>" />
 	<h3><?php echo t('Enter URL to valid file(s)')?></h3>
 	<?php echo $valt->output('import_remote');?>
 

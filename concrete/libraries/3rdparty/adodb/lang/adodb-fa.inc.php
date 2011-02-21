@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /* Farsi - by "Peyman Hooshmandi Raad" <phooshmand#gmail.com> */
 

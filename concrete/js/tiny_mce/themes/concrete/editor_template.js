@@ -1,8 +1,11 @@
 /**
- * $Id: editor_template_src.js 766 2008-04-03 20:37:06Z spocke $
+ * editor_template_src.js
  *
- * @author Moxiecode
- * @copyright Copyright © 2004-2008, Moxiecode Systems AB, All rights reserved.
+ * Copyright 2009, Moxiecode Systems AB
+ * Released under LGPL License.
+ *
+ * License: http://tinymce.moxiecode.com/license
+ * Contributing: http://tinymce.moxiecode.com/contributing
  */
 
 (function(tinymce) {
@@ -13,6 +16,7 @@
 
 	tinymce.create('tinymce.themes.ConcreteTheme', {
 		sizes : [8, 10, 12, 14, 18, 24, 36],
+
 		// Control name lookup, format: title, command
 		controls : {
 			bold : ['bold_desc', 'Bold'],
@@ -36,19 +40,24 @@
 			unlink : ['unlink_desc', 'unlink'],
 			image : ['image_desc', 'mceImage'],
 			cleanup : ['cleanup_desc', 'mceCleanup'],
+			help : ['help_desc', 'mceHelp'],
 			code : ['code_desc', 'mceCodeEditor'],
 			hr : ['hr_desc', 'InsertHorizontalRule'],
 			removeformat : ['removeformat_desc', 'RemoveFormat'],
+			sub : ['sub_desc', 'subscript'],
+			sup : ['sup_desc', 'superscript'],
 			forecolor : ['forecolor_desc', 'ForeColor'],
 			forecolorpicker : ['forecolor_desc', 'mceForeColor'],
 			backcolor : ['backcolor_desc', 'HiliteColor'],
 			backcolorpicker : ['backcolor_desc', 'mceBackColor'],
 			charmap : ['charmap_desc', 'mceCharMap'],
+			visualaid : ['visualaid_desc', 'mceToggleVisualAid'],
 			anchor : ['anchor_desc', 'mceInsertAnchor'],
+			newdocument : ['newdocument_desc', 'mceNewDocument'],
 			blockquote : ['blockquote_desc', 'mceBlockQuote']
 		},
-		
-		stateControls : ['bold', 'italic', 'underline', 'strikethrough', 'bullist', 'numlist', 'justifyleft', 'justifycenter', 'justifyright', 'justifyfull', 'blockquote'],
+
+		stateControls : ['bold', 'italic', 'underline', 'strikethrough', 'bullist', 'numlist', 'justifyleft', 'justifycenter', 'justifyright', 'justifyfull', 'sub', 'sup', 'blockquote'],
 
 		init : function(ed, url) {
 			var t = this, s, v, o;
@@ -60,22 +69,19 @@
 			// Default settings
 			t.settings = s = extend({
 				theme_concrete_path : true,
-				theme_concrete_toolbar_location : 'bottom',
-				theme_concrete_buttons1 : "pasteword,|,bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,hr,|,styleselect,formatselect,fontsizeselect",
-				theme_concrete_buttons2 : "forecolor,backcolor,|,bullist,numlist,|,outdent,indent,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,|",
-				theme_concrete_blockformats : "p,address,pre,h1,h2,h3,div,blockquote,cite",
+				theme_concrete_toolbar_location : 'top',
+				theme_concrete_buttons1 : "undo,redo,pastetext,pasteword,|,bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,styleselect,formatselect",
+				theme_concrete_buttons2 : "bullist,numlist,|,outdent,indent,|,hr,charmap,|,forecolor,backcolor,|,link,unlink,anchor,|,image,cleanup,code",
+				theme_concrete_blockformats : "p,address,pre,h1,h2,h3,h4,h5,h6",
 				theme_concrete_toolbar_align : "left",
 				theme_concrete_fonts : "Andale Mono=andale mono,times;Arial=arial,helvetica,sans-serif;Arial Black=arial black,avant garde;Book Antiqua=book antiqua,palatino;Comic Sans MS=comic sans ms,sans-serif;Courier New=courier new,courier;Georgia=georgia,palatino;Helvetica=helvetica;Impact=impact,chicago;Symbol=symbol;Tahoma=tahoma,arial,helvetica,sans-serif;Terminal=terminal,monaco;Times New Roman=times new roman,times;Trebuchet MS=trebuchet ms,geneva;Verdana=verdana,geneva;Webdings=webdings;Wingdings=wingdings,zapf dingbats",
-				theme_concrete_font_sizes : "1,2,3,4,5,6,7",
 				theme_concrete_more_colors : 1,
 				theme_concrete_row_height : 23,
 				theme_concrete_resize_horizontal : 1,
 				theme_concrete_resizing_use_cookie : 1,
-				theme_concrete_toolbar_location : "top"
+				theme_concrete_font_sizes : "1,2,3,4,5,6,7",
+				readonly : ed.settings.readonly
 			}, ed.settings);
-			
-			if ((v = s.theme_concrete_path_location) && v != 'none')
-				s.theme_concrete_statusbar_location = s.theme_concrete_path_location;
 
 			// Setup default font_size_style_values
 			if (!s.font_size_style_values)
@@ -140,10 +146,10 @@
 				}
 			});
 
-			DOM.loadCSS(ed.baseURI.toAbsolute(s.editor_css || "themes/concrete/skins/" + ed.settings.skin + "/ui.css"));
+			DOM.loadCSS(s.editor_css ? ed.documentBaseURI.toAbsolute(s.editor_css) : url + "/skins/" + ed.settings.skin + "/ui.css");
 
 			if (s.skin_variant)
-				DOM.loadCSS(ed.baseURI.toAbsolute(s.editor_css || "themes/concrete/skins/" + ed.settings.skin + "/ui_" + s.skin_variant + ".css"));
+				DOM.loadCSS(url + "/skins/" + ed.settings.skin + "/ui_" + s.skin_variant + ".css");
 		},
 
 		createControl : function(n, cf) {
@@ -196,7 +202,8 @@
 
 					ed.formatter.register(name, {
 						inline : 'span',
-						classes : o['class']
+						attributes : {'class' : o['class']},
+						selector : '*'
 					});
 
 					ctrl.add(o['class'], name);
@@ -211,8 +218,24 @@
 			ctrl = ctrlMan.createListBox('styleselect', {
 				title : 'concrete.style_select',
 				onselect : function(name) {
+					var matches, formatNames = [];
+
+					each(ctrl.items, function(item) {
+						formatNames.push(item.value);
+					});
+
 					ed.focus();
-					ed.formatter.toggle(name);
+					ed.undoManager.add();
+
+					// Toggle off the current format
+					matches = ed.formatter.matchAll(formatNames);
+					if (!name || matches[0] == name)
+						ed.formatter.remove(matches[0]);
+					else
+						ed.formatter.apply(name);
+
+					ed.undoManager.add();
+					ed.nodeChanged();
 
 					return false; // No auto select
 				}
@@ -244,7 +267,8 @@
 
 							ed.formatter.register(name, {
 								inline : 'span',
-								classes : val
+								classes : val,
+								selector : '*'
 							});
 
 							ctrl.add(t.editor.translate(key), name);
@@ -275,7 +299,20 @@
 			c = ed.controlManager.createListBox('fontselect', {
 				title : 'concrete.fontdefault',
 				onselect : function(v) {
+					var cur = c.items[c.selectedIndex];
+
+					if (!v && cur) {
+						ed.execCommand('FontName', false, cur.value);
+						return;
+					}
+
 					ed.execCommand('FontName', false, v);
+
+					// Fake selection, execCommand will fire a nodeChange and update the selection
+					c.select(function(sv) {
+						return v == sv;
+					});
+
 					return false; // No auto select
 				}
 			});
@@ -293,16 +330,35 @@
 			var t = this, ed = t.editor, c, i = 0, cl = [];
 
 			c = ed.controlManager.createListBox('fontsizeselect', {title : 'concrete.font_size', onselect : function(v) {
-				if (v.fontSize)
-					ed.execCommand('FontSize', false, v.fontSize);
-				else {
-					each(t.settings.theme_concrete_font_sizes, function(v, k) {
-						if (v['class'])
-							cl.push(v['class']);
-					});
+				var cur = c.items[c.selectedIndex];
 
-					ed.editorCommands._applyInlineStyle('span', {'class' : v['class']}, {check_classes : cl});
+				if (!v && cur) {
+					cur = cur.value;
+
+					if (cur['class']) {
+						ed.formatter.toggle('fontsize_class', {value : cur['class']});
+						ed.undoManager.add();
+						ed.nodeChanged();
+					} else {
+						ed.execCommand('FontSize', false, cur.fontSize);
+					}
+
+					return;
 				}
+
+				if (v['class']) {
+					ed.focus();
+					ed.undoManager.add();
+					ed.formatter.toggle('fontsize_class', {value : v['class']});
+					ed.undoManager.add();
+					ed.nodeChanged();
+				} else
+					ed.execCommand('FontSize', false, v.fontSize);
+
+				// Fake selection, execCommand will fire a nodeChange and update the selection
+				c.select(function(sv) {
+					return v == sv;
+				});
 
 				return false; // No auto select
 			}});
@@ -482,7 +538,7 @@
 			}
 */
 
-			if (!ed.getParam('accessibility_focus') || ed.getParam('tab_focus'))
+			if (!ed.getParam('accessibility_focus'))
 				Event.add(DOM.add(p, 'a', {href : '#'}, '<!-- IE -->'), 'focus', function() {tinyMCE.get(ed.id).focus();});
 
 			if (s.theme_concrete_toolbar_location == 'external')
@@ -501,9 +557,9 @@
 
 		getInfo : function() {
 			return {
-				longname : 'Concrete theme',
-				author : 'Concrete CMS',
-				authorurl : 'http://concretecms.com',
+				longname : 'concrete5 Theme',
+				author : 'concrete5',
+				authorurl : 'http://concrete5.org',
 				version : tinymce.majorVersion + "." + tinymce.minorVersion
 			}
 		},
@@ -514,8 +570,8 @@
 			this.resizeTo(e.clientWidth + dw, e.clientHeight + dh);
 		},
 
-		resizeTo : function(w, h) {
-			var ed = this.editor, s = ed.settings, e = DOM.get(ed.id + '_tbl'), ifr = DOM.get(ed.id + '_ifr'), dh;
+		resizeTo : function(w, h, store) {
+			var ed = this.editor, s = this.settings, e = DOM.get(ed.id + '_tbl'), ifr = DOM.get(ed.id + '_ifr');
 
 			// Boundery fix box
 			w = Math.max(s.theme_concrete_resizing_min_width || 100, w);
@@ -523,12 +579,28 @@
 			w = Math.min(s.theme_concrete_resizing_max_width || 0xFFFF, w);
 			h = Math.min(s.theme_concrete_resizing_max_height || 0xFFFF, h);
 
-			// Calc difference between iframe and container
-			dh = e.clientHeight - ifr.clientHeight;
-
 			// Resize iframe and container
-			DOM.setStyle(ifr, 'height', h - dh);
-			DOM.setStyles(e, {width : w, height : h});
+			DOM.setStyle(e, 'height', '');
+			DOM.setStyle(ifr, 'height', h);
+
+			if (s.theme_concrete_resize_horizontal) {
+				DOM.setStyle(e, 'width', '');
+				DOM.setStyle(ifr, 'width', w);
+
+				// Make sure that the size is never smaller than the over all ui
+				if (w < e.clientWidth) {
+					w = e.clientWidth;
+					DOM.setStyle(ifr, 'width', e.clientWidth);
+				}
+			}
+
+			// Store away the size
+			if (store && s.theme_advanced_resizing_use_cookie) {
+				Cookie.setHash("TinyMCE_" + ed.id + "_size", {
+					cw : w,
+					ch : h
+				});
+			}
 		},
 
 		destroy : function() {
@@ -697,7 +769,7 @@
 
 			n = DOM.add(DOM.add(c, 'tr'), 'td', {'class' : 'mceToolbar ' + a});
 
-			if (!ed.getParam('accessibility_focus') || ed.getParam('tab_focus'))
+			if (!ed.getParam('accessibility_focus'))
 				h.push(DOM.createHTML('a', {href : '#', onfocus : 'tinyMCE.get(\'' + ed.id + '\').focus();'}, '<!-- IE -->'));
 
 			h.push(DOM.createHTML('a', {href : '#', accesskey : 'q', title : ed.getLang("concrete.toolbar_focus")}, '<!-- IE -->'));
@@ -729,10 +801,10 @@
 
 			n = DOM.add(tb, 'tr');
 			n = td = DOM.add(n, 'td', {'class' : 'mceStatusbar'});
-			n = DOM.add(n, 'div', {id : ed.id + '_path_row'}, s.theme_concrete_path ? ed.translate('concrete.path') + ': ' : '&nbsp;');
+			n = DOM.add(n, 'div', {id : ed.id + '_path_row'}, s.theme_concrete_path ? ed.translate('concrete.path') + ': ' : '&#160;');
 			DOM.add(n, 'a', {href : '#', accesskey : 'x'});
 
-			if (s.theme_concrete_resizing && !tinymce.isOldWebKit) {
+			if (s.theme_concrete_resizing) {
 				DOM.add(td, 'a', {id : ed.id + '_resize', href : 'javascript:;', onclick : "return false;", 'class' : 'mceResize'});
 
 				if (s.theme_concrete_resizing_use_cookie) {
@@ -742,99 +814,55 @@
 						if (!o)
 							return;
 
-						if (s.theme_concrete_resize_horizontal)
-							c.style.width = Math.max(10, o.cw) + 'px';
-
-						c.style.height = Math.max(10, o.ch) + 'px';
-						DOM.get(ed.id + '_ifr').style.height = Math.max(10, parseInt(o.ch) + t.deltaHeight) + 'px';
+						t.resizeTo(o.cw, o.ch);
 					});
 				}
 
 				ed.onPostRender.add(function() {
+					Event.add(ed.id + '_resize', 'click', function(e) {
+						e.preventDefault();
+					});
+
 					Event.add(ed.id + '_resize', 'mousedown', function(e) {
-						var c, p, w, h, n, pa;
+						var mouseMoveHandler1, mouseMoveHandler2,
+							mouseUpHandler1, mouseUpHandler2,
+							startX, startY, startWidth, startHeight, width, height, ifrElm;
 
-						// Measure container
-						c = DOM.get(ed.id + '_tbl');
-						w = c.clientWidth;
-						h = c.clientHeight;
+						function resizeOnMove(e) {
+							e.preventDefault();
 
-						miw = s.theme_concrete_resizing_min_width || 100;
-						mih = s.theme_concrete_resizing_min_height || 100;
-						maw = s.theme_concrete_resizing_max_width || 0xFFFF;
-						mah = s.theme_concrete_resizing_max_height || 0xFFFF;
+							width = startWidth + (e.screenX - startX);
+							height = startHeight + (e.screenY - startY);
 
-						// Setup placeholder
-						p = DOM.add(DOM.get(ed.id + '_parent'), 'div', {'class' : 'mcePlaceHolder'});
-						DOM.setStyles(p, {width : w, height : h});
-
-						// Replace with placeholder
-						DOM.hide(c);
-						DOM.show(p);
-
-						// Create internal resize obj
-						r = {
-							x : e.screenX,
-							y : e.screenY,
-							w : w,
-							h : h,
-							dx : null,
-							dy : null
+							t.resizeTo(width, height);
 						};
 
-						// Start listening
-						mf = Event.add(DOM.doc, 'mousemove', function(e) {
-							var w, h;
-
-							// Calc delta values
-							r.dx = e.screenX - r.x;
-							r.dy = e.screenY - r.y;
-
-							// Boundery fix box
-							w = Math.max(miw, r.w + r.dx);
-							h = Math.max(mih, r.h + r.dy);
-							w = Math.min(maw, w);
-							h = Math.min(mah, h);
-
-							// Resize placeholder
-							if (s.theme_concrete_resize_horizontal)
-								p.style.width = w + 'px';
-
-							p.style.height = h + 'px';
-
-							return Event.cancel(e);
-						});
-
-						me = Event.add(DOM.doc, 'mouseup', function(e) {
-							var ifr;
-
+						function endResize(e) {
 							// Stop listening
-							Event.remove(DOM.doc, 'mousemove', mf);
-							Event.remove(DOM.doc, 'mouseup', me);
+							Event.remove(DOM.doc, 'mousemove', mouseMoveHandler1);
+							Event.remove(ed.getDoc(), 'mousemove', mouseMoveHandler2);
+							Event.remove(DOM.doc, 'mouseup', mouseUpHandler1);
+							Event.remove(ed.getDoc(), 'mouseup', mouseUpHandler2);
 
-							c.style.display = '';
-							DOM.remove(p);
+							width = startWidth + (e.screenX - startX);
+							height = startHeight + (e.screenY - startY);
+							t.resizeTo(width, height, true);
+						};
 
-							if (r.dx === null)
-								return;
+						e.preventDefault();
 
-							ifr = DOM.get(ed.id + '_ifr');
+						// Get the current rect size
+						startX = e.screenX;
+						startY = e.screenY;
+						ifrElm = DOM.get(t.editor.id + '_ifr');
+						startWidth = width = ifrElm.clientWidth;
+						startHeight = height = ifrElm.clientHeight;
 
-							if (s.theme_concrete_resize_horizontal)
-								c.style.width = Math.max(10, r.w + r.dx) + 'px';
-
-							c.style.height = Math.max(10, r.h + r.dy) + 'px';
-							ifr.style.height = Math.max(10, ifr.clientHeight + r.dy) + 'px';
-
-							if (s.theme_concrete_resizing_use_cookie) {
-								Cookie.setHash("TinyMCE_" + ed.id + "_size", {
-									cw : r.w + r.dx,
-									ch : r.h + r.dy
-								});
-							}
-						});
-
-						return Event.cancel(e);
+						// Register envent handlers
+						mouseMoveHandler1 = Event.add(DOM.doc, 'mousemove', resizeOnMove);
+						mouseMoveHandler2 = Event.add(ed.getDoc(), 'mousemove', resizeOnMove);
+						mouseUpHandler1 = Event.add(DOM.doc, 'mouseup', endResize);
+						mouseUpHandler2 = Event.add(ed.getDoc(), 'mouseup', endResize);
 					});
 				});
 			}
@@ -844,7 +872,7 @@
 		},
 
 		_nodeChanged : function(ed, cm, n, co, ob) {
-			var t = this, p, de = 0, v, c, s = t.settings, cl, fz, fn;
+			var t = this, p, de = 0, v, c, s = t.settings, cl, fz, fn, formatNames, matches;
 
 			tinymce.each(t.stateControls, function(c) {
 				cm.setActive(c, ed.queryCommandState(t.controls[c][1]));
@@ -894,10 +922,13 @@
 			if (c = cm.get('styleselect')) {
 				t._importClasses();
 
-				// Check each format and update
-				c.select(function(fmt) {
-					return !!ed.formatter.match(fmt);
+				formatNames = [];
+				each(c.items, function(item) {
+					formatNames.push(item.value);
 				});
+
+				matches = ed.formatter.matchAll(formatNames);
+				c.select(matches[0]);
 			}
 
 			if (c = cm.get('formatselect')) {
@@ -951,6 +982,9 @@
 				getParent(function(n) {
 					var na = n.nodeName.toLowerCase(), u, pi, ti = '';
 
+					/*if (n.getAttribute('_mce_bogus'))
+						return;
+*/
 					// Ignore non element and hidden elements
 					if (n.nodeType != 1 || n.nodeName === 'BR' || (DOM.hasClass(n, 'mceItemHidden') || DOM.hasClass(n, 'mceItemRemoved')))
 						return;
@@ -958,7 +992,7 @@
 					// Fake name
 					if (v = DOM.getAttrib(n, 'mce_name'))
 						na = v;
-	
+
 					// Handle prefix
 					if (tinymce.isIE && n.scopeName !== 'HTML')
 						na = n.scopeName + ':' + na;
@@ -1056,7 +1090,7 @@
 			ed.windowManager.open({
 				url : tinymce.baseURL + '/themes/concrete/anchor.htm',
 				width : 320 + parseInt(ed.getLang('concrete.anchor_delta_width', 0)),
-				height : 110 + parseInt(ed.getLang('concrete.anchor_delta_height', 0)),
+				height : 130 + parseInt(ed.getLang('concrete.anchor_delta_height', 0)),
 				inline : true
 			}, {
 				theme_url : this.url
@@ -1097,7 +1131,7 @@
 			ed.windowManager.open({
 				url : tinymce.baseURL + '/themes/concrete/color_picker.htm',
 				width : 375 + parseInt(ed.getLang('concrete.colorpicker_delta_width', 0)),
-				height : 310 + parseInt(ed.getLang('concrete.colorpicker_delta_height', 0)),
+				height : 250 + parseInt(ed.getLang('concrete.colorpicker_delta_height', 0)),
 				close_previous : false,
 				inline : true
 			}, {
@@ -1113,7 +1147,7 @@
 			ed.windowManager.open({
 				url : tinymce.baseURL + '/themes/concrete/source_editor.htm',
 				width : parseInt(ed.getParam("theme_concrete_source_editor_width", 720)),
-				height : parseInt(ed.getParam("theme_concrete_source_editor_height", 590)),
+				height : parseInt(ed.getParam("theme_concrete_source_editor_height", 580)),
 				inline : true,
 				resizable : true,
 				maximizable : true
@@ -1131,9 +1165,9 @@
 
 			ed.windowManager.open({
 				url : tinymce.baseURL + '/themes/concrete/image.htm',
-				width : 400 + parseInt(ed.getLang('concrete.image_delta_width', 0)),
-				height : 350 + parseInt(ed.getLang('concrete.image_delta_height', 0)),
-				inline : true
+				width : 355 + parseInt(ed.getLang('concrete.image_delta_width', 0)),
+				height : 275 + parseInt(ed.getLang('concrete.image_delta_height', 0)),
+				inline : trueconcrete
 			}, {
 				theme_url : this.url
 			});
@@ -1148,10 +1182,8 @@
 				height : 200 + parseInt(ed.getLang('concrete.link_delta_height', 0)),
 				inline : true
 			}, {
-				scrollbars : "no",
 				theme_url : this.url
 			});
-						
 		},
 
 		_mceNewDocument : function() {

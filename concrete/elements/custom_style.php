@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 if (ENABLE_CUSTOM_DESIGN == false) {
 	die(t('Custom design options have been disabled.'));
 }
@@ -328,9 +328,12 @@ if ($_REQUEST['subtask'] == 'delete_custom_style_preset') {
 	
 	<?php  if ($cspID > 0) { ?>
 	<div id="cspFooterPreset" style="display: none">
-		<div><?php echo $form->radio('cspPresetAction', 'update_existing_preset', true)?> <?php echo t('Update "%s" preset everywhere it is used?', $csp->getCustomStylePresetName())?></div>
-		<div><?php echo $form->radio('cspPresetAction', 'save_as_custom_style')?> <?php echo t('Use this style here, and leave "%s" unchanged?', $csp->getCustomStylePresetName())?></div>
-		<div><?php echo $form->radio('cspPresetAction', 'create_new_preset')?> <?php echo t('Save this style as a new preset?')?><br/><span style="margin-left: 20px"><?php echo $form->text('cspName', array('style' => 'width:  127px', 'disabled' => true))?></span></div>
+		<div class="ccm-note-important">
+			<h2><?php echo t('You are changing a preset')?></h2>
+			<div><?php echo $form->radio('cspPresetAction', 'update_existing_preset', true)?> <?php echo t('Update "%s" preset everywhere it is used', $csp->getCustomStylePresetName())?></div>
+			<div><?php echo $form->radio('cspPresetAction', 'save_as_custom_style')?> <?php echo t('Use this style here, and leave "%s" unchanged', $csp->getCustomStylePresetName())?></div>
+			<div><?php echo $form->radio('cspPresetAction', 'create_new_preset')?> <?php echo t('Save this style as a new preset')?><br/><span style="margin-left: 20px"><?php echo $form->text('cspName', array('style' => 'width:  127px', 'disabled' => true))?></span></div>
+		</div>
 	</div>
 	<?php  } ?>
 	

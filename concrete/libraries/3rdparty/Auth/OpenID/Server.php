@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * OpenID server protocol and logic.

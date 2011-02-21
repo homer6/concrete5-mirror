@@ -16,7 +16,7 @@
  * @license    http://www.concrete5.org/license/     MIT License
  */
  
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class MailHelper {
 
 	protected $headers = array();
@@ -26,6 +26,7 @@ class MailHelper {
 	protected $subject = '';
 	public $body = '';
 	protected $template; 
+	protected $bodyHTML = false;
 	
 	public static function getMailerObject(){
 		Loader::library('3rdparty/Zend/Mail');
@@ -107,7 +108,9 @@ class MailHelper {
 	
 	public function getSubject() {return $this->subject;}
 	public function getBody() {return $this->body;}
-	
+	public function setBodyHTML($html) {
+		$this->bodyHTML = $html;
+	}	
 	public function enableMailResponseProcessing($importer, $data) {
 		foreach($this->to as $em) {
 			$importer->setupValidation($em[0], $data);
@@ -158,6 +161,23 @@ class MailHelper {
 			$this->to[] = array($email, $name);	
 		}
 	}
+
+	/*	
+	 * Sets the reply-to address on the email about to be sent out
+	 * @param string $email
+	 * @param string $name
+	 * @return void
+	 */
+	public function replyto($email, $name = null) {
+		if (strpos($email, ',') > 0) {
+			$email = explode(',', $email);
+			foreach($email as $em) {
+				$this->replyto[] = array($em, $name);
+			}
+		} else {
+			$this->replyto[] = array($email, $name);	
+		}
+	}
 		
 	/** 
 	 * Sends the email
@@ -166,6 +186,7 @@ class MailHelper {
 		$_from[] = $this->from;
 		$fromStr = $this->generateEmailStrings($_from);
 		$toStr = $this->generateEmailStrings($this->to);
+		$replyStr = $this->generateEmailStrings($this->replyto);
 		if (ENABLE_EMAILS) {
 			
 			$zendMailData = self::getMailerObject();
@@ -178,15 +199,30 @@ class MailHelper {
 				}
 			}
 			if (!isset($from)) {
-				$from = array('concrete5-noreply@' . str_replace(array('http://www.', 'https://www.', 'http://', 'https://'), '', BASE_URL), '');
+				$from = array(EMAIL_DEFAULT_FROM_ADDRESS, EMAIL_DEFAULT_FROM_NAME);
 			}
 			
+			// The currently included Zend library has a bug in setReplyTo that
+			// adds the Reply-To address as a recipient of the email. We must
+			// set the Reply-To before any header with addresses and then clear
+			// all recipients so that a copy is not sent to the Reply-To address.
+			if(is_array($this->replyto)) {
+				foreach ($this->replyto as $reply) {
+					$mail->setReplyTo($reply[0], $reply[1]);
+				}
+			}
+			$mail->clearRecipients();
+			
+
 			$mail->setFrom($from[0], $from[1]);
 			$mail->setSubject($this->subject);
 			foreach($this->to as $to) {
 				$mail->addTo($to[0], $to[1]);
 			}
 			$mail->setBodyText($this->body);
+			if ($this->bodyHTML != false) {
+				$mail->setBodyHTML($this->bodyHTML);
+			}
 			try {
 				$mail->send($transport);
 					
@@ -198,6 +234,9 @@ class MailHelper {
 					$l->write(t('Template Used') . ': ' . $this->template);
 					$l->write(t('To') . ': ' . $toStr);
 					$l->write(t('From') . ': ' . $fromStr);
+					if (isset($this->replyto)) {
+						$l->write(t('Reply-To') . ': ' . $replyStr);
+					}
 					$l->write(t('Subject') . ': ' . $this->subject);
 					$l->write(t('Body') . ': ' . $this->body);
 				}				
@@ -216,6 +255,9 @@ class MailHelper {
 			$l->write(t('Template Used') . ': ' . $this->template);
 			$l->write(t('To') . ': ' . $toStr);
 			$l->write(t('From') . ': ' . $fromStr);
+			if (isset($this->replyto)) {
+				$l->write(t('Reply-To') . ': ' . $replyStr);
+			}
 			$l->write(t('Subject') . ': ' . $this->subject);
 			$l->write(t('Body') . ': ' . $this->body);
 			$l->close();

@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
 *
@@ -13,9 +13,9 @@ class PageList extends DatabaseItemList {
 	protected $includeSystemPages = false;
 	protected $attributeFilters = array();
 	protected $includeAliases = true;
-	protected $displayOnlyPermittedPages = false;
+	protected $displayOnlyPermittedPages = false; // not used.
 	protected $displayOnlyApprovedPages = true;
-	protected $systemPagesToExclude = array('login.php', 'register.php', 'download_file.php', 'profile/%', 'dashboard/%');
+	protected $systemPagesToExclude = array('login.php', 'page_not_found.php', 'page_forbidden.php','register.php', 'download_file.php', 'profile/%', 'dashboard/%');
 	protected $filterByCParentID = 0;
 	protected $filterByCT = false;
 	protected $ignorePermissions = false;
@@ -48,6 +48,7 @@ class PageList extends DatabaseItemList {
 	public function includeSystemPages() {
 		$this->includeSystemPages = true;
 	}
+	
 	public function displayUnapprovedPages() {
 		$this->displayOnlyApprovedPages = false;
 	}
@@ -56,21 +57,25 @@ class PageList extends DatabaseItemList {
 	/** 
 	 * Filters by "keywords" (which searches everything including filenames, title, tags, users who uploaded the file, tags)
 	 */
-	public function filterByKeywords($keywords) {
+	public function filterByKeywords($keywords, $simple = false) {
 		$db = Loader::db();
 		$kw = $db->quote($keywords);
 		$qk = $db->quote('%' . $keywords . '%');
-		$this->indexedSearch = true;
-		$this->indexedKeywords = $keywords;
-		$this->autoSortColumns[] = 'cIndexScore';
-		Loader::model('attribute/categories/collection');		
-		$keys = CollectionAttributeKey::getSearchableIndexedList();
-		$attribsStr = '';
-		foreach ($keys as $ak) {
-			$cnt = $ak->getController();			
-			$attribsStr.=' OR ' . $cnt->searchKeywords($keywords);
+		if ($simple || $this->indexModeSimple) { // $this->indexModeSimple is set by the IndexedPageList class
+			$this->filter(false, "(psi.cName like $qk or psi.cDescription like $qk or psi.content like $qk)");		
+		} else {
+			$this->indexedSearch = true;
+			$this->indexedKeywords = $keywords;
+			$this->autoSortColumns[] = 'cIndexScore';
+			Loader::model('attribute/categories/collection');		
+			$keys = CollectionAttributeKey::getSearchableIndexedList();
+			$attribsStr = '';
+			foreach ($keys as $ak) {
+				$cnt = $ak->getController();			
+				$attribsStr.=' OR ' . $cnt->searchKeywords($keywords);
+			}
+			$this->filter(false, "((match(psi.cName, psi.cDescription, psi.content) against ({$kw})) {$attribsStr})");
 		}
-		$this->filter(false, "((match(psi.cName, psi.cDescription, psi.content) against ({$kw})) {$attribsStr})");
 	}
 
 	public function filterByName($name, $exact = false) {
@@ -151,6 +156,10 @@ class PageList extends DatabaseItemList {
 	 */
 	public function sortByDisplayOrderDescending() {
 		parent::sortBy('p1.cDisplayOrder', 'desc');
+	}
+
+	public function sortByCollectionIDAscending() {
+		parent::sortBy('p1.cID', 'asc');
 	}
 	
 	/** 
@@ -279,7 +288,11 @@ class PageList extends DatabaseItemList {
 	 * @param bool $checkForPermissions
 	 */
 	public function displayOnlyPermittedPages($checkForPermissions) {
-		$this->displayOnlyPermittedPages = $checkForPermissions;
+		if ($checkForPermissions) {
+			$this->ignorePermissions = false;
+		} else {
+			$this->ignorePermissions = true;
+		}
 	}
 	
 	protected function setBaseQuery($additionalFields = '') {
@@ -287,16 +300,23 @@ class PageList extends DatabaseItemList {
 			$db = Loader::db();
 			$ik = ', match(psi.cName, psi.cDescription, psi.content) against (' . $db->quote($this->indexedKeywords) . ') as cIndexScore ';
 		}
-		if ($this->includeAliases) {
-			$this->setQuery('select p1.cID, pt.ctHandle ' . $ik . $additionalFields . ' from Pages p1 left join Pages p2 on (p1.cPointerID = p2.cID) left join PageTypes pt on (pt.ctID = (if (p2.cID is null, p1.ctID, p2.cID))) left join PagePaths on (PagePaths.cID = p1.cID and PagePaths.ppIsCanonical = 1) left join PageSearchIndex psi on (psi.cID = if(p2.cID is null, p1.cID, p2.cID)) inner join CollectionVersions cv on (cv.cID = if(p2.cID is null, p1.cID, p2.cID) and cvID = (select max(cvID) from CollectionVersions where cID = cv.cID)) inner join Collections c on (c.cID = if(p2.cID is null, p1.cID, p2.cID))');
-		} else {
-			$this->setQuery('select p1.cID, pt.ctHandle ' . $ik . $additionalFields . ' from Pages p1 left join PageTypes pt on (pt.ctID = p1.ctID) left join PagePaths on (PagePaths.cID = p1.cID and PagePaths.ppIsCanonical = 1) left join PageSearchIndex psi on (psi.cID = p1.cID) inner join CollectionVersions cv on (cv.cID = p1.cID and cvID = (select max(cvID) from CollectionVersions where cID = cv.cID)) inner join Collections c on (c.cID = p1.cID)');
+	
+		if (!$this->includeAliases) {
+			$this->filter(false, '(p1.cPointerID < 1 or p1.cPointerID is null)');
 		}
 		
-		
+		$cvID = '(select max(cvID) from CollectionVersions where cID = cv.cID)';		
 		if ($this->displayOnlyApprovedPages) {
+			$cvID = '(select cvID from CollectionVersions where cvIsApproved = 1 and cID = cv.cID)';
 			$this->filter('cvIsApproved', 1);
 		}
+
+		if ($this->includeAliases) {
+			$this->setQuery('select p1.cID, pt.ctHandle ' . $ik . $additionalFields . ' from Pages p1 left join Pages p2 on (p1.cPointerID = p2.cID) left join PageTypes pt on (pt.ctID = (if (p2.cID is null, p1.ctID, p2.ctID))) left join PagePaths on (PagePaths.cID = p1.cID and PagePaths.ppIsCanonical = 1) left join PageSearchIndex psi on (psi.cID = if(p2.cID is null, p1.cID, p2.cID)) inner join CollectionVersions cv on (cv.cID = if(p2.cID is null, p1.cID, p2.cID) and cvID = ' . $cvID . ') inner join Collections c on (c.cID = if(p2.cID is null, p1.cID, p2.cID))');
+		} else {
+			$this->setQuery('select p1.cID, pt.ctHandle ' . $ik . $additionalFields . ' from Pages p1 left join PageTypes pt on (pt.ctID = p1.ctID) left join PagePaths on (PagePaths.cID = p1.cID and PagePaths.ppIsCanonical = 1) left join PageSearchIndex psi on (psi.cID = p1.cID) inner join CollectionVersions cv on (cv.cID = p1.cID and cvID = ' . $cvID . ') inner join Collections c on (c.cID = p1.cID)');
+		}
+		
 		if ($this->includeAliases) {
 			$this->filter(false, "(p1.cIsTemplate = 0 or p2.cIsTemplate = 0)");
 		} else {

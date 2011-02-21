@@ -1,5 +1,5 @@
 <?php 
-	defined('C5_EXECUTE') or die(_("Access Denied."));
+	defined('C5_EXECUTE') or die("Access Denied.");
 /**
  * Contains the collection version object.
  * @package Pages
@@ -73,6 +73,7 @@
 			foreach($cvIDs as $cvID) {
 				Cache::delete('page', $cID . ':' . $cvID);
 				Cache::delete('collection_version', $cID . ':' . $cvID);
+				Cache::delete('collection_blocks', $cID . ':' . $cvID);
 				Cache::delete('collection_version_id', $cID . ':' . $cvID);
 				Cache::delete('collection_version_id', $cID . ':RECENT');
 				Cache::delete('collection_version_id', $cID . ':ACTIVE');
@@ -231,6 +232,10 @@
 			$oldHandle = $ov->getCollectionHandle();
 			$newHandle = $this->cvHandle;
 
+			// update a collection updated record
+			$dh = Loader::helper('date');
+			$db->query('update Collections set cDateModified = ? where cID = ?', array($dh->getLocalDateTime(), $cID));
+
 			// first we remove approval for the other version of this collection
 			$v = array($cID);
 			$q = "update CollectionVersions set cvIsApproved = 0 where cID = ?";
@@ -243,9 +248,7 @@
 			$r = $db->query($q2, $v2);
 			
 			// next, we rescan our collection paths for the particular collection, but only if this isn't a generated collection
-			if (($oldHandle != $newHandle) && (!$c->isGeneratedCollection())) {
-				$c->rescanCollectionPath();
-			}
+			$c->rescanCollectionPath();
 			Events::fire('on_page_version_approve', $c);
 			$c->reindex();
 			$this->refreshCache();
@@ -271,6 +274,10 @@
 			$db = Loader::db();
 			$cvID = $this->cvID;
 			$cID = $this->cID;
+			
+			// first we update a collection updated record
+			$dh = Loader::helper('date');
+			$db->query('update Collections set cDateModified = ? where cID = ?', array($dh->getLocalDateTime(), $cID));
 			
 			// first we remove approval for all versions of this collection
 			$v = array($cID);
@@ -339,11 +346,20 @@
 	
 		var $vArray = array();
 		
-		function VersionList(&$c) {
+		function VersionList(&$c, $limit = -1, $page = false) {
 			$db = Loader::db();
 			
-			$cID = $c->getCollectionID();		
-			$q = "select cvID from CollectionVersions where cID = '$cID' order by cvID desc";
+			$cID = $c->getCollectionID();
+			$this->total = $db->GetOne('select count(cvID) from CollectionVersions where cID = ?', $cID);
+			$q = "select cvID from CollectionVersions where cID = '$cID' order by cvID desc ";
+			if ($page > 1) {
+				$pl = ($page-1) * $limit;
+			}			
+			if ($page > 1) {
+				$q .= "limit " . $pl . ',' . $limit;
+			} else if ($limit > -1) {
+				$q .= "limit " . $limit;
+			}
 			$r = $db->query($q);
 	
 			if ($r) {
@@ -361,7 +377,7 @@
 		}
 		
 		function getVersionListCount() {
-			return count($this->vArray);
+			return $this->total;
 		}
 	
 	}

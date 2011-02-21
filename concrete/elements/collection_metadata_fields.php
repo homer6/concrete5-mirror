@@ -91,6 +91,8 @@ $usedKeysCombined = array_merge($requiredKeys, $usedKeys);
 	</h2><br/>
 
 	<?php  
+		ob_start();
+		
 		$al = Loader::helper('concrete/asset_library');
 
 
@@ -111,6 +113,27 @@ $usedKeysCombined = array_merge($requiredKeys, $usedKeys);
 				<div class="ccm-spacer">&nbsp;</div>
 				
 			</div>
-		<?php  } ?>	
+		<?php  } 
+		$contents = ob_get_contents();
+		ob_end_clean(); ?>	
+		
+		<script type="text/javascript">
+		<?php  
+		$v = View::getInstance();
+		$headerItems = $v->getHeaderItems();
+		foreach($headerItems as $item) {
+			if ($item instanceof CSSOutputObject) {
+				$type = 'CSS';
+			} else {
+				$type = 'JAVASCRIPT';
+			} ?>
+			 ccm_addHeaderItem("<?php echo $item->file?>", '<?php echo $type?>');
+			<?php  
+		} 
+		?>
+		</script>
+		
+		<?php  print $contents; ?>
 
 </div>
+

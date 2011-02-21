@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?> 
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?> 
 <?php 
 Loader::model('file_set');
 
@@ -8,6 +8,7 @@ $searchFields = array(
 	'type' => t('Type'),
 	'extension' => t('Extension'),
 	'date_added' => t('Added Between'),
+	'added_to' => t('Added to Page')
 );
 
 if ($_REQUEST['fType'] != false) {
@@ -16,6 +17,8 @@ if ($_REQUEST['fType'] != false) {
 if ($_REQUEST['fExtension'] != false) {
 	unset($searchFields['extension']);
 }
+
+$html = Loader::helper('html');
 
 Loader::model('file_attributes');
 $searchFieldAttributes = FileAttributeKey::getSearchableList();
@@ -34,8 +37,6 @@ $types = array();
 foreach($t1 as $value) {
 	$types[$value] = FileType::getGenericTypeText($value);
 }
-
-$s1 = FileSet::getMySets();
 
 ?>
 
@@ -64,6 +65,14 @@ $s1 = FileSet::getMySets();
 		<?php echo t('to')?>
 		<?php echo $form->text('date_to', array('style' => 'width: 86px'))?>
 		</span>
+
+		<span class="ccm-search-option" search-field="added_to">
+		<div style="width: 100px">
+		<?php  $ps = Loader::helper("form/page_selector");
+		print $ps->selectPage('ocIDSearchField');
+		?>
+		</div>
+		</span>
 		
 		<?php  foreach($searchFieldAttributes as $sfa) { 
 			$sfa->render('search'); ?>
@@ -82,6 +91,35 @@ $s1 = FileSet::getMySets();
 	?>
 
 	<form method="get" id="ccm-<?php echo $searchInstance?>-advanced-search" action="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/search_results">
+
+<?php 
+$s2 = FileSet::getSavedSearches();
+if (count($s2) > 0) { 
+	if ($_REQUEST['fssID'] < 1) {
+		$savedSearches = array('' => t('** Select a saved search.'));
+	}
+	
+	foreach($s2 as $fss) {
+		$savedSearches[$fss->getFileSetID()] = $fss->getFileSetName();
+	}
+?>
+	<div class="ccm-search-advanced-fields">
+		<h2><?php echo t('Saved Searches')?></h2>
+		
+		<?php echo $form->select('fssID', $savedSearches, $fssID, array('style' => 'vertical-align: middle'))?>
+		<?php  if (isset($_REQUEST['fssID'])) { ?>
+			<a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/delete_set?fsID=<?php echo $_REQUEST['fssID']?>&searchInstance=<?php echo $searchInstance?>" class="ccm-file-set-delete-saved-search" dialog-title="<?php echo t('Delete File Set')?>" dialog-width="320" dialog-height="200" dialog-modal="false" style="vertical-align: middle"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/delete_small.png" style="vertical-align: middle" width="16" height="16" border="0" /></a>
+		<?php  } ?>
+		
+		<?php  if (isset($_REQUEST['fssID'])) { ?>
+			<br/><br/>
+			
+			<a class="ccm-search-saved-exit" href="#" onclick="javascript:void(0)"><?php echo t("&lt; Exit Saved Search")?></a>
+		<?php  } ?>
+	</div>
+	<br/>
+	
+<?php  } ?>
 
 <input type="hidden" name="searchInstance" value="<?php echo $searchInstance?>" />
 	
@@ -133,7 +171,7 @@ $s1 = FileSet::getMySets();
 							'500' => '500'
 						), $searchRequest['numResults'], array('style' => 'width:65px'))?>
 					</td>
-					<td><a href="javascript:void(0)" id="ccm-<?php echo $searchInstance?>-search-add-option"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/add.png" width="16" height="16" /></a></td>
+					<td><?php  if ($_REQUEST['fssID'] < 1) { ?><a href="javascript:void(0)" id="ccm-<?php echo $searchInstance?>-search-add-option"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/add.png" width="16" height="16" /></a><?php  } ?></td>
 				</tr>	
 				</table>
 			</div>
@@ -150,7 +188,7 @@ $s1 = FileSet::getMySets();
 						<?php echo t('Select Search Field.')?>
 						</td>
 						<td valign="top">
-						<a href="javascript:void(0)" class="ccm-search-remove-option"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/remove_minus.png" width="16" height="16" /></a>
+						<?php  if ($_REQUEST['fssID'] < 1) { ?><a href="javascript:void(0)" class="ccm-search-remove-option"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/remove_minus.png" width="16" height="16" /></a><?php  } ?>
 						</td>
 					</tr>
 				</table>
@@ -204,6 +242,16 @@ $s1 = FileSet::getMySets();
 								<?php echo $form->text('date_to', $searchRequest['date_to'], array('style' => 'width: 86px'))?>
 								</span>
 							<?php  } ?>
+
+							<?php  if ($req == 'added_to') { ?>
+							<span class="ccm-search-option" search-field="parent">
+							<div style="width: 100px">
+							<?php  $ps = Loader::helper("form/page_selector");
+							print $ps->selectPage('ocIDSearchField', $searchRequest['ocIDSearchField']);
+							?>
+							</div>
+							</span>
+							<?php  } ?>
 							
 							<?php  foreach($searchFieldAttributes as $sfa) { 
 								if ($sfa->getAttributeKeyID() == $req) {
@@ -214,7 +262,7 @@ $s1 = FileSet::getMySets();
 							} ?>
 							</td>
 							<td valign="top">
-							<a href="javascript:void(0)" class="ccm-search-remove-option"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/remove_minus.png" width="16" height="16" /></a>
+							<?php  if ($_REQUEST['fssID'] < 1) { ?><a href="javascript:void(0)" class="ccm-search-remove-option"><img src="<?php echo ASSETS_URL_IMAGES?>/icons/remove_minus.png" width="16" height="16" /></a><?php  } ?>
 							</td>
 						</tr>
 					</table>
@@ -228,26 +276,27 @@ $s1 = FileSet::getMySets();
 			</div>
 			
 			<div id="ccm-search-fields-submit">
+				<?php  if ($_REQUEST['fssID'] < 1) { ?><div id="ccm-search-save"><a href="<?php echo REL_DIR_FILES_TOOLS_REQUIRED?>/files/save_search?searchInstance=<?php echo $searchInstance?>" id="ccm-<?php echo $searchInstance?>-launch-save-search" dialog-title="<?php echo t('Save Search')?>" dialog-width="320" dialog-height="200" dialog-modal="false"><?php echo t('Save Search')?></a></div><?php  } ?>
 				<?php echo $form->submit('ccm-search-files', 'Search')?>
 			</div>
 		</div>
 	
 </div>
 
-<?php  if (count($s1) > 0) { ?>
-
-<div id="ccm-search-advanced-sets">
-	<h2><?php echo t('Filter by File Set')?></h2>
-	<div style="max-height: 200px; overflow: auto">
-	<?php  foreach($s1 as $fs) { ?>
-		<div class="ccm-<?php echo $searchInstance?>-search-advanced-sets-cb"><?php echo $form->checkbox('fsID[' . $fs->getFileSetID() . ']', $fs->getFileSetID(), (is_array($searchRequest['fsID']) && in_array($fs->getFileSetID(), $searchRequest['fsID'])))?> <?php echo $form->label('fsID[' . $fs->getFileSetID() . ']', $fs->getFileSetName())?></div>
-	<?php  } ?>
-	</div>
-	
-	<hr/>
-	
-	<div><?php echo $form->checkbox('fsIDNone', '1', $searchRequest['fsIDNone'] == 1, array('instance' => $searchInstance))?> <?php echo $form->label('fsIDNone', t('Display files in no sets.'))?></div>
+<div id="ccm-<?php echo $searchInstance?>-sets-search-wrapper">
+	<?php  Loader::element('files/search_form_sets', array('searchInstance' => $searchInstance, 'searchRequest' => $searchRequest)) ?>
 </div>
 
-<?php  } ?>
 </form>	
+
+<script type="text/javascript">$(function() {
+	$('a#ccm-<?php echo $searchInstance?>-launch-save-search').dialog();
+	$('a.ccm-file-set-delete-saved-search').dialog();
+	
+	<?php  if ($_REQUEST['fssID'] > 0) { ?>
+	$('#ccm-<?php echo $searchInstance?>-advanced-search input, #ccm-<?php echo $searchInstance?>-advanced-search select, #ccm-<?php echo $searchInstance?>-advanced-search textarea').attr('disabled',true);
+	$('#ccm-<?php echo $searchInstance?>-advanced-search select[name=fssID]').attr('disabled', false);
+	<?php  } ?>
+	
+
+});</script>

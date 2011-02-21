@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 Loader::controller('/profile/edit');
 Loader::model('user_private_message');
 
@@ -84,7 +84,7 @@ class ProfileMessagesController extends ProfileEditController {
 		$msg = UserPrivateMessage::getByID($msgID, $mailbox);
 		if ($ui->canReadPrivateMessage($msg)) {
 			$msg->markAsRead();
-			$this->set('subject', $msg->getMessageSubject());
+			$this->set('subject', $msg->getFormattedMessageSubject());
 			$this->set('msgContent', $msg->getMessageBody());
 			$this->set('dateAdded', $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')));
 			$this->set('author', $msg->getMessageAuthorObject());
@@ -130,10 +130,10 @@ class ProfileMessagesController extends ProfileEditController {
 		$this->set('box', $boxID);
 		$this->set('msg', $msg);
 		
-		$this->set('msgSubject', $msg->getMessageSubject());
+		$this->set('msgSubject', $msg->getFormattedMessageSubject());
 		
 		$body = "\n\n\n" . $msg->getMessageDelimiter() . "\n";
-		$body .= t("From: %s\nDate Sent: %s\nSubject: %s", $msg->getMessageAuthorName(), $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')), $msg->getMessageSubject());
+		$body .= t("From: %s\nDate Sent: %s\nSubject: %s", $msg->getMessageAuthorName(), $msg->getMessageDateAdded('user', t('F d, Y \a\t g:i A')), $msg->getFormattedMessageSubject());
 		$body .= "\n\n" . $msg->getMessageBody();
 		$this->set('msgBody', $body);
 	}

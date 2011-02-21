@@ -1,6 +1,6 @@
 <?php 
 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
  * Contains the collection object.
@@ -154,10 +154,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			if ($this->isAlias()) {
 				return false;
 			}
+			$db = Loader::db();
 			
 			Loader::model('attribute/categories/collection');
 			$attribs = CollectionAttributeKey::getAttributes($this->getCollectionID(), $this->getVersionID(), 'getSearchIndexValue');
-			$db = Loader::db();
 	
 			$db->Execute('delete from CollectionSearchIndexAttributes where cID = ?', array($this->getCollectionID()));
 			$searchableAttributes = array('cID' => $this->getCollectionID());
@@ -168,13 +168,17 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 				Loader::library('database_indexed_search');
 				$index = new IndexedSearch();
 			}
+			
+			$datetime = Loader::helper('date')->getSystemDateTime();
+			
 			$db->Replace('PageSearchIndex', array(
 				'cID' => $this->getCollectionID(), 
 				'cName' => $this->getCollectionName(), 
 				'cDescription' => $this->getCollectionDescription(), 
 				'cPath' => $this->getCollectionPath(),
 				'cDatePublic' => $this->getCollectionDatePublic(), 
-				'content' => $index->getBodyContentFromPage($this)
+				'content' => $index->getBodyContentFromPage($this),
+				'cDateLastIndexed' => $datetime
 			), array('cID'), true);			
 		}
 		
@@ -324,6 +328,10 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			// shortcut
 			return $this->vObj->cvID;
 		}
+		
+	public function __destruct() {
+		unset($this->vObj);
+	}
 
 	function getCollectionAreaDisplayOrder($arHandle, $ignoreVersions = false) {
 		// this function queries CollectionBlocks to grab the highest displayOrder value, then increments it, and returns
@@ -333,11 +341,13 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		$cID = $this->cID;
 		$cvID = $this->vObj->cvID;
 		if ($ignoreVersions) {
-			$q = "select max(cbDisplayOrder) as cbdis from CollectionVersionBlocks where cID = '$cID' and arHandle='$arHandle'";
+			$q = "select max(cbDisplayOrder) as cbdis from CollectionVersionBlocks where cID = ? and arHandle = ?";
+			$v = array($cID, $arHandle);
 		} else {
-			$q = "select max(cbDisplayOrder) as cbdis from CollectionVersionBlocks where cID = '$cID' and cvID = '{$cvID}' and arHandle='$arHandle'";
+			$q = "select max(cbDisplayOrder) as cbdis from CollectionVersionBlocks where cID = ? and cvID = ? and arHandle = ?";
+			$v = array($cID, $cvID, $arHandle);
 		}
-		$r = $db->query($q);
+		$r = $db->query($q, $v);
 		if ($r) {
 			if ($r->numRows() > 0) {
 				// then we know we got a value; we increment it and return
@@ -359,12 +369,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 	 * Retrieves all custom style rules that should be inserted into the header on a page, whether they are defined in areas
 	 * or blocks
 	 */
-	public function outputCustomStyleHeaderItems() {	
+	public function outputCustomStyleHeaderItems($return = false) {	
 		
 		$db = Loader::db();
 		$csrs = array();
-		$r1 = $db->GetCol('select csrID from CollectionVersionBlockStyles where cID = ? and cvID = ?', array($this->getCollectionID(), $this->getVersionID()));
-		$r2 = $db->GetCol('select csrID from CollectionVersionAreaStyles where cID = ? and cvID = ?', array($this->getCollectionID(), $this->getVersionID()));
+		$r1 = $db->GetCol('select csrID from CollectionVersionBlockStyles where cID = ? and cvID = ? and csrID > 0', array($this->getCollectionID(), $this->getVersionID()));
+		$r2 = $db->GetCol('select csrID from CollectionVersionAreaStyles where cID = ? and cvID = ? and csrID > 0', array($this->getCollectionID(), $this->getVersionID()));
 		foreach($r1 as $csrID) {
 			$obj = CustomStyleRule::getByID($csrID);
 			if (is_object($obj)) {
@@ -395,8 +405,12 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 		}  
 		
 		if(strlen(trim($styleHeader))) {
-			$v = View::getInstance();
-			$v->addHeaderItem("<style type=\"text/css\"> \r\n".$styleHeader.'</style>', 'VIEW');
+			if ($return == true) {
+				return $styleHeader;
+			} else {
+				$v = View::getInstance();
+				$v->addHeaderItem("<style type=\"text/css\"> \r\n".$styleHeader.'</style>', 'VIEW');
+			}
 		}
 	} 
 
@@ -609,40 +623,69 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$vo = $this->getVersionObject();
 			Cache::delete('page', $this->getCollectionID());
 			Cache::delete('page_path', $this->getCollectionID());
+			Cache::delete('request_path_page', $this->getCollectionPath()  );
 			Cache::delete('page_id_from_path', $this->getCollectionPath());
 			Cache::delete('parent_id', $this->getCollectionID());
+			Cache::delete('page_content', $this->getCollectionID());
 			if (is_object($vo)) {
 				$vo->refreshCache();
+			}
+			$db = Loader::db();
+			$areas = $db->GetCol('select arHandle from Areas where cID = ?', array($this->getCollectionID()));
+			foreach($areas as $arHandle) {
+				Cache::delete('area', $this->getCollectionID() . ':' . $arHandle);
 			}
 		}
 		
 		public function getBlocks($arHandle = false) {
 			
-			$db = Loader::db();
-			
 			$v = array($this->getCollectionID(), $this->getVersionID());
-			if ($arHandle != false) {
-				$v[] = $arHandle;
-			}
-			$q = "select Blocks.bID, CollectionVersionBlocks.arHandle ";
-			$q .= "from CollectionVersionBlocks inner join Blocks on (CollectionVersionBlocks.bID = Blocks.bID) inner join BlockTypes on (Blocks.btID = BlockTypes.btID) where CollectionVersionBlocks.cID = ? and (CollectionVersionBlocks.cvID = ? or CollectionVersionBlocks.cbIncludeAll=1) ";
-			if ($arHandle != false) {
-				$q .= 'and CollectionVersionBlocks.arHandle = ? ';
-			}
-			$q .= "order by CollectionVersionBlocks.cbDisplayOrder asc";
-
-			$r = $db->query($q, $v);
 			$blocks = array();
-			while ($row = $r->fetchRow()) {
-				$ab = Block::getByID($row['bID'], $this, $row['arHandle']);
-				if (is_object($ab)) {
-					$blocks[] = $ab;
+
+			$blockIDs = Cache::get('collection_blocks', $this->getCollectionID() . ':' . $this->getVersionID());		
+			
+			if (!is_array($blockIDs)) {
+				$db = Loader::db();
+				$q = "select Blocks.bID, CollectionVersionBlocks.arHandle from CollectionVersionBlocks inner join Blocks on (CollectionVersionBlocks.bID = Blocks.bID) inner join BlockTypes on (Blocks.btID = BlockTypes.btID) where CollectionVersionBlocks.cID = ? and (CollectionVersionBlocks.cvID = ? or CollectionVersionBlocks.cbIncludeAll=1) order by CollectionVersionBlocks.cbDisplayOrder asc";
+	
+				$r = $db->GetAll($q, $v);
+				$blockIDs = array();
+				if (is_array($r)) {
+					foreach($r as $bl) {
+						$blockIDs[$bl['arHandle']][] = $bl;
+					}
+				}
+				Cache::set('collection_blocks', $this->getCollectionID() . ':' . $this->getVersionID(), $blockIDs);
+			}
+			
+			if ($arHandle != false) {
+				$blockIDsTmp = $blockIDs[$arHandle];
+				$blockIDs = $blockIDsTmp;
+			} else {
+			
+				$blockIDsTmp = $blockIDs;
+				$blockIDs = array();
+				foreach($blockIDsTmp as $arHandle => $row) {
+					foreach($row as $brow) {
+						if (!in_array($brow, $blockIDs)) {
+							$blockIDs[] = $brow;
+						}
+					}
+				}
+			}		
+			
+			$blocks = array();
+			if (is_array($blockIDs)) {
+				foreach($blockIDs as $row) {
+					$ab = Block::getByID($row['bID'], $this, $row['arHandle']);
+					if (is_object($ab)) {
+						$blocks[] = $ab;
+					}
 				}
 			}
-			$r->free();
 			return $blocks;
 		}
-			
+		
 		public function addBlock($bt, $a, $data) {
 			$db = Loader::db();
 			
@@ -668,6 +711,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			$q = "insert into CollectionVersionBlocks (cID, cvID, bID, arHandle, cbDisplayOrder, isOriginal, cbIncludeAll) values (?, ?, ?, ?, ?, ?, ?)";
 
 			$res = $db->Execute($q, $v);
+
+			Cache::delete('collection_blocks', $cID . ':' . $vObj->getVersionID());
 			
 			return Block::getByID($nb->getBlockID(), $this, $a);
 		}
@@ -687,6 +732,8 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 			
 			$cvIsApproved = (isset($data['cvIsApproved']) && $data['cvIsApproved'] == 0) ? 0 : 1;
+			
+			$data['name'] = Loader::helper('text')->sanitize($data['name']);
 			
 			if ($res) {
 				// now we add a pending version to the collectionversions table
@@ -762,6 +809,30 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 					$vv = array($newCID, $row['cvID'], $row['cvName'], $row['cvHandle'], $row['cvDescription'], $row['cvDatePublic'], $cDate, $row['cvComments'], $row['cvAuthorUID'], $row['cvIsApproved']);
 					$qv = "insert into CollectionVersions (cID, cvID, cvName, cvHandle, cvDescription, cvDatePublic, cvDateCreated, cvComments, cvAuthorUID, cvIsApproved) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 					$db->query($qv, $vv);
+				}
+				
+				// duplicate layout records 
+				$ql = "select * from CollectionVersionAreaLayouts where cID = '{$this->cID}' order by cvalID asc";
+				$rl = $db->query($ql);
+				while ($row = $rl->fetchRow()) { 
+					$vl = array( $newCID, $row['cvID'], $row['arHandle'], $row['layoutID'], $row['position'], $row['areaNameNumber'] );
+					$ql = "insert into CollectionVersionAreaLayouts (cID, cvID, arHandle, layoutID, position, areaNameNumber) values ( ?, ?, ?, ?, ?, ?)";
+					$db->query($ql, $vl);
+				}				
+
+				$ql = "select * from CollectionVersionBlockStyles where cID = '{$this->cID}'";
+				$rl = $db->query($ql);
+				while ($row = $rl->fetchRow()) { 
+					$vl = array( $newCID, $row['cvID'], $row['bID'], $row['arHandle'], $row['csrID'] );
+					$ql = "insert into CollectionVersionBlockStyles (cID, cvID, bID, arHandle, csrID) values (?, ?, ?, ?, ?)";
+					$db->query($ql, $vl);
+				}
+				$ql = "select * from CollectionVersionAreaStyles where cID = '{$this->cID}'";
+				$rl = $db->query($ql);
+				while ($row = $rl->fetchRow()) { 
+					$vl = array( $newCID, $row['cvID'], $row['arHandle'], $row['csrID'] );
+					$ql = "insert into CollectionVersionAreaStyles (cID, cvID, arHandle, csrID) values (?, ?, ?, ?)";
+					$db->query($ql, $vl);
 				}
 	
 				// now we grab all the blocks we're going to need

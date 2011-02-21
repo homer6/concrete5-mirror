@@ -1,4 +1,13 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
+
+<?php 
+if (isset($GLOBALS['CCM_SITEMAP_NODE_NUM'])) {
+	$GLOBALS['CCM_EDITOR_SITEMAP_NODE_NUM']++;
+} else {
+	$GLOBALS['CCM_EDITOR_SITEMAP_NODE_NUM'] = 1;
+}
+
+?>
 
 <script type="text/javascript">
 var ccm_editorCurrentAuxTool = '';
@@ -6,10 +15,11 @@ var ccm_editorCurrentAuxTool = '';
 // store the selection/position for ie..
 var bm; 
 setBookMark = function () {
+	tinyMCE.activeEditor.focus();
 	bm = tinyMCE.activeEditor.selection.getBookmark();
 }
 
-ccm_selectSitemapNode = function(cID, cName) {
+ccm_selectSitemapNode<?php echo $GLOBALS['CCM_EDITOR_SITEMAP_NODE_NUM']?> = function(cID, cName) {
 	var mceEd = tinyMCE.activeEditor;	
 	var url = '<?php echo BASE_URL . DIR_REL?>/<?php echo DISPATCHER_FILENAME?>?cID=' + cID;
 	

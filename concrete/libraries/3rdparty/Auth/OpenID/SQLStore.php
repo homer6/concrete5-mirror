@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * SQL-backed OpenID stores.

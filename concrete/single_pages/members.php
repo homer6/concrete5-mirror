@@ -1,4 +1,4 @@
-<?php  defined('C5_EXECUTE') or die(_("Access Denied.")); ?>
+<?php  defined('C5_EXECUTE') or die("Access Denied."); ?>
 <div id="ccm-profile-wrapper">
 	<form method="get" action="<?php echo DIR_REL?>/<?php echo DISPATCHER_FILENAME?>">
 			Search  		

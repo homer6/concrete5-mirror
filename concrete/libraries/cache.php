@@ -3,7 +3,7 @@
 class CacheLocal {
 
 	public $cache = array();
-	public $enabled = false; // disabled because of weird annoying race conditions. This will slow things down but only if you don't have zend cache active.
+	public $enabled = true; // disabled because of weird annoying race conditions. This will slow things down but only if you don't have zend cache active.
 	
 	public static function get() {
 		static $instance;
@@ -27,8 +27,9 @@ class Cache {
 			if (is_dir(DIR_FILES_CACHE) && is_writable(DIR_FILES_CACHE)) {
 				Loader::library('3rdparty/Zend/Cache');
 				$frontendOptions = array(
-					'lifetime' => 7200,
-					'automatic_serialization' => true			
+					'lifetime' => CACHE_LIFETIME,
+					'automatic_serialization' => true,
+					'cache_id_prefix' => CACHE_ID		
 				);
 				$backendOptions = array(
 					'cache_dir' => DIR_FILES_CACHE
@@ -86,7 +87,12 @@ class Cache {
 	public function set($type, $id, $obj, $expire = false) {
 		$loc = CacheLocal::get();
 		if ($loc->enabled) {
-			$loc->cache[Cache::key($type, $id)] = $obj;
+			if (is_object($obj)) {
+				$r = clone $obj;
+			} else {
+				$r = $obj;
+			}
+			$loc->cache[Cache::key($type, $id)] = $r;
 		}
 		$cache = Cache::getLibrary();
 		if (!$cache) {
@@ -160,7 +166,11 @@ class Cache {
 		if (!$cache) {
 			return false;
 		}
+		$cache->setOption('caching', true);
 		$cache->clean(Zend_Cache::CLEANING_MODE_ALL);
+		if (!ENABLE_CACHE) {
+			Cache::disableCache();
+		}		
 		return true;
 	}
 		

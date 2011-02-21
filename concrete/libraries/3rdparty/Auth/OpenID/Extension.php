@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * An interface for OpenID extensions.

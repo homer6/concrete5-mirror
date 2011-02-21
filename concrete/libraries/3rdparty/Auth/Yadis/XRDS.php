@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /**
  * This module contains the XRDS parsing code.

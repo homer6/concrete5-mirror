@@ -1,9 +1,11 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 class AttributeKey extends Object {
 	
 	public function getIndexedSearchTable() {return false;}
-	
+	public function getSearchIndexFieldDefinition() {
+		return $this->searchIndexFieldDefinition;
+	}
 	/** 
 	 * Returns the name for this attribute key
 	 */
@@ -234,6 +236,9 @@ class AttributeKey extends Object {
 						$this->clearAttributeSets();
 						$this->setAttributeSet($as);
 					}
+				} else {
+					// clear set
+					$this->clearAttributeSets();
 				}
 				break;
 		}
@@ -478,6 +483,10 @@ class AttributeKey extends Object {
 		}
 		$at->__destruct();
 		unset($at);
+	}
+	
+	public function __destruct() {
+
 	}
 	
 	public function validateAttributeForm($h = false) {

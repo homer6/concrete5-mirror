@@ -1,5 +1,5 @@
 <?php 
-defined('C5_EXECUTE') or die(_("Access Denied."));
+defined('C5_EXECUTE') or die("Access Denied.");
 global $c; ?>
 
 <a name="_edit<?php echo $b->getBlockID()?>"></a>
@@ -36,6 +36,8 @@ $(function() {
 </script>
 
 <form method="post" id="ccm-block-form" class="validate" action="<?php echo $b->getBlockEditAction()?>&rcID=<?php echo intval($rcID)?>" enctype="multipart/form-data">
+
+<input type="hidden" name="ccm-block-form-method" value="REGULAR" />
 
 <?php  foreach($this->controller->getJavaScriptStrings() as $key => $val) { ?>
 	<input type="hidden" name="ccm-string-<?php echo $key?>" value="<?php echo $val?>" />
