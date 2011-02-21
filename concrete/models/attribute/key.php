@@ -56,13 +56,28 @@ class AttributeKey extends Object {
 	 */
 	protected function load($akID) {
 		$db = Loader::db();
-		$row = $db->GetRow('select akID, akHandle, akName, akCategoryID, akIsEditable, akIsSearchable, akIsSearchableIndexed, akIsAutoCreated, akIsColumnHeader, AttributeKeys.atID, atHandle, AttributeKeys.pkgID from AttributeKeys inner join AttributeTypes on AttributeKeys.atID = AttributeTypes.atID where akID = ?', array($akID));
+		$akunhandle = Loader::helper('text')->uncamelcase(get_class($this));
+		$akCategoryHandle = substr($akunhandle, 0, strpos($akunhandle, '_attribute_key'));
+		if ($akCategoryHandle != '') {
+			$row = $db->GetRow('select akID, akHandle, akName, AttributeKeys.akCategoryID, akIsEditable, akIsSearchable, akIsSearchableIndexed, akIsAutoCreated, akIsColumnHeader, AttributeKeys.atID, atHandle, AttributeKeys.pkgID from AttributeKeys inner join AttributeKeyCategories on AttributeKeys.akCategoryID = AttributeKeyCategories.akCategoryID inner join AttributeTypes on AttributeKeys.atID = AttributeTypes.atID where akID = ? and akCategoryHandle = ?', array($akID, $akCategoryHandle));
+		} else {
+			$row = $db->GetRow('select akID, akHandle, akName, akCategoryID, akIsEditable, akIsSearchable, akIsSearchableIndexed, akIsAutoCreated, akIsColumnHeader, AttributeKeys.atID, atHandle, AttributeKeys.pkgID from AttributeKeys inner join AttributeTypes on AttributeKeys.atID = AttributeTypes.atID where akID = ?', array($akID));		
+		}
 		$this->setPropertiesFromArray($row);
 	}
 	
 	public function getPackageID() { return $this->pkgID;}
 	public function getPackageHandle() {
 		return PackageList::getHandle($this->pkgID);
+	}
+	
+	public static function getInstanceByID($akID) {
+		$db = Loader::db();
+		$akCategoryID = $db->GetOne('select akCategoryID from AttributeKeys where akID = ?', $akID);
+		if ($akCategoryID > 0) {
+			$akc = AttributeKeyCategory::getByID($akCategoryID);
+			return $akc->getAttributeKeyByID($akID);
+		}
 	}
 	
 	/** 

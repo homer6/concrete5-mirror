@@ -31,19 +31,19 @@ class Page extends Collection {
 	 * @param unknown_type $versionOrig
 	 * @return Page
 	 */
-	public static function getByID($cID, $versionOrig = 'RECENT') {
+	public static function getByID($cID, $versionOrig = 'RECENT', $class = 'Page') {
 		if ($versionOrig) {
 			$version = CollectionVersion::getNumericalVersionID($cID, $versionOrig);
 		}
 		$ca = new Cache();
 		$c = ($version > 0) ? $ca->get('page', $cID . ':' . $version) : $ca->get('page', $cID);
 
-		if ($c instanceof Page) {
+		if ($c instanceof $class) {
 			return $c;
 		}
 		
 		$where = "where Pages.cID = ?";
-		$c = new Page;
+		$c = new $class;
 		$c->populatePage($cID, $where, $version);
  
 		// must use cID instead of c->getCollectionID() because cID may be the pointer to another page		
@@ -860,9 +860,9 @@ $ppWhere = '';
 		return $this->childrenCIDArray;
 	}
 
-	function _getNumChildren($cID,$oneLevelOnly=0) {
+	function _getNumChildren($cID,$oneLevelOnly=0, $sortColumn = 'cDisplayOrder asc') {
 		$db = Loader::db();
-		$q = "select cID from Pages left join Packages on Pages.pkgID = Packages.pkgID where cParentID = {$cID} and cIsTemplate = 0 and (Packages.pkgHandle <> 'core' or pkgHandle is null or Pages.ctID > 0)";
+		$q = "select cID from Pages left join Packages on Pages.pkgID = Packages.pkgID where cParentID = {$cID} and cIsTemplate = 0 and (Packages.pkgHandle <> 'core' or pkgHandle is null or Pages.ctID > 0) order by {$sortColumn}";
 		$r = $db->query($q);
 		if ($r) {
 			while ($row = $r->fetchRow()) {
@@ -1019,6 +1019,7 @@ $ppWhere = '';
 		foreach ($newPaths as $key=>$val) {
 			if (!empty($val)) {
 				// Auto-prepend a slash if one is missing.
+				$val = trim($val, '/');
 				$val = $txt->sanitizeFileSystem($val, true);
 				if ($val{0} != '/') {
 					$val = '/' . $val;
@@ -1230,10 +1231,10 @@ $ppWhere = '';
 		$this->rescanCollectionPath();
 	}
 
-	function duplicateAll($nc) {
+	function duplicateAll($nc, $preserveUserID = false) {
 		$db = Loader::db();
 		$nc2 = $this->duplicate($nc);
-		Page::_duplicateAll($this, $nc2);
+		Page::_duplicateAll($this, $nc2, $preserveUserID);
 		return $nc2;
 	}
 
@@ -1241,7 +1242,7 @@ $ppWhere = '';
 	* @access private
 	**/
 
-	function _duplicateAll($cParent, $cNewParent) {
+	function _duplicateAll($cParent, $cNewParent, $preserveUserID = false) {
 		$db = Loader::db();
 		$cID = $cParent->getCollectionID();
 		$q = "select cID from Pages where cParentID = '{$cID}' order by cDisplayOrder asc";
@@ -1249,19 +1250,22 @@ $ppWhere = '';
 		if ($r) {
 			while ($row = $r->fetchRow()) {
 				$tc = Page::getByID($row['cID']);
-				$nc = $tc->duplicate($cNewParent);
-				$tc->_duplicateAll($tc, $nc);
+				$nc = $tc->duplicate($cNewParent, $preserveUserID);
+				$tc->_duplicateAll($tc, $nc, $preserveUserID);
 			}
 		}
 	}
 
-	function duplicate($nc) {
+	function duplicate($nc, $preserveUserID = false) {
 		$db = Loader::db();
 		// the passed collection is the parent collection
 		$cParentID = $nc->getCollectionID();
 
 		$u = new User();
 		$uID = $u->getUserID();
+		if ($preserveUserID) {
+			$uID = $this->getCollectionUserID();		
+		}
 		$dh = Loader::helper('date');			
 		$cDate = $dh->getSystemDateTime();
 		
@@ -2066,12 +2070,13 @@ $ppWhere = '';
 		
 		// test get variables
 		$allowedGetVars = array('cid');
-		foreach($_GET as $key => $value) {
-			if (!in_array(strtolower($key), $allowedGetVars)) {
-				return false;
+		if (is_array($_GET)) {
+			foreach($_GET as $key => $value) {
+				if (!in_array(strtolower($key), $allowedGetVars)) {
+					return false;
+				}
 			}
-		}
-		
+		}		
 		
 		if ($this->cCacheFullPageContent == 1 || FULL_PAGE_CACHE_GLOBAL == 'all') {
 			// this cache page at the page level
@@ -2083,11 +2088,17 @@ $ppWhere = '';
 			// we are NOT specifically caching this page, and we don't 
 			return false;
 		}
+		
+		if ($this->isGeneratedCollection()) {
+			return false;
+		}	
 
-		foreach($blocks as $b) {
-			$controller = $b->getInstance();
-			if (!$controller->cacheBlockOutput()) {
-				return false;
+		if (is_array($blocks)) {
+			foreach($blocks as $b) {
+				$controller = $b->getInstance();
+				if (!$controller->cacheBlockOutput()) {
+					return false;
+				}
 			}
 		}
 		return true;

@@ -1,38 +1,52 @@
 <?php  defined('C5_EXECUTE') or die("Access Denied."); 
 
-$options = $this->controller->getOptions();
 $form = Loader::helper('form');
-
+$json = Loader::helper('json');
 if ($akSelectAllowMultipleValues && $akSelectAllowOtherValues) { // display autocomplete form
 	$attrKeyID = $this->attributeKey->getAttributeKeyID();
 	?>
 	<div id="selectedAttrValueRows_<?php  echo $attrKeyID;?>">
 		<?php  
-		foreach($options as $opt) { 
-			if(in_array($opt->getSelectAttributeOptionID(), $selectedOptions)) { ?>
+		foreach($selectedOptions as $optID) { 
+			$opt = SelectAttributeTypeOption::getByID($optID);
+			
+			?>
 			<div class="existingAttrValue">
 				<?php echo $form->hidden($this->field('atSelectOptionID') . '[]', $opt->getSelectAttributeOptionID(), array('style'=>'position:relative;')); ?>
 				<?php echo $opt->getSelectAttributeOptionValue()?>
 				<a href="javascript:void(0);" onclick="$(this).parent().remove()">x</a>	
 			</div>
-		<?php 	} 
-		} ?>
+		<?php  } 
+		
+		// now we get items from the post
+		$vals = $this->post('atSelectNewOption');
+		if (is_array($vals)) {
+			foreach($vals as $v) { ?>
+				<div class="newAttrValue">
+					<?php echo $form->hidden($this->field('atSelectNewOption') . '[]', $v)?>
+					<?php echo $v?>
+					<a onclick="ccmAttributeTypeSelectTagHelper<?php  echo $attrKeyID?>.remove(this)" href="javascript:void(0)">x</a>
+				</div>
+			<?php  
+			}
+		}
+		
+		?>
 	</div>
+	<span style="position: relative">
+	
 	<?php  
 	echo $form->text('newAttrValueRows'.$attrKeyID, array('style'=>'position:relative; width: 200px; z-index: 260;'));
 	?>
 	<input type="button" value="<?php echo t('Add')?>" onclick="ccmAttributeTypeSelectTagHelper<?php echo $attrKeyID?>.addButtonClick(); return false" />
-	<?php 
+	</span>
 	
-	foreach($options as $op) {
-			$opt_values[] = (string) $op;	
-	};?>
 	<script type="text/javascript">
 	//<![CDATA[
 	$(function() {
-		var availableTags = <?php  echo json_encode($opt_values);?>;
+		var availableTags = <?php echo $json->encode($opt_values);?>;
 		$("#newAttrValueRows<?php  echo $attrKeyID?>").autocomplete({
-			source: availableTags,
+			source: "<?php echo $this->action('load_autocomplete_values')?>",
 			select: function( event, ui ) {
 				ccmAttributeTypeSelectTagHelper<?php  echo $attrKeyID?>.add(ui.item.value);
 				$(this).val('');
@@ -76,6 +90,9 @@ if ($akSelectAllowMultipleValues && $akSelectAllowOtherValues) { // display auto
 	</script>
 	<?php 
 } else {
+
+	$options = $this->controller->getOptions();
+
 	if ($akSelectAllowMultipleValues) { ?>
 			
 		<?php  foreach($options as $opt) { ?>
