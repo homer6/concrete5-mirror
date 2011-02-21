@@ -33,26 +33,51 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}			
 		}
 		
+		/**
+		 * returns the UserInfo object for a give user's uID
+		 * @param int $uID
+		 * @param array $userPermissionsArray
+		 * @return UserInfo
+		 */
 		public static function getByID($uID, $userPermissionsArray = null) {
 			return UserInfo::get('where uID = ?', $uID, $userPermissionsArray);
 		}
 		
+		/**
+		 * returns the UserInfo object for a give user's username
+		 * @param string $uName
+		 * @param array $userPermissionsArray
+		 * @return UserInfo
+		 */
 		public static function getByUserName($uName, $userPermissionsArray = null) {
 			return UserInfo::get('where uName = ?', $uName, $userPermissionsArray);
 		}
 		
+		/**
+		 * returns the UserInfo object for a give user's email address
+		 * @param string $uEmail
+		 * @param array $userPermissionsArray
+		 * @return UserInfo
+		 */
 		public static function getByEmail($uEmail, $userPermissionsArray = null) {
 			return UserInfo::get('where uEmail = ?', $uEmail, $userPermissionsArray);
 		}
 
 		/** 
 		 * Returns a user object by open ID. Does not log a user in.
+		 * @param string $uOpenID
+		 * @return UserInfo
 		 */
 		public function getByOpenID($uOpenID) {
 			return UserInfo::get('inner join UserOpenIDs on Users.uID = UserOpenIDs.uID where uOpenID = ?', $uOpenID);
 		}
 		
 		
+		/**
+		 * @param string $uHash
+		 * @param boolean $unredeemedHashesOnly
+		 * @return UserInfo
+		 */
 		public static function getByValidationHash($uHash, $unredeemedHashesOnly = true) {
 			$db = Loader::db();
 			if ($unredeemedHashesOnly) {
@@ -186,6 +211,7 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 			}
 
 			$r = $db->query("DELETE FROM UserGroups WHERE uID = ?",array(intval($this->uID)) );
+			$r = $db->query("DELETE FROM UserOpenIDs WHERE uID = ?",array(intval($this->uID)));
 			$r = $db->query("DELETE FROM Users WHERE uID = ?",array(intval($this->uID)));
 			$r = $db->query("DELETE FROM UserValidationHashes WHERE uID = ?",array(intval($this->uID)));
 			

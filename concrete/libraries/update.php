@@ -18,6 +18,18 @@ defined('C5_EXECUTE') or die(_("Access Denied."));
 class Update {
 
 	public function getLatestAvailableVersionNumber() {
+		if (defined('MULTI_SITE') && MULTI_SITE == 1) {
+			$updates = Update::getLocalAvailableUpdates();
+			$multiSiteVersion = 0;
+			foreach($updates as $up) {
+				if (version_compare($up->getUpdateVersion(), $multiSiteVersion, '>')) {
+					$multiSiteVersion = $up->getUpdateVersion();
+				}	
+			}
+			Config::save('APP_VERSION_LATEST', $multiSiteVersion);
+			return $multiSiteVersion;
+		}
+		
 		$d = Loader::helper('date');
 		// first, we check session
 		$queryWS = false;
@@ -119,7 +131,7 @@ class Update {
 		$updates = array();
 		$contents = @$fh->getDirectoryContents(DIR_APP_UPDATES);
 		foreach($contents as $con) {
-			if (strpos($con, DIRNAME_APP) === 0) {
+			if (is_dir(DIR_APP_UPDATES . '/' . $con)) {
 				$obj = ApplicationUpdate::get($con);
 				if (is_object($obj)) {
 					if (version_compare($obj->getUpdateVersion(), APP_VERSION, '>')) {
@@ -172,9 +184,9 @@ class ApplicationUpdate {
 		file_put_contents($configFile, $contents);
 		
 		if (substr($contents, -2) == '?>') {
-			file_put_contents($configFile, "<?php  define('DIRNAME_APP_UPDATED', '" . $this->getUpdateIdentifier() . "');?>", FILE_APPEND);
+			file_put_contents($configFile, "<" . "?" . "p" . "hp define('DIRNAME_APP_UPDATED', '" . $this->getUpdateIdentifier() . "');?>", FILE_APPEND);
 		} else {
-			file_put_contents($configFile, "?><?php  define('DIRNAME_APP_UPDATED', '" . $this->getUpdateIdentifier() . "');?>", FILE_APPEND);
+			file_put_contents($configFile, "?><" . "?" . "p" . "hp define('DIRNAME_APP_UPDATED', '" . $this->getUpdateIdentifier() . "');?>", FILE_APPEND);
 		}
 		
 		return true;

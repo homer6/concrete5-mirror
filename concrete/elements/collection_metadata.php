@@ -117,8 +117,9 @@ if ($cp->canAdminPage()) {
 		<div class="ccm-field">
 		<label><?php echo  t('Canonical URL')?></label>
 		<?php  if (!$c->isGeneratedCollection()) { ?>
-			<?php echo BASE_URL . DIR_REL . DISPATCHER_FILENAME .
-			substr($c->getCollectionPath(), 0, -1 * strlen($c->getCollectionHandle()))?><input type="text" name="cHandle" class="ccm-input-text" value="<?php  echo $c->getCollectionHandle()?>" id="cHandle"><input type="hidden" name="oldCHandle" value="<?php  echo $c->getCollectionHandle()?>"><br /><br />
+			<?php echo BASE_URL . DIR_REL;?><?php  if (URL_REWRITING == false) { ?>/<?php echo DISPATCHER_FILENAME?><?php  } ?><?php 
+			$cPath = substr($c->getCollectionPath(), strrpos($c->getCollectionPath(), '/') + 1);
+			print substr($c->getCollectionPath(), 0, strrpos($c->getCollectionPath(), '/'))?>/<input type="text" name="cHandle" class="ccm-input-text" value="<?php  echo $cPath?>" id="cHandle"><input type="hidden" name="oldCHandle" value="<?php  echo $c->getCollectionHandle()?>"><br /><br />
 		<?php   } else { ?>
 			<?php  echo $c->getCollectionHandle()?><br /><br />
 		<?php   } ?>

@@ -154,22 +154,20 @@ $crypt = Loader::helper('encryption');
 	</td>
 	<td>
 	<?php  if ($crypt->isAvailable()) { ?>
-		<input type="checkbox" name="useEncryption" id="useEncryption" value="1" checked />
-		<?php echo t('Use Encryption? (Note: this is <strong>strongly</strongly> recommended.)')?>
+		<input type="checkbox" name="useEncryption" id="useEncryption" value="1" />
+		<?php echo t('Use Encryption')?>
 	<?php  } else { ?>
 		<input type="checkbox" value="0" disabled />
-		<?php echo t('Use Encryption? (Note: this is <strong>strongly</strongly> recommended.)')?>
+		<?php echo t('Use Encryption')?>
 	<?php  } ?>
-	
 	</td>
 </tr>
 </table>
+	<br/>
 
-	<div class="ccm-note" style="margin-top:16px; font-size:12px; line-height:16px; margin-bottom:8px;">
-	<?php echo t('This will create a database export file and store it on your server. It tries to encrypt the file if possible, 
-	but may not always do so. Leaving these files on your server may introduce a security risk for your site, and running a 
-	restore is not guaranteed to always work correctly.')?>
-	</div>
+	<h2><?php echo t('Important Information about Backup & Restore')?></h2>
+	
+	<?php echo t('Running a backup will create a database export file and store it on your server. Encryption is only advised if you plan on storing the backup on the server indefinitely. This is <strong>not recommended</strong>. After running backup, download the file and make sure that the entire database was saved correctly. If any error messages appear during the backup process, do <b>not</b> attempt to restore from that backup.')?>
 
 </div>
 

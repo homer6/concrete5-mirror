@@ -43,9 +43,11 @@
 		
 	
 	<?php  } ?>
-	
+		
+		</div>
+		
 		<?php echo $userList->displayPaging()?>
-	
+		
 	<?php  
 	
 	} ?>

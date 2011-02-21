@@ -48,6 +48,10 @@ if (!defined('ENABLE_EMAILS')) {
 	define('ENABLE_EMAILS', true);
 }
 
+if (!defined('SITEMAP_PAGES_LIMIT')) {
+	define('SITEMAP_PAGES_LIMIT', 100);
+}
+
 if (!defined("ENABLE_AREA_LAYOUTS")) {
 	define('ENABLE_AREA_LAYOUTS', true);
 }
@@ -299,7 +303,7 @@ if (!defined('DIR_FILES_CACHE')) {
 	define('DIR_FILES_CACHE', DIR_BASE . '/files/cache');
 }
 
-if (!is_dir(DIR_FILES_CACHE)) {
+if (defined('DIR_FILES_CACHE') && !is_dir(DIR_FILES_CACHE)) {
 	@mkdir(DIR_FILES_CACHE);
 	@chmod(DIR_FILES_CACHE, 0777);
 }
@@ -311,8 +315,13 @@ if (!defined('DIR_TMP')) {
 define('DISPATCHER_FILENAME_CORE', 'dispatcher.php');
 
 
-define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
-define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
+if (defined('DIR_FILES_CACHE')) {
+	define('DIR_FILES_CACHE_DB', DIR_FILES_CACHE);
+	define('DIR_FILES_CACHE_PAGES', DIR_FILES_CACHE . '/lucene.pages');
+	$ADODB_ACTIVE_CACHESECS = 300;
+	$ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
+}
+
 define('ON_WINDOWS', intval(substr(PHP_OS,0,3)=='WIN') );
 
 # Binaries used by the system
@@ -424,8 +433,6 @@ if (!defined("API_KEY_PICNIK")) {
 }
 
 $ADODB_ASSOC_CASE =  2;
-$ADODB_ACTIVE_CACHESECS = 300;
-$ADODB_CACHE_DIR = DIR_FILES_CACHE_DB;
 require(dirname(__FILE__) . '/version.php');
 define('APP_VERSION', $APP_VERSION);
 define('APP_VERSION_LATEST_THRESHOLD', 172800); // Every 2 days we check for the latest version (this is seconds)

@@ -5,5 +5,5 @@ $bt->inc('editor_init.php');
 ?>
 
 <div style="text-align: center" id="ccm-editor-pane">
-<textarea id="ccm-content-<?php echo $b->getBlockID()?>-<?php echo $a->getAreaID()?>" class="ccm-advanced-editor" name="content"><?php echo $controller->getContentEditMode()?></textarea>
+<textarea id="ccm-content-<?php echo $b->getBlockID()?>-<?php echo $a->getAreaID()?>" class="advancedEditor ccm-advanced-editor" name="content"><?php echo $controller->getContentEditMode()?></textarea>
 </div>
