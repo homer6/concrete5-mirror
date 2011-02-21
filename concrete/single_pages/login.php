@@ -105,6 +105,40 @@
 
 </div>
 
+<?php  } else if ($invalidRegistrationFields == true) { ?>
+
+<div class="ccm-form">
+
+	<p><?php echo t('You must provide the following information before you may login.')?></p>
+	
+<form method="post" action="<?php echo $this->url('/login', 'do_login')?>">
+	<?php  
+	$attribs = UserAttributeKey::getRegistrationList();
+	$af = Loader::helper('form/attribute');
+	
+	$i = 0;
+	foreach($unfilledAttributes as $ak) { 
+		if ($i > 0) { 
+			print '<br/><br/>';
+		}
+		print $af->display($ak, $ak->isAttributeKeyRequiredOnRegister());	
+		$i++;
+	}
+	?>
+	
+	<?php echo $form->hidden('uName', $_POST['uName'])?>
+	<?php echo $form->hidden('uPassword', $_POST['uPassword'])?>
+	<?php echo $form->hidden('uOpenID', $uOpenID)?>
+	<?php echo $form->hidden('completePartialProfile', true)?>
+
+	<div class="ccm-button">
+		<?php echo $form->submit('submit', t('Sign In'))?>
+		<?php echo $form->hidden('rcID', $rcID); ?>
+	</div>
+	
+</form>
+</div>	
+
 <?php  } else { ?>
 
 <?php  if (isset($intro_msg)) { ?>

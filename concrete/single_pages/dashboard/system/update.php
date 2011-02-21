@@ -20,6 +20,8 @@
 	<?php echo Loader::helper('concrete/interface')->button_js(t('Close'), 'javascript:jQuery.fn.dialog.closeTop()', 'left');?>
 	</div>
 	
+	</form>
+	
 	
 	<?php  } else { ?>
 		<p><?php echo t('All available updates have been either downloaded or applied.')?></p>
@@ -33,6 +35,8 @@
 <h1><span><?php echo t('Install Local Update')?></span></h1>
 <div class="ccm-dashboard-inner">
 <?php 
+
+print '<strong>' . t('Make sure you <a href="%s">backup your database</a> before updating.', $this->url('/dashboard/system/backup')) . '</strong><br/>';
 $ih = Loader::helper('concrete/interface');
 
 switch(count($updates)) {

@@ -281,7 +281,7 @@ foreach($searchFieldAttributes as $ak) {
 			</div>
 			
 			<div id="ccm-search-fields-submit">
-				<?php echo $form->submit('ccm-search-pages', 'Search')?>
+				<?php echo $form->submit('ccm-search-pages', t('Search'))?>
 			</div>
 		</div>
 	

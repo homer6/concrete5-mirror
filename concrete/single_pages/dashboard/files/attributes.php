@@ -1,6 +1,6 @@
 
 <?php  if ($this->controller->getTask() != 'select_type' && $this->controller->getTask() != 'add' && $this->controller->getTask() != 'edit') { ?>
-	<h1><a class="ccm-dashboard-header-option" href="<?php echo $this->url('/dashboard/settings/', 'manage_attribute_types')?>">Manage Attribute Types</a><span><?php echo t('Attributes')?></span></h1>
+	<h1><a class="ccm-dashboard-header-option" href="<?php echo $this->url('/dashboard/settings/', 'manage_attribute_types')?>"><?php echo t('Manage Attribute Types')?></a><span><?php echo t('Attributes')?></span></h1>
 	<div class="ccm-dashboard-inner">
 	<?php 
 	$attribs = FileAttributeKey::getList();

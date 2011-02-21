@@ -21,7 +21,7 @@
 				<div >
 					<a href="<?php echo View::url('/profile',$friendUID) ?>"><?php echo  $friendUI->getUsername(); ?></a>
 					<div style=" font-size:90%; line-height:90%; margin-top:4px;">
-					<?php echo t('Member Since') ?> <?php echo date('F d, Y', strtotime($friendUI->getUserDateAdded('user')))?>
+					<?php echo t('Member Since') ?> <?php echo date(DATE_APP_GENERIC_MDY_FULL, strtotime($friendUI->getUserDateAdded('user')))?>
 					</div>
 				</div>
 				<div class="ccm-spacer"></div>
